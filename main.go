@@ -15,10 +15,10 @@ func main() {
 	var key encryptor.Key
 
 	sqlcon, _ := persist.NewSqlLiteConnection()
-	x := keystore.NewKeyStore(key, sqlcon)
-	x.Insert("Test", key)
+	keyStore := keystore.NewKeyStore(key, sqlcon)
+	//x.Insert("Test", key)
 
-	err := encrypt(key)
+	err := encrypt(key, keyStore)
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
@@ -30,7 +30,7 @@ func main() {
 	fmt.Println("Decryption complete and data written to file.")
 }
 
-func encrypt(key encryptor.Key) error {
+func encrypt(key encryptor.Key, store *keystore.KeyStore) error {
 	inputFile, err := os.Open("D:\\sample.txt")
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
@@ -45,8 +45,12 @@ func encrypt(key encryptor.Key) error {
 
 	fileUuid, _ := uuid.NewV7()
 	clientId := "CLIENTID"
+	pair, err := store.GenerateKeyPair()
+	if err != nil {
+		return err
+	}
 
-	efg := encryptor.NewEncryptedFileGenerator(inputFile, key, 10*1024*1024, clientId, fileUuid.String(), "")
+	efg := encryptor.NewEncryptedFileGenerator(inputFile, pair.Key, 10*1024*1024, clientId, fileUuid.String(), "")
 
 	_, err = io.Copy(outputFile, efg)
 	if err != nil {

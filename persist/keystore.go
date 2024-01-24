@@ -2,11 +2,10 @@ package persist
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"storage-go/keystore"
 )
-
-// KeyStorePersist is an interface for persisting keys
 
 // Ensure SqlLiteConnection implements KeyStorePersist
 var _ keystore.KeyStorePersist = (*SqlLiteConnection)(nil)
@@ -25,7 +24,7 @@ func (conn *SqlLiteConnection) GetKey(keyID string) (*keystore.SerializedKey, er
 		keyID).Scan(&sk.ID, &sk.Nonce, &sk.Key, &sk.Tag)
 
 	switch {
-	case err == sql.ErrNoRows:
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, nil
 	case err != nil:
 		return nil, fmt.Errorf("query failed: %v", err)
@@ -41,7 +40,7 @@ func (conn *SqlLiteConnection) GetWithTag(tag string) (*keystore.SerializedKey, 
 		tag).Scan(&sk.ID, &sk.Nonce, &sk.Key, &sk.Tag)
 
 	switch {
-	case err == sql.ErrNoRows:
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, nil
 	case err != nil:
 		return nil, fmt.Errorf("query failed: %v", err)
