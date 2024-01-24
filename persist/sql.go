@@ -2,8 +2,7 @@ package persist
 
 import (
 	"database/sql"
-	_ "github.com/ncruces/go-sqlite3/driver"
-	_ "github.com/ncruces/go-sqlite3/embed"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"path/filepath"
 )
