@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"io"
+	"log"
 	"os"
 	"storage-go/encryptor"
 	"storage-go/keystore"
 	"storage-go/persist"
 	"storage-go/storage"
+	"storage-go/utils"
 )
 
 func main() {
@@ -90,8 +92,15 @@ func decrypt(id string, store *keystore.KeyStore, s3storage *storage.S3Storage) 
 	//}
 	//defer file.Close()
 
+	//Create temp download file
+	tempFile, err := utils.CreateTempFile(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer utils.CloseDeleteTempFile(tempFile)
+
 	//Download file
-	file, err := s3storage.Download(id)
+	err = s3storage.Download(id, tempFile)
 
 	//Get data key
 	dataKey, err := store.Get(id)
@@ -100,7 +109,7 @@ func decrypt(id string, store *keystore.KeyStore, s3storage *storage.S3Storage) 
 	}
 
 	// Create a new ReaderDecryptor
-	rd, err := encryptor.NewReaderDecryptor(*dataKey, file)
+	rd, err := encryptor.NewReaderDecryptor(*dataKey, tempFile)
 	if err != nil {
 		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
 	}

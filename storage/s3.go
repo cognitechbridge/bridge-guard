@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -51,19 +50,17 @@ func (s *S3Storage) Upload(reader io.Reader, key string) error {
 	return err
 }
 
-func (s *S3Storage) Download(key string) (io.Reader, error) {
+func (s *S3Storage) Download(key string, writeAt io.WriterAt) error {
 	var partMiBs int64 = 10
 	downloader := manager.NewDownloader(s.Client, func(d *manager.Downloader) {
 		d.PartSize = partMiBs * 1024 * 1024
 	})
-	buffer := manager.NewWriteAtBuffer([]byte{})
-	_, err := downloader.Download(context.TODO(), buffer, &s3.GetObjectInput{
+	_, err := downloader.Download(context.TODO(), writeAt, &s3.GetObjectInput{
 		Bucket: aws.String(s.BucketName),
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't download. Here's why: %v\n", err)
+		return fmt.Errorf("Couldn't download. Here's why: %v\n", err)
 	}
-	reader := bytes.NewReader(buffer.Bytes())
-	return reader, nil
+	return nil
 }
