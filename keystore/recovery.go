@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/chacha20poly1305"
 	"io"
 	"storage-go/encryptor"
@@ -20,15 +19,15 @@ type GeneratedKey struct {
 }
 
 type Recovery struct {
-	Version string
-	Alg     string
-	Nonce   string
-	Cipher  string
-	ID      string
+	Version string `json:"version"`
+	Alg     string `json:"alg"`
+	Nonce   string `json:"nonce"`
+	Cipher  string `json:"cipher"`
+	Id      string `json:"id"`
 }
 
 func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key, nonce []byte) (string, error) {
-	recoveryID, recoveryKey, err := ks.GetRecoveryKey()
+	recoveryId, recoveryKey, err := ks.GetRecoveryKey()
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +44,7 @@ func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key, nonce []byte) (strin
 		Alg:     "XChaCha20Poly1305",
 		Nonce:   base64.StdEncoding.EncodeToString(nonce[:]),
 		Cipher:  base64.StdEncoding.EncodeToString(encrypted),
-		ID:      recoveryID,
+		Id:      recoveryId,
 	}
 
 	serialized, err := json.Marshal(recovery)
@@ -57,7 +56,7 @@ func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key, nonce []byte) (strin
 	return blob, nil
 }
 
-func (ks *KeyStore) GenerateKeyPair() (GeneratedKey, error) {
+func (ks *KeyStore) GenerateKeyPair(keyId string) (GeneratedKey, error) {
 	key := encryptor.Key{}
 	if _, err := io.ReadFull(rand.Reader, key[:]); err != nil {
 		return GeneratedKey{}, err
@@ -73,8 +72,7 @@ func (ks *KeyStore) GenerateKeyPair() (GeneratedKey, error) {
 		return GeneratedKey{}, err
 	}
 
-	keyId := uuid.New()
-	err = ks.Insert(keyId.String(), key)
+	err = ks.Insert(keyId, key)
 	if err != nil {
 		return GeneratedKey{}, err
 	}

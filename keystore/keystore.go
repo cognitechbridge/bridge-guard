@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"storage-go/encryptor"
-	"sync"
 )
 
 type SerializedKey struct {
@@ -23,7 +22,6 @@ type KeyStorePersist interface {
 type KeyStore struct {
 	rootKey encryptor.Key
 	persist KeyStorePersist
-	mu      sync.RWMutex
 }
 
 // NewKeyStore creates a new instance of KeyStore
@@ -36,39 +34,30 @@ func NewKeyStore(rootKey encryptor.Key, persist KeyStorePersist) *KeyStore {
 
 // Insert inserts a key into the key store
 func (ks *KeyStore) Insert(keyID string, key encryptor.Key) error {
-	ks.mu.Lock()
-	defer ks.mu.Unlock()
-
 	return ks.persistKey(keyID, key, "DK")
 }
 
 // Get retrieves a key from the key store
-func (ks *KeyStore) Get(keyID string) (encryptor.Key, error) {
-	ks.mu.RLock()
-	defer ks.mu.RUnlock()
-
+func (ks *KeyStore) Get(keyID string) (*encryptor.Key, error) {
 	sk, err := ks.persist.GetKey(keyID)
 	if err != nil {
-		return encryptor.Key{}, err
+		return nil, err
 	}
 
-	if sk.ID == "" {
-		return encryptor.Key{}, nil
+	if sk == nil {
+		return nil, err
 	}
 
 	key, err := ks.DeserializeKeyPair(sk.Nonce, sk.Key)
 	if err != nil {
-		return encryptor.Key{}, err
+		return nil, err
 	}
 
-	return *key, nil
+	return key, nil
 }
 
 // GetWithTag retrieves a key with a specific tag from the key store
 func (ks *KeyStore) GetWithTag(tag string) (string, encryptor.Key, error) {
-	ks.mu.RLock()
-	defer ks.mu.RUnlock()
-
 	sk, err := ks.persist.GetWithTag(tag)
 	if err != nil {
 		return "", encryptor.Key{}, err

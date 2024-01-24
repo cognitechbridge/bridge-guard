@@ -16,13 +16,12 @@ func main() {
 
 	sqlcon, _ := persist.NewSqlLiteConnection()
 	keyStore := keystore.NewKeyStore(key, sqlcon)
-	//x.Insert("Test", key)
 
-	err := encrypt(key, keyStore)
+	fileId, err := encrypt(keyStore)
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
-	err = decrypt(key)
+	err = decrypt(fileId, keyStore)
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
@@ -30,37 +29,50 @@ func main() {
 	fmt.Println("Decryption complete and data written to file.")
 }
 
-func encrypt(key encryptor.Key, store *keystore.KeyStore) error {
+func encrypt(store *keystore.KeyStore) (string, error) {
+	//Open input file
 	inputFile, err := os.Open("D:\\sample.txt")
 	if err != nil {
-		return fmt.Errorf("failed to open input file: %w", err)
+		return "", fmt.Errorf("failed to open input file: %w", err)
 	}
 	defer inputFile.Close()
 
+	//Create output file
 	outputFile, err := os.Create("D:\\encrypted.txt")
 	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
+		return "", fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer outputFile.Close()
 
-	fileUuid, _ := uuid.NewV7()
+	//Create header parameters
 	clientId := "CLIENTID"
-	pair, err := store.GenerateKeyPair()
+	fileUuid, _ := uuid.NewV7()
+	pair, err := store.GenerateKeyPair(fileUuid.String())
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	efg := encryptor.NewEncryptedFileGenerator(inputFile, pair.Key, 10*1024*1024, clientId, fileUuid.String(), "")
+	//Create reader
+	efg := encryptor.NewEncryptedFileGenerator(
+		inputFile,
+		pair.Key,
+		10*1024*1024,
+		clientId,
+		fileUuid.String(),
+		pair.RecoveryBlob,
+	)
 
+	//Copy to output
 	_, err = io.Copy(outputFile, efg)
 	if err != nil {
-		return fmt.Errorf("error copying file: %w", err)
+		return "", fmt.Errorf("error copying file: %w", err)
 	}
 
-	return nil
+	//Return file id
+	return fileUuid.String(), nil
 }
 
-func decrypt(key encryptor.Key) error {
+func decrypt(id string, store *keystore.KeyStore) error {
 	// Open the encrypted file
 	file, err := os.Open("D:\\encrypted.txt")
 	if err != nil {
@@ -68,8 +80,14 @@ func decrypt(key encryptor.Key) error {
 	}
 	defer file.Close()
 
+	//Get data key
+	dataKey, err := store.Get(id)
+	if err != nil {
+		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+	}
+
 	// Create a new ReaderDecryptor
-	rd, err := encryptor.NewReaderDecryptor(key, file)
+	rd, err := encryptor.NewReaderDecryptor(*dataKey, file)
 	if err != nil {
 		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
 	}
@@ -81,6 +99,7 @@ func decrypt(key encryptor.Key) error {
 	}
 	defer outputFile.Close()
 
+	//Copy to output
 	_, err = io.Copy(outputFile, rd)
 	if err != nil {
 		return fmt.Errorf("error Copying file: %w", err)
