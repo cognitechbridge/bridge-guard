@@ -8,20 +8,24 @@ import (
 	"storage-go/encryptor"
 	"storage-go/keystore"
 	"storage-go/persist"
+	"storage-go/storage"
 )
 
 func main() {
 	// Replace with your actual encryption key and nonce
 	var key encryptor.Key
 
+	s3storage := storage.NewS3Storage("ctb-test-2", 10*1024*1024)
+	//err := s3storage.Upload("D:\\sample.txt", "tesy33")
+
 	sqlcon, _ := persist.NewSqlLiteConnection()
 	keyStore := keystore.NewKeyStore(key, sqlcon)
 
-	fileId, err := encrypt(keyStore)
+	fileId, err := encrypt(keyStore, s3storage)
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
-	err = decrypt(fileId, keyStore)
+	err = decrypt(fileId, keyStore, s3storage)
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
@@ -29,7 +33,7 @@ func main() {
 	fmt.Println("Decryption complete and data written to file.")
 }
 
-func encrypt(store *keystore.KeyStore) (string, error) {
+func encrypt(store *keystore.KeyStore, s3storage *storage.S3Storage) (string, error) {
 	//Open input file
 	inputFile, err := os.Open("D:\\sample.txt")
 	if err != nil {
@@ -63,22 +67,31 @@ func encrypt(store *keystore.KeyStore) (string, error) {
 	)
 
 	//Copy to output
-	_, err = io.Copy(outputFile, efg)
+	//_, err = io.Copy(outputFile, efg)
+	//if err != nil {
+	//	return "", fmt.Errorf("error copying file: %w", err)
+	//}
+
+	//Upload
+	err = s3storage.Upload(efg, fileUuid.String())
 	if err != nil {
-		return "", fmt.Errorf("error copying file: %w", err)
+		return "", err
 	}
 
 	//Return file id
 	return fileUuid.String(), nil
 }
 
-func decrypt(id string, store *keystore.KeyStore) error {
+func decrypt(id string, store *keystore.KeyStore, s3storage *storage.S3Storage) error {
 	// Open the encrypted file
-	file, err := os.Open("D:\\encrypted.txt")
-	if err != nil {
-		return fmt.Errorf("error opening file: %w", err)
-	}
-	defer file.Close()
+	//file, err := os.Open("D:\\encrypted.txt")
+	//if err != nil {
+	//	return fmt.Errorf("error opening file: %w", err)
+	//}
+	//defer file.Close()
+
+	//Download file
+	file, err := s3storage.Download(id)
 
 	//Get data key
 	dataKey, err := store.Get(id)
