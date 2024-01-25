@@ -96,5 +96,5 @@ func (efg *EncryptedFileGenerator) readBytesEncrypted() ([]byte, error) {
 	if n == 0 {
 		return nil, nil
 	}
-	return EncryptChunk(buffer[:n], efg.key, efg.nonce)
+	return encryptChunk(buffer[:n], efg.key, efg.nonce)
 }

@@ -50,7 +50,7 @@ func (rd *ReaderDecryptor) Read(p []byte) (int, error) {
 			break
 		}
 
-		decryptedData, err := DecryptChunk(buffer[:bytesRead], rd.key, rd.nonce)
+		decryptedData, err := decryptChunk(buffer[:bytesRead], rd.key, rd.nonce)
 		if err != nil {
 			return 0, err
 		}

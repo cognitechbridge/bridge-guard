@@ -20,7 +20,7 @@ func GetAlgorithmName() string {
 }
 
 // EncryptChunk encrypts a chunk of data using the ChaCha20-Poly1305 algorithm.
-func EncryptChunk(plaintext []byte, key Key, nonce Nonce) ([]byte, error) {
+func encryptChunk(plaintext []byte, key Key, nonce Nonce) ([]byte, error) {
 	aead, err := chacha20poly1305.New(key[:])
 	if err != nil {
 		return nil, errors.New("failed to create cipher: " + err.Error())
@@ -31,7 +31,7 @@ func EncryptChunk(plaintext []byte, key Key, nonce Nonce) ([]byte, error) {
 }
 
 // DecryptChunk decrypts a chunk of data using the ChaCha20-Poly1305 algorithm.
-func DecryptChunk(ciphertext []byte, key Key, nonce Nonce) ([]byte, error) {
+func decryptChunk(ciphertext []byte, key Key, nonce Nonce) ([]byte, error) {
 	aead, err := chacha20poly1305.New(key[:])
 	if err != nil {
 		return nil, errors.New("failed to create cipher: " + err.Error())
