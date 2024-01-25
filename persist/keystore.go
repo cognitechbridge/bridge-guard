@@ -8,7 +8,7 @@ import (
 )
 
 // Ensure SqlLiteConnection implements KeyStorePersist
-var _ keystore.KeyStorePersist = (*SqlLiteConnection)(nil)
+var _ keystore.Persist = (*SqlLiteConnection)(nil)
 
 // SaveKey saves a serialized key in the database
 func (conn *SqlLiteConnection) SaveKey(serializedKey keystore.SerializedKey) error {

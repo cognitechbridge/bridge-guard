@@ -2,15 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"io"
-	"log"
-	"os"
+	"github.com/goombaio/namegenerator"
 	"storage-go/encryptor"
+	"storage-go/filesyetem"
 	"storage-go/keystore"
 	"storage-go/persist"
+	"storage-go/secure_storage"
 	"storage-go/storage"
-	"storage-go/utils"
+	"time"
 )
 
 func main() {
@@ -18,114 +17,27 @@ func main() {
 	var key encryptor.Key
 
 	s3storage := storage.NewS3Storage("ctb-test-2", 10*1024*1024)
-	//err := s3storage.Upload("D:\\sample.txt", "tesy33")
+	sqlLiteConnection, _ := persist.NewSqlLiteConnection()
+	keyStore := keystore.NewKeyStore(key, sqlLiteConnection)
+	filesystem := filesyetem.NewPersistFileSystem(sqlLiteConnection)
 
-	sqlcon, _ := persist.NewSqlLiteConnection()
-	keyStore := keystore.NewKeyStore(key, sqlcon)
+	seed := time.Now().UTC().UnixNano()
+	nameGenerator := namegenerator.NewNameGenerator(seed)
+	name := nameGenerator.Generate()
 
-	fileId, err := encrypt(keyStore, s3storage)
+	manager := secure_storage.NewManager(keyStore, s3storage, filesystem)
+
+	uploader := manager.NewUploader("D:\\sample.txt", name)
+	_, err := uploader.Download()
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
-	err = decrypt(fileId, keyStore, s3storage)
+
+	downloader := manager.NewDownloader("D:\\unencrypted.txt", name)
+	err = downloader.Download()
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
 
 	fmt.Println("Decryption complete and data written to file.")
-}
-
-func encrypt(store *keystore.KeyStore, s3storage *storage.S3Storage) (string, error) {
-	//Open input file
-	inputFile, err := os.Open("D:\\sample.txt")
-	if err != nil {
-		return "", fmt.Errorf("failed to open input file: %w", err)
-	}
-	defer inputFile.Close()
-
-	//Create output file
-	outputFile, err := os.Create("D:\\encrypted.txt")
-	if err != nil {
-		return "", fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer outputFile.Close()
-
-	//Create header parameters
-	clientId := "CLIENTID"
-	fileUuid, _ := uuid.NewV7()
-	pair, err := store.GenerateKeyPair(fileUuid.String())
-	if err != nil {
-		return "", err
-	}
-
-	//Create reader
-	efg := encryptor.NewEncryptedFileGenerator(
-		inputFile,
-		pair.Key,
-		10*1024*1024,
-		clientId,
-		fileUuid.String(),
-		pair.RecoveryBlob,
-	)
-
-	//Copy to output
-	//_, err = io.Copy(outputFile, efg)
-	//if err != nil {
-	//	return "", fmt.Errorf("error copying file: %w", err)
-	//}
-
-	//Upload
-	err = s3storage.Upload(efg, fileUuid.String())
-	if err != nil {
-		return "", err
-	}
-
-	//Return file id
-	return fileUuid.String(), nil
-}
-
-func decrypt(id string, store *keystore.KeyStore, s3storage *storage.S3Storage) error {
-	// Open the encrypted file
-	//file, err := os.Open("D:\\encrypted.txt")
-	//if err != nil {
-	//	return fmt.Errorf("error opening file: %w", err)
-	//}
-	//defer file.Close()
-
-	//Create temp download file
-	tempFile, err := utils.CreateTempFile(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer utils.CloseDeleteTempFile(tempFile)
-
-	//Download file
-	err = s3storage.Download(id, tempFile)
-
-	//Get data key
-	dataKey, err := store.Get(id)
-	if err != nil {
-		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
-	}
-
-	// Create a new ReaderDecryptor
-	rd, err := encryptor.NewReaderDecryptor(*dataKey, tempFile)
-	if err != nil {
-		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
-	}
-
-	// Create or open the output file
-	outputFile, err := os.Create("D:\\decrypted.txt") // Specify your output file path
-	if err != nil {
-		return fmt.Errorf("error creating output file: %w", err)
-	}
-	defer outputFile.Close()
-
-	//Copy to output
-	_, err = io.Copy(outputFile, rd)
-	if err != nil {
-		return fmt.Errorf("error Copying file: %w", err)
-	}
-
-	return nil
 }

@@ -11,8 +11,8 @@ type SerializedKey struct {
 	Tag   string
 }
 
-// KeyStorePersist is an interface for persisting keys
-type KeyStorePersist interface {
+// Persist KeyStorePersist is an interface for persisting keys
+type Persist interface {
 	SaveKey(serializedKey SerializedKey) error
 	GetKey(keyID string) (*SerializedKey, error)
 	GetWithTag(tag string) (*SerializedKey, error)
@@ -21,11 +21,11 @@ type KeyStorePersist interface {
 // KeyStore represents a key store
 type KeyStore struct {
 	rootKey encryptor.Key
-	persist KeyStorePersist
+	persist Persist
 }
 
 // NewKeyStore creates a new instance of KeyStore
-func NewKeyStore(rootKey encryptor.Key, persist KeyStorePersist) *KeyStore {
+func NewKeyStore(rootKey encryptor.Key, persist Persist) *KeyStore {
 	return &KeyStore{
 		rootKey: rootKey,
 		persist: persist,

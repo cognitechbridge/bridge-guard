@@ -16,6 +16,6 @@ func CreateTempFile(pattern string) (*os.File, error) {
 }
 
 func CloseDeleteTempFile(file *os.File) {
-	file.Close()
-	os.Remove(file.Name())
+	_ = file.Close()
+	_ = os.Remove(file.Name())
 }
