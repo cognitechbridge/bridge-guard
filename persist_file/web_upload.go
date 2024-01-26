@@ -9,8 +9,6 @@ import (
 	"sync"
 )
 
-const Concurrency = 5
-
 type Uploader struct {
 	sync.Mutex
 	reader   io.Reader

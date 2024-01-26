@@ -2,6 +2,8 @@ package persist_file
 
 import "net/http"
 
+const Concurrency = 5
+
 type CtbCloudClient struct {
 	baseURL    string
 	ChunkSize  uint64
