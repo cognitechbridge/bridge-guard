@@ -6,16 +6,17 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 type CtbCloudClient struct {
 	baseURL    string
-	ChunkSize  int64
+	ChunkSize  uint64
 	httpClient *http.Client
 }
 
 // NewUploaderClient creates a new CtbCloudClient.
-func NewUploaderClient(baseURL string, chunkSize int64) *CtbCloudClient {
+func NewUploaderClient(baseURL string, chunkSize uint64) *CtbCloudClient {
 	return &CtbCloudClient{
 		baseURL:    baseURL,
 		ChunkSize:  chunkSize,
@@ -91,42 +92,49 @@ func (client *CtbCloudClient) Upload(reader io.Reader, fileName string) error {
 }
 
 func (client *CtbCloudClient) Download(key string, writeAt io.WriterAt) error {
-	query := url.Values{}
-	query.Add("filename", key)
-	reqURL := client.baseURL + "/download?" + query.Encode()
-	req, err := http.NewRequest("POST", reqURL, nil)
-
-	reqResponse, err := client.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer reqResponse.Body.Close()
-
-	if err != nil {
-		return err
-	}
-
-	offset := int64(0)
-	buf := make([]byte, client.ChunkSize)
+	offset := uint64(0)
+	partNum := 1
 	for {
+		query := url.Values{}
+		query.Add("filename", key)
+		query.Add("partnumber", fmt.Sprintf("%d", partNum))
+		reqURL := client.baseURL + "/download?" + query.Encode()
+		req, err := http.NewRequest("POST", reqURL, nil)
+
+		reqResponse, err := client.httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer reqResponse.Body.Close()
+
+		if err != nil {
+			return err
+		}
+
 		// Read data into the buffer.
+		buf := make([]byte, client.ChunkSize)
 		bytesRead, readErr := reqResponse.Body.Read(buf)
+		if readErr != nil && readErr != io.EOF {
+			return readErr
+		}
 		if bytesRead > 0 {
 			// Write data at the specific offset.
-			_, writeErr := writeAt.WriteAt(buf[:bytesRead], offset)
+			_, writeErr := writeAt.WriteAt(buf[:bytesRead], int64(offset))
 			if writeErr != nil {
 				panic(writeErr)
 			}
 			// Update the offset.
-			offset += int64(bytesRead)
+			offset += uint64(bytesRead)
+			partNum += 1
 		}
 
-		if readErr == io.EOF {
-			break // End of file reached
+		partsCountStr := reqResponse.Header.Get("Parts-Count")
+		partsCount, _ := strconv.Atoi(partsCountStr)
+
+		if partNum > partsCount {
+			break
 		}
-		if readErr != nil {
-			return readErr
-		}
+
 	}
 
 	return nil
