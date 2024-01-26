@@ -11,12 +11,6 @@ import (
 
 const Concurrency = 5
 
-type CtbCloudClient struct {
-	baseURL    string
-	ChunkSize  uint64
-	httpClient *http.Client
-}
-
 type Uploader struct {
 	sync.Mutex
 	reader   io.Reader
@@ -24,15 +18,6 @@ type Uploader struct {
 	wg       sync.WaitGroup
 	err      error
 	client   *CtbCloudClient
-}
-
-// NewCtbCloudClient NewUploaderClient creates a new CtbCloudClient.
-func NewCtbCloudClient(baseURL string, chunkSize uint64) *CtbCloudClient {
-	return &CtbCloudClient{
-		baseURL:    baseURL,
-		ChunkSize:  chunkSize,
-		httpClient: &http.Client{},
-	}
 }
 
 type chunk struct {
