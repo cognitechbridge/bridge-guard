@@ -2,70 +2,68 @@ package secure_storage
 
 import (
 	"fmt"
-	"github.com/google/uuid"
+	"io"
 	"os"
 	"storage-go/encryptor"
+	"storage-go/utils"
 )
 
-type Uploader struct {
+type Downloader struct {
 	manger       *Manager
 	path         string
 	friendlyName string
 }
 
-func (mn *Manager) NewUploader(path string, friendlyName string) *Uploader {
-	return &Uploader{
+func (mn *Manager) NewDownloader(path string, friendlyName string) *Downloader {
+	return &Downloader{
 		manger:       mn,
 		path:         path,
 		friendlyName: friendlyName,
 	}
 }
 
-func (dn *Uploader) Download() (string, error) {
-	//Open input file
-	inputFile, err := os.Open(dn.path)
-	if err != nil {
-		return "", fmt.Errorf("failed to open input file: %w", err)
-	}
-	defer closeFile(inputFile)
+func (dn *Downloader) Download() error {
 
-	//Create output file
-	outputFile, err := os.Create("D:\\encrypted.txt")
+	//Find file id
+	id, err := dn.manger.filesystem.GetPath(dn.friendlyName)
 	if err != nil {
-		return "", fmt.Errorf("failed to create output file: %w", err)
+		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+	}
+
+	//Create temp download file
+	tempFile, err := utils.CreateTempFile(id)
+	if err != nil {
+		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+	}
+	defer utils.CloseDeleteTempFile(tempFile)
+
+	//Download file
+	err = dn.manger.cloudStorage.Download(id, tempFile)
+
+	//Get data key
+	dataKey, err := dn.manger.store.Get(id)
+	if err != nil {
+		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+	}
+
+	// Create a new ReaderDecryptor
+	rd, err := encryptor.NewReaderDecryptor(*dataKey, tempFile)
+	if err != nil {
+		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+	}
+
+	// Create or open the output file
+	outputFile, err := os.Create(dn.path) // Specify your output file path
+	if err != nil {
+		return fmt.Errorf("error creating output file: %w", err)
 	}
 	defer closeFile(outputFile)
 
-	//Create header parameters
-	clientId := "CLIENTID"
-	fileUuid, _ := uuid.NewV7()
-	pair, err := dn.manger.store.GenerateKeyPair(fileUuid.String())
+	//Copy to output
+	_, err = io.Copy(outputFile, rd)
 	if err != nil {
-		return "", err
+		return fmt.Errorf("error Copying file: %w", err)
 	}
 
-	//Create reader
-	efg := encryptor.NewEncryptedFileGenerator(
-		inputFile,
-		pair.Key,
-		10*1024*1024,
-		clientId,
-		fileUuid.String(),
-		pair.RecoveryBlob,
-	)
-
-	//Save friendly name
-	err = dn.manger.filesystem.SavePath(fileUuid.String(), dn.friendlyName)
-	if err != nil {
-		return "", err
-	}
-
-	//Upload
-	err = dn.manger.s3storage.Upload(efg, fileUuid.String())
-	if err != nil {
-		return "", err
-	}
-
-	//Return file id
-	return fileUuid.String(), nil
+	return nil
 }

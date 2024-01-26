@@ -17,6 +17,8 @@ func main() {
 	var key encryptor.Key
 
 	s3storage := storage.NewS3Storage("ctb-test-2", 10*1024*1024)
+	cloudClient := storage.NewUploaderClient("http://localhost:1323", 10*1024*1024)
+
 	sqlLiteConnection, _ := persist.NewSqlLiteConnection()
 	keyStore := keystore.NewKeyStore(key, sqlLiteConnection)
 	filesystem := filesyetem.NewPersistFileSystem(sqlLiteConnection)
@@ -25,10 +27,10 @@ func main() {
 	nameGenerator := namegenerator.NewNameGenerator(seed)
 	name := nameGenerator.Generate()
 
-	manager := secure_storage.NewManager(keyStore, s3storage, filesystem)
+	manager := secure_storage.NewManager(keyStore, s3storage, filesystem, cloudClient)
 
 	uploader := manager.NewUploader("D:\\sample.txt", name)
-	_, err := uploader.Download()
+	_, err := uploader.Upload()
 	if err != nil {
 		fmt.Println("Encryption failed:", err)
 	}
