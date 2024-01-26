@@ -11,23 +11,20 @@ import (
 
 type downloader struct {
 	sync.Mutex
-	writeAt   io.WriterAt
-	fileName  string
-	pos       int64
-	wg        sync.WaitGroup
-	err       error
-	client    *CtbCloudClient
-	chunkSize uint64
-
+	writeAt    io.WriterAt
+	fileName   string
+	pos        int64
+	wg         sync.WaitGroup
+	err        error
+	chunkSize  uint64
 	totalBytes int64
+	client     *CtbCloudClient
 }
 
 type dlchunk struct {
-	w       io.WriterAt
-	start   int64
-	size    int64
-	cur     int64
-	partNum int
+	w     io.WriterAt
+	start int64
+	size  int64
 }
 
 func (c *CtbCloudClient) Download(fileName string, writeAt io.WriterAt) error {
@@ -35,7 +32,7 @@ func (c *CtbCloudClient) Download(fileName string, writeAt io.WriterAt) error {
 		fileName:  fileName,
 		wg:        sync.WaitGroup{},
 		writeAt:   writeAt,
-		chunkSize: c.ChunkSize,
+		chunkSize: c.chunkSize,
 		client:    c,
 	}
 	return d.Download()
@@ -108,8 +105,8 @@ func (d *downloader) getChunk() {
 		return
 	}
 
-	chunk := dlchunk{w: d.writeAt, start: d.pos, size: int64(d.client.ChunkSize)}
-	d.pos += int64(d.client.ChunkSize)
+	chunk := dlchunk{w: d.writeAt, start: d.pos, size: int64(d.chunkSize)}
+	d.pos += int64(d.chunkSize)
 
 	if err := d.downloadChunk(chunk); err != nil {
 		d.setErr(err)

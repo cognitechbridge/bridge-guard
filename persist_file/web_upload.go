@@ -11,11 +11,12 @@ import (
 
 type Uploader struct {
 	sync.Mutex
-	reader   io.Reader
-	fileName string
-	wg       sync.WaitGroup
-	err      error
-	client   *CtbCloudClient
+	reader    io.Reader
+	fileName  string
+	wg        sync.WaitGroup
+	err       error
+	chunkSize uint64
+	client    *CtbCloudClient
 }
 
 type chunk struct {
@@ -25,10 +26,11 @@ type chunk struct {
 
 func (c *CtbCloudClient) Upload(reader io.Reader, fileName string) error {
 	u := Uploader{
-		fileName: fileName,
-		wg:       sync.WaitGroup{},
-		reader:   reader,
-		client:   c,
+		fileName:  fileName,
+		wg:        sync.WaitGroup{},
+		reader:    reader,
+		chunkSize: c.chunkSize,
+		client:    c,
 	}
 	return u.Upload()
 }
@@ -43,8 +45,8 @@ func (u *Uploader) Upload() error {
 	}
 
 	for u.geterr() == nil {
-		// Create a buffer to store multipart form data
-		buf := make([]byte, u.client.ChunkSize)
+		// Create a buffer to store multipart data
+		buf := make([]byte, u.chunkSize)
 		written, err := u.reader.Read(buf)
 
 		// Check for errors other than EOF

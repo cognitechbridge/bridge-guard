@@ -6,7 +6,7 @@ const Concurrency = 5
 
 type CtbCloudClient struct {
 	baseURL    string
-	ChunkSize  uint64
+	chunkSize  uint64
 	httpClient *http.Client
 }
 
@@ -14,7 +14,7 @@ type CtbCloudClient struct {
 func NewCtbCloudClient(baseURL string, chunkSize uint64) *CtbCloudClient {
 	return &CtbCloudClient{
 		baseURL:    baseURL,
-		ChunkSize:  chunkSize,
+		chunkSize:  chunkSize,
 		httpClient: &http.Client{},
 	}
 }
