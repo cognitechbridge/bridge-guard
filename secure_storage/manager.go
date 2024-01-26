@@ -3,20 +3,18 @@ package secure_storage
 import (
 	"storage-go/filesyetem"
 	"storage-go/keystore"
-	"storage-go/storage"
+	"storage-go/persist_file"
 )
 
 type Manager struct {
 	store        *keystore.KeyStore
-	s3storage    *storage.S3Storage
-	cloudStorage storage.CloudStorageClient
+	cloudStorage persist_file.CloudStorageClient
 	filesystem   *filesyetem.FileSystem
 }
 
-func NewManager(store *keystore.KeyStore, s3storage *storage.S3Storage, filesystem *filesyetem.FileSystem, cloudStorage storage.CloudStorageClient) *Manager {
+func NewManager(store *keystore.KeyStore, filesystem *filesyetem.FileSystem, cloudStorage persist_file.CloudStorageClient) *Manager {
 	return &Manager{
 		store:        store,
-		s3storage:    s3storage,
 		filesystem:   filesystem,
 		cloudStorage: cloudStorage,
 	}

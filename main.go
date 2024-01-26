@@ -7,8 +7,8 @@ import (
 	"storage-go/filesyetem"
 	"storage-go/keystore"
 	"storage-go/persist"
+	"storage-go/persist_file"
 	"storage-go/secure_storage"
-	"storage-go/storage"
 	"time"
 )
 
@@ -16,8 +16,8 @@ func main() {
 	// Replace with your actual encryption key and nonce
 	var key encryptor.Key
 
-	s3storage := storage.NewS3Storage("ctb-test-2", 10*1024*1024)
-	cloudClient := storage.NewUploaderClient("http://localhost:1323", 10*1024*1024)
+	//s3storage := storage.NewS3Client("ctb-test-2", 10*1024*1024)
+	cloudClient := persist_file.NewCtbCloudClient("http://localhost:1323", 10*1024*1024)
 
 	sqlLiteConnection, _ := persist.NewSqlLiteConnection()
 	keyStore := keystore.NewKeyStore(key, sqlLiteConnection)
@@ -27,7 +27,7 @@ func main() {
 	nameGenerator := namegenerator.NewNameGenerator(seed)
 	name := nameGenerator.Generate()
 
-	manager := secure_storage.NewManager(keyStore, s3storage, filesystem, cloudClient)
+	manager := secure_storage.NewManager(keyStore, filesystem, cloudClient)
 
 	uploader := manager.NewUploader("D:\\sample.txt", name)
 	_, err := uploader.Upload()

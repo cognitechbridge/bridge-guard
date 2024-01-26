@@ -1,4 +1,4 @@
-package storage
+package persist_file
 
 import "io"
 

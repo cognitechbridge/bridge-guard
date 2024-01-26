@@ -1,4 +1,4 @@
-package storage
+package persist_file
 
 import (
 	"bytes"
@@ -15,8 +15,8 @@ type CtbCloudClient struct {
 	httpClient *http.Client
 }
 
-// NewUploaderClient creates a new CtbCloudClient.
-func NewUploaderClient(baseURL string, chunkSize uint64) *CtbCloudClient {
+// NewCtbCloudClient NewUploaderClient creates a new CtbCloudClient.
+func NewCtbCloudClient(baseURL string, chunkSize uint64) *CtbCloudClient {
 	return &CtbCloudClient{
 		baseURL:    baseURL,
 		ChunkSize:  chunkSize,
