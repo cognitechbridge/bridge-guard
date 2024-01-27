@@ -2,10 +2,10 @@ package keystore
 
 import (
 	"crypto/rand"
+	"ctb-cli/encryptor"
 	"encoding/base64"
 	"fmt"
 	"golang.org/x/crypto/chacha20poly1305"
-	"storage-go/encryptor"
 )
 
 // SerializeKeyPair encrypts and serializes the key pair

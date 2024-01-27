@@ -2,11 +2,11 @@ package keystore
 
 import (
 	"crypto/rand"
+	"ctb-cli/encryptor"
 	"encoding/base64"
 	"encoding/json"
 	"golang.org/x/crypto/chacha20poly1305"
 	"io"
-	"storage-go/encryptor"
 )
 
 const RecoveryTag = "RECOVERY"

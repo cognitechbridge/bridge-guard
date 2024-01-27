@@ -1,10 +1,10 @@
 package secure_storage
 
 import (
+	"ctb-cli/encryptor"
 	"fmt"
 	"github.com/google/uuid"
 	"os"
-	"storage-go/encryptor"
 )
 
 type Uploader struct {

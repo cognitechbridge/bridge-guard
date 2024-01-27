@@ -1,7 +1,7 @@
 package keystore
 
 import (
-	"storage-go/encryptor"
+	"ctb-cli/encryptor"
 )
 
 type SerializedKey struct {

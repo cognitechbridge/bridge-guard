@@ -1,11 +1,11 @@
 package secure_storage
 
 import (
+	"ctb-cli/encryptor"
+	"ctb-cli/utils"
 	"fmt"
 	"io"
 	"os"
-	"storage-go/encryptor"
-	"storage-go/utils"
 )
 
 type Downloader struct {

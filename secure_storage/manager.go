@@ -1,9 +1,9 @@
 package secure_storage
 
 import (
-	"storage-go/filesyetem"
-	"storage-go/keystore"
-	"storage-go/persist_file"
+	"ctb-cli/filesyetem"
+	"ctb-cli/keystore"
+	"ctb-cli/persist_file"
 )
 
 type Manager struct {

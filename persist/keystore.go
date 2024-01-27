@@ -1,10 +1,10 @@
 package persist
 
 import (
+	"ctb-cli/keystore"
 	"database/sql"
 	"errors"
 	"fmt"
-	"storage-go/keystore"
 )
 
 // Ensure SqlLiteConnection implements KeyStorePersist

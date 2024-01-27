@@ -1,14 +1,14 @@
 package main
 
 import (
+	"ctb-cli/encryptor"
+	"ctb-cli/filesyetem"
+	"ctb-cli/keystore"
+	"ctb-cli/persist"
+	"ctb-cli/persist_file"
+	"ctb-cli/secure_storage"
 	"fmt"
 	"github.com/goombaio/namegenerator"
-	"storage-go/encryptor"
-	"storage-go/filesyetem"
-	"storage-go/keystore"
-	"storage-go/persist"
-	"storage-go/persist_file"
-	"storage-go/secure_storage"
 	"time"
 )
 

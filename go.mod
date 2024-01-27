@@ -1,4 +1,4 @@
-module storage-go
+module ctb-cli
 
 go 1.21
 

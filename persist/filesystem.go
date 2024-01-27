@@ -1,10 +1,10 @@
 package persist
 
 import (
+	"ctb-cli/filesyetem"
 	"database/sql"
 	"errors"
 	"fmt"
-	"storage-go/filesyetem"
 )
 
 var _ filesyetem.Persist = (*SqlLiteConnection)(nil)
