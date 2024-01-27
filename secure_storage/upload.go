@@ -48,7 +48,7 @@ func (dn *Uploader) Upload() (string, error) {
 	efg := encryptor.NewEncryptedFileGenerator(
 		inputFile,
 		pair.Key,
-		1024*1024,
+		dn.manger.config.EncryptChunkSize,
 		clientId,
 		fileUuid.String(),
 		pair.RecoveryBlob,

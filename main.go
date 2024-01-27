@@ -28,7 +28,15 @@ func main() {
 	nameGenerator := namegenerator.NewNameGenerator(seed)
 	name := nameGenerator.Generate()
 
-	manager := secure_storage.NewManager(keyStore, filesystem, cloudClient)
+	config := secure_storage.ManagerConfig{
+		EncryptChunkSize: 1024 * 1024,
+	}
+	manager := secure_storage.NewManager(
+		config,
+		keyStore,
+		filesystem,
+		cloudClient,
+	)
 
 	fmt.Println("Upload started")
 	startTime := time.Now()
