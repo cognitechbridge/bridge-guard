@@ -45,7 +45,7 @@ func (dn *Uploader) Upload() (string, error) {
 	}
 
 	//Create reader
-	efg := encryptor.NewEncryptedFileGenerator(
+	efg := encryptor.NewFileEncryptor(
 		inputFile,
 		pair.Key,
 		dn.manger.config.EncryptChunkSize,

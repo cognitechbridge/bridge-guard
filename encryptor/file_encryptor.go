@@ -15,8 +15,8 @@ var (
 	EncryptedFileVersion = []byte{1}          // Define the file version
 )
 
-// EncryptedFileGenerator is a struct for generating encrypted files.
-type EncryptedFileGenerator struct {
+// FileEncryptor is a struct for generating encrypted files.
+type FileEncryptor struct {
 	sync.Mutex
 	//
 	source       io.Reader
@@ -31,9 +31,9 @@ type EncryptedFileGenerator struct {
 	err error
 }
 
-// NewEncryptedFileGenerator creates a new EncryptedFileGenerator.
-func NewEncryptedFileGenerator(source io.Reader, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlob string) *EncryptedFileGenerator {
-	return &EncryptedFileGenerator{
+// NewFileEncryptor creates a new FileEncryptor.
+func NewFileEncryptor(source io.Reader, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlob string) *FileEncryptor {
+	return &FileEncryptor{
 		source:       source,
 		header:       NewEncryptionFileHeader(chunkSize, clientId, fileId, recoveryBlob),
 		buffer:       make([]byte, 0),
@@ -44,8 +44,8 @@ func NewEncryptedFileGenerator(source io.Reader, key Key, chunkSize uint64, clie
 	}
 }
 
-// Read implements the io.Reader interface for EncryptedFileGenerator.
-func (e *EncryptedFileGenerator) Read(buf []byte) (int, error) {
+// Read implements the io.Reader interface for FileEncryptor.
+func (e *FileEncryptor) Read(buf []byte) (int, error) {
 	if e.chunkCounter == 0 {
 		if err := e.appendHeader(); err != nil {
 			return 0, err
@@ -72,7 +72,7 @@ func (e *EncryptedFileGenerator) Read(buf []byte) (int, error) {
 }
 
 // appendHeader appends the header to the buffer.
-func (e *EncryptedFileGenerator) appendHeader() error {
+func (e *FileEncryptor) appendHeader() error {
 	e.buffer = append(e.buffer, EncryptedFileVersion...)
 	headerBytes, err := json.Marshal(e.header)
 	if err != nil {
@@ -83,24 +83,11 @@ func (e *EncryptedFileGenerator) appendHeader() error {
 }
 
 // writeContext writes a string to the buffer with its length.
-func (e *EncryptedFileGenerator) writeContext(context string) {
+func (e *FileEncryptor) writeContext(context string) {
 	contextLength := len(context)
 	// Assumes context length fits in 2 bytes
 	e.buffer = append(e.buffer, byte(contextLength), byte(contextLength>>8))
 	e.buffer = append(e.buffer, context...)
-}
-
-// readBytesEncrypted reads and encrypts a chunk of data from the source.
-func (e *EncryptedFileGenerator) readBytesEncrypted() ([]byte, error) {
-	buffer := make([]byte, e.chunkSize)
-	n, err := e.source.Read(buffer)
-	if err != nil {
-		return nil, err
-	}
-	if n == 0 {
-		return nil, nil
-	}
-	return encryptChunk(buffer[:n], e.key, e.nonce)
 }
 
 type ChunkData struct {
@@ -119,14 +106,15 @@ type ChunkResultsMut struct {
 	list []ChunkResult
 }
 
-func (e *EncryptedFileGenerator) encryptChunks(dc chan ChunkData, resultChan *ChunkResultsMut) {
+func (e *FileEncryptor) encryptChunks(dc chan ChunkData, resultChan *ChunkResultsMut) {
 	defer e.wg.Done()
 	for {
 		chunkData, ok := <-dc
 		if !ok {
 			break
 		}
-		encryptedChunk, err := encryptChunk(chunkData.Data, e.key, chunkData.nonce)
+		crypto := NewCrypto(e.key, chunkData.nonce)
+		encryptedChunk, err := crypto.seal(chunkData.Data)
 		if err != nil {
 			e.setErr(err)
 		}
@@ -138,7 +126,7 @@ func (e *EncryptedFileGenerator) encryptChunks(dc chan ChunkData, resultChan *Ch
 }
 
 // processWithChunkWorkers processes data using concurrent workers and maintains order.
-func (e *EncryptedFileGenerator) processWithChunkWorkers(size int64) error {
+func (e *FileEncryptor) processWithChunkWorkers(size int64) error {
 	dataChan := make(chan ChunkData, numWorkers)
 	results := ChunkResultsMut{}
 
@@ -173,7 +161,7 @@ func (e *EncryptedFileGenerator) processWithChunkWorkers(size int64) error {
 	return nil
 }
 
-func (e *EncryptedFileGenerator) addResultsToBuffer(results *ChunkResultsMut) {
+func (e *FileEncryptor) addResultsToBuffer(results *ChunkResultsMut) {
 	slices.SortFunc(results.list, func(a, b ChunkResult) int {
 		return cmp.Compare(a.Sequence, b.Sequence)
 	})
@@ -184,7 +172,7 @@ func (e *EncryptedFileGenerator) addResultsToBuffer(results *ChunkResultsMut) {
 	}
 }
 
-func (e *EncryptedFileGenerator) getErr() error {
+func (e *FileEncryptor) getErr() error {
 	e.Lock()
 	defer e.Unlock()
 
@@ -192,7 +180,7 @@ func (e *EncryptedFileGenerator) getErr() error {
 }
 
 // setErr is a thread-safe setter for the error object
-func (e *EncryptedFileGenerator) setErr(err error) {
+func (e *FileEncryptor) setErr(err error) {
 	e.Lock()
 	defer e.Unlock()
 

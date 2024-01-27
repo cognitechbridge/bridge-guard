@@ -1,11 +1,11 @@
 package main
 
 import (
+	"ctb-cli/db"
 	"ctb-cli/encryptor"
+	"ctb-cli/file_db/cloud"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
-	"ctb-cli/persist"
-	"ctb-cli/persist_file"
 	"ctb-cli/secure_storage"
 	"fmt"
 	"github.com/goombaio/namegenerator"
@@ -16,11 +16,11 @@ func main() {
 	// Replace with your actual encryption key and nonce
 	var key encryptor.Key
 
-	//s3storage := storage.NewS3Client("ctb-test-2", 10*1024*1024)
-	cloudClient := persist_file.NewCtbCloudClient("http://localhost:1323", 10*1024*1024)
-	//cloudClient := persist_file.NewDummyClient()
+	//s3Client := s3.NewClient("ctb-test-2", 10*1024*1024)
+	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
+	//cloudClient := file_db.NewDummyClient()
 
-	sqlLiteConnection, _ := persist.NewSqlLiteConnection()
+	sqlLiteConnection, _ := db.NewSqlLiteConnection()
 	keyStore := keystore.NewKeyStore(key, sqlLiteConnection)
 	filesystem := filesyetem.NewPersistFileSystem(sqlLiteConnection)
 

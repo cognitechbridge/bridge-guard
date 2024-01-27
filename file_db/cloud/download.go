@@ -1,4 +1,4 @@
-package persist_file
+package cloud
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ type downloader struct {
 	err        error
 	chunkSize  uint64
 	totalBytes int64
-	client     *CtbCloudClient
+	client     *Client
 }
 
 type dlchunk struct {
@@ -27,7 +27,7 @@ type dlchunk struct {
 	size  int64
 }
 
-func (c *CtbCloudClient) Download(fileName string, writeAt io.WriterAt) error {
+func (c *Client) Download(fileName string, writeAt io.WriterAt) error {
 	d := downloader{
 		fileName:  fileName,
 		wg:        sync.WaitGroup{},

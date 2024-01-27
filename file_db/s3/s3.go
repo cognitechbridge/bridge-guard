@@ -1,4 +1,4 @@
-package persist_file
+package s3
 
 import (
 	"context"
@@ -11,15 +11,15 @@ import (
 	"log"
 )
 
-// S3Client represents the persist_file configuration for S3
-type S3Client struct {
+// Client S3Client represents the file_db configuration for S3
+type Client struct {
 	BucketName string
 	ChunkSize  int64
 	Client     *s3.Client
 }
 
-// NewS3Client creates a new instance of S3Client
-func NewS3Client(bucketName string, chunkSize int64) *S3Client {
+// NewClient creates a new instance of S3Client
+func NewClient(bucketName string, chunkSize int64) *Client {
 	ctx := context.TODO()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -28,14 +28,14 @@ func NewS3Client(bucketName string, chunkSize int64) *S3Client {
 
 	// Create an Amazon S3 service client
 	client := s3.NewFromConfig(cfg)
-	return &S3Client{
+	return &Client{
 		BucketName: bucketName,
 		ChunkSize:  chunkSize,
 		Client:     client,
 	}
 }
 
-func (s *S3Client) Upload(reader io.Reader, key string) error {
+func (s *Client) Upload(reader io.Reader, key string) error {
 	uploader := manager.NewUploader(s.Client, func(u *manager.Uploader) {
 		u.PartSize = s.ChunkSize
 	})
@@ -50,7 +50,7 @@ func (s *S3Client) Upload(reader io.Reader, key string) error {
 	return err
 }
 
-func (s *S3Client) Download(key string, writeAt io.WriterAt) error {
+func (s *Client) Download(key string, writeAt io.WriterAt) error {
 	var partMiBs int64 = 10
 	downloader := manager.NewDownloader(s.Client, func(d *manager.Downloader) {
 		d.PartSize = partMiBs * 1024 * 1024

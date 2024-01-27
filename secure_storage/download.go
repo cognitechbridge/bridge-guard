@@ -27,13 +27,13 @@ func (dn *Downloader) Download() error {
 	//Find file id
 	id, err := dn.manger.filesystem.GetPath(dn.friendlyName)
 	if err != nil {
-		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}
 
 	//Create temp download file
 	tempFile, err := utils.CreateTempFile(id)
 	if err != nil {
-		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}
 	defer utils.CloseDeleteTempFile(tempFile)
 
@@ -43,13 +43,13 @@ func (dn *Downloader) Download() error {
 	//Get data key
 	dataKey, err := dn.manger.store.Get(id)
 	if err != nil {
-		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}
 
-	// Create a new ReaderDecryptor
-	rd, err := encryptor.NewReaderDecryptor(*dataKey, tempFile)
+	// Create a new FileDecryptor
+	rd, err := encryptor.NewFileDecryptor(*dataKey, tempFile)
 	if err != nil {
-		return fmt.Errorf("error creating ReaderDecryptor: %w", err)
+		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}
 
 	// Create or open the output file

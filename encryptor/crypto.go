@@ -5,6 +5,15 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
+type Crypto struct {
+	key   Key
+	nonce Nonce
+}
+
+func NewCrypto(key Key, nonce Nonce) Crypto {
+	return Crypto{key: key, nonce: nonce}
+}
+
 // Key represents a 256-bit key used for ChaCha20-Poly1305.
 type Key [chacha20poly1305.KeySize]byte
 
@@ -19,25 +28,25 @@ func GetAlgorithmName() string {
 	return "ChaChaPoly1350"
 }
 
-// EncryptChunk encrypts a chunk of data using the ChaCha20-Poly1305 algorithm.
-func encryptChunk(plaintext []byte, key Key, nonce Nonce) ([]byte, error) {
-	aead, err := chacha20poly1305.New(key[:])
+// seal encrypts a chunk of data using the ChaCha20-Poly1305 algorithm.
+func (c *Crypto) seal(plaintext []byte) ([]byte, error) {
+	aead, err := chacha20poly1305.New(c.key[:])
 	if err != nil {
 		return nil, errors.New("failed to create cipher: " + err.Error())
 	}
 
-	ciphertext := aead.Seal(nil, nonce[:], plaintext, nil)
+	ciphertext := aead.Seal(nil, c.nonce[:], plaintext, nil)
 	return ciphertext, nil
 }
 
-// DecryptChunk decrypts a chunk of data using the ChaCha20-Poly1305 algorithm.
-func decryptChunk(ciphertext []byte, key Key, nonce Nonce) ([]byte, error) {
-	aead, err := chacha20poly1305.New(key[:])
+// open decrypts a chunk of data using the ChaCha20-Poly1305 algorithm.
+func (c *Crypto) open(ciphertext []byte) ([]byte, error) {
+	aead, err := chacha20poly1305.New(c.key[:])
 	if err != nil {
 		return nil, errors.New("failed to create cipher: " + err.Error())
 	}
 
-	plaintext, err := aead.Open(nil, nonce[:], ciphertext, nil)
+	plaintext, err := aead.Open(nil, c.nonce[:], ciphertext, nil)
 	if err != nil {
 		return nil, errors.New("decryption error: " + err.Error())
 	}

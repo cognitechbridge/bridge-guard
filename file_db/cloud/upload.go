@@ -1,4 +1,4 @@
-package persist_file
+package cloud
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ type Uploader struct {
 	wg        sync.WaitGroup
 	err       error
 	chunkSize uint64
-	client    *CtbCloudClient
+	client    *Client
 }
 
 type chunk struct {
@@ -24,7 +24,7 @@ type chunk struct {
 	num int32
 }
 
-func (c *CtbCloudClient) Upload(reader io.Reader, fileName string) error {
+func (c *Client) Upload(reader io.Reader, fileName string) error {
 	u := Uploader{
 		fileName:  fileName,
 		wg:        sync.WaitGroup{},

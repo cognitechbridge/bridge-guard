@@ -1,14 +1,14 @@
 package secure_storage
 
 import (
+	"ctb-cli/file_db"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
-	"ctb-cli/persist_file"
 )
 
 type Manager struct {
 	store        *keystore.KeyStore
-	cloudStorage persist_file.CloudStorageClient
+	cloudStorage file_db.CloudStorageClient
 	filesystem   *filesyetem.FileSystem
 	config       ManagerConfig
 }
@@ -21,7 +21,7 @@ func NewManager(
 	config ManagerConfig,
 	keyStore *keystore.KeyStore,
 	filesyetem *filesyetem.FileSystem,
-	cloudStorage persist_file.CloudStorageClient,
+	cloudStorage file_db.CloudStorageClient,
 ) *Manager {
 	return &Manager{
 		store:        keyStore,

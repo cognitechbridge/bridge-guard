@@ -1,4 +1,4 @@
-package persist
+package db
 
 import (
 	"ctb-cli/filesyetem"

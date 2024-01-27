@@ -1,4 +1,4 @@
-package persist_file
+package file_db
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
