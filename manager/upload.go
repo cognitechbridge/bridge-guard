@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"os"
-	"path/filepath"
 )
 
 type Uploader struct {
@@ -25,8 +24,6 @@ func (mn *Manager) NewUploader(path string, friendlyName string, force bool) *Up
 }
 
 func (dn *Uploader) Upload() (string, error) {
-	absPath, _ := filepath.Abs(dn.path)
-
 	if dn.manger.filesystem.PathExist(dn.friendlyName) {
 		if !dn.force {
 			return "", fmt.Errorf("file exist: %s", dn.friendlyName)
@@ -38,7 +35,7 @@ func (dn *Uploader) Upload() (string, error) {
 	}
 
 	//Open input file
-	inputFile, err := os.Open(absPath)
+	inputFile, err := os.Open(dn.path)
 	if err != nil {
 		return "", fmt.Errorf("failed to open input file: %w", err)
 	}
