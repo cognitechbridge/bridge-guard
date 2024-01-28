@@ -5,11 +5,12 @@ import (
 	"ctb-cli/encryptor"
 )
 
-type SerializedKey struct {
-	ID    string
-	Nonce string
-	Key   string
-	Tag   string
+// KeyStore represents a key store
+type KeyStore struct {
+	rootKey           encryptor.Key
+	recoveryPublicKey *rsa.PublicKey
+	recoverySha1      string
+	persist           Persist
 }
 
 // Persist KeyStorePersist is an interface for persisting keys
@@ -19,12 +20,11 @@ type Persist interface {
 	GetWithTag(tag string) (*SerializedKey, error)
 }
 
-// KeyStore represents a key store
-type KeyStore struct {
-	rootKey           encryptor.Key
-	recoveryPublicKey *rsa.PublicKey
-	recoverySha1      string
-	persist           Persist
+type SerializedKey struct {
+	ID    string
+	Nonce string
+	Key   string
+	Tag   string
 }
 
 // NewKeyStore creates a new instance of KeyStore

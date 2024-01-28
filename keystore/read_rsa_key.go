@@ -30,7 +30,7 @@ func (ks *KeyStore) ReadRecoveryKey(inPath string) error {
 	pubKey, ok := pub.(*rsa.PublicKey)
 
 	if !ok {
-		return errors.New("public key is not of type *rsa.PublicKey")
+		return errors.New("public key is not of type RSA Public Key")
 	}
 
 	ks.recoveryPublicKey = pubKey

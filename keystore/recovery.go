@@ -11,8 +11,6 @@ import (
 	"io"
 )
 
-const RecoveryTag = "RECOVERY"
-
 type RecoveryVersion int
 
 type GeneratedKey struct {
