@@ -17,7 +17,8 @@ type walkResult struct {
 }
 
 type file struct {
-	path string
+	path  string
+	isDir bool
 }
 
 func (mn *Manager) NewUploadDirWalker(rootPath string, name string, force bool) *UploadDirWalker {
@@ -48,16 +49,6 @@ func walkDir(rootPath string) ([]file, error) {
 			return err
 		}
 
-		// Skip the root directory itself
-		if path == rootPath {
-			return nil
-		}
-
-		// Skip directories
-		if info.IsDir() {
-			return nil
-		}
-
 		// Compute the relative path
 		relativePath, err := filepath.Rel(rootPath, path)
 		if err != nil {
@@ -65,7 +56,8 @@ func walkDir(rootPath string) ([]file, error) {
 		}
 
 		f := file{
-			path: relativePath,
+			path:  relativePath,
+			isDir: info.IsDir(),
 		}
 		files = append(files, f)
 		return nil
@@ -86,7 +78,7 @@ func (f *UploadDirWalker) Upload() error {
 	for _, file := range res.list {
 		name := filepath.Join(f.name, file.path)
 		path := filepath.Join(f.rootPath, file.path)
-		u := f.mn.NewUploader(path, name, f.force)
+		u := f.mn.NewUploader(path, name, file.isDir, f.force)
 		_, err := u.Upload()
 		if err != nil {
 			return err

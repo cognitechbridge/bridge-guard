@@ -26,7 +26,7 @@ var uploadCmd = &cobra.Command{
 		recursive, _ := cmd.Flags().GetBool("recursive")
 
 		if !recursive {
-			uploader := manager.Client.NewUploader(absPath, name, force)
+			uploader := manager.Client.NewUploader(absPath, name, false, force)
 			res, err := uploader.Upload()
 			if err != nil {
 				fmt.Printf("Error uploading: %v", err)
