@@ -3,6 +3,7 @@ package cloud
 import (
 	"bytes"
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,6 +18,7 @@ type Uploader struct {
 	err       error
 	chunkSize uint64
 	client    *Client
+	bar       *progressbar.ProgressBar
 }
 
 type chunk struct {
@@ -37,6 +39,11 @@ func (c *Client) Upload(reader io.Reader, fileName string) error {
 
 func (u *Uploader) Upload() error {
 	partNumber := int32(1)
+
+	u.bar = progressbar.DefaultBytes(
+		-1,
+		"uploading",
+	)
 
 	ch := make(chan chunk, Concurrency)
 	for i := 0; i < Concurrency; i++ {
@@ -72,6 +79,8 @@ func (u *Uploader) Upload() error {
 	if err != nil {
 		return err
 	}
+
+	_ = u.bar.Finish()
 
 	return nil
 }
@@ -130,7 +139,9 @@ func (u *Uploader) send(ch chunk) error {
 	)
 
 	buf := bytes.NewBuffer(ch.buf)
-	req, err := http.NewRequest("POST", reqURL, buf)
+	teeReader := io.TeeReader(buf, u.bar)
+
+	req, err := http.NewRequest("POST", reqURL, teeReader)
 	if err != nil {
 		return err
 	}
@@ -141,6 +152,7 @@ func (u *Uploader) send(ch chunk) error {
 	if err != nil {
 		return err
 	}
+
 	_ = response.Body.Close()
 
 	return nil
