@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-type DirWalker struct {
+type UploadDirWalker struct {
 	rootPath string
 	name     string
 	mn       *Manager
@@ -20,8 +20,8 @@ type file struct {
 	path string
 }
 
-func (mn *Manager) NewDirWalker(rootPath string, name string, force bool) *DirWalker {
-	return &DirWalker{
+func (mn *Manager) NewUploadDirWalker(rootPath string, name string, force bool) *UploadDirWalker {
+	return &UploadDirWalker{
 		rootPath: rootPath,
 		name:     name,
 		force:    force,
@@ -29,7 +29,7 @@ func (mn *Manager) NewDirWalker(rootPath string, name string, force bool) *DirWa
 	}
 }
 
-func (f *DirWalker) read() (*walkResult, error) {
+func (f *UploadDirWalker) read() (*walkResult, error) {
 	files, err := walkDir(f.rootPath)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func walkDir(rootPath string) ([]file, error) {
 	return files, nil
 }
 
-func (f *DirWalker) Upload() error {
+func (f *UploadDirWalker) Upload() error {
 	res, err := f.read()
 	if err != nil {
 		return err

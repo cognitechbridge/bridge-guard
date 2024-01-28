@@ -34,7 +34,7 @@ var uploadCmd = &cobra.Command{
 			}
 			fmt.Printf("Upload completed: %s\n", res)
 		} else {
-			wk := manager.Client.NewDirWalker(absPath, name, force)
+			wk := manager.Client.NewUploadDirWalker(absPath, name, force)
 			err := wk.Upload()
 			if err != nil {
 				fmt.Printf("Error uploading: %v", err)
