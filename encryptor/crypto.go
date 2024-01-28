@@ -25,7 +25,7 @@ func GetOverHeadSize() int {
 }
 
 func GetAlgorithmName() string {
-	return "ChaChaPoly1350"
+	return "AEAD_ChaCha20_Poly1305"
 }
 
 // seal encrypts a chunk of data using the ChaCha20-Poly1305 algorithm.
