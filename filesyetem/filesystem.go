@@ -4,6 +4,7 @@ package filesyetem
 type Persist interface {
 	SavePath(path string, key string) error
 	GetPath(path string) (string, error)
+	RemovePath(path string) error
 }
 
 // FileSystem implements the FileSystem interface
@@ -26,4 +27,14 @@ func (p *FileSystem) SavePath(id string, path string) error {
 // GetPath retrieves a path
 func (p *FileSystem) GetPath(path string) (string, error) {
 	return p.persist.GetPath(path)
+}
+
+func (p *FileSystem) PathExist(path string) bool {
+	_, err := p.persist.GetPath(path)
+	return err == nil
+}
+
+func (p *FileSystem) RemovePath(path string) error {
+	err := p.persist.RemovePath(path)
+	return err
 }

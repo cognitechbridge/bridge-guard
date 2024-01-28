@@ -16,13 +16,11 @@ var uploadCmd = &cobra.Command{
 	Short: "Uploads a file to cloud",
 	Long:  `Uploads a file to cloud`,
 	Run: func(cmd *cobra.Command, args []string) {
-		file, _ := cmd.Flags().GetString("file")
+		path, _ := cmd.Flags().GetString("path")
 		name, _ := cmd.Flags().GetString("name")
+		force, _ := cmd.Flags().GetBool("force")
 
-		uploader := manager.Client.NewUploader(
-			file,
-			name,
-		)
+		uploader := manager.Client.NewUploader(path, name, force)
 		res, err := uploader.Upload()
 		if err != nil {
 			fmt.Printf("Error uploading: %v", err)
@@ -36,7 +34,8 @@ func init() {
 	rootCmd.AddCommand(uploadCmd)
 
 	uploadCmd.Flags().StringP("name", "n", "", "name on cloud")
-	uploadCmd.Flags().StringP("file", "f", "", "File to upload")
+	uploadCmd.Flags().StringP("path", "p", "", "path to file to upload")
+	uploadCmd.Flags().BoolP("force", "f", false, "force")
 	_ = uploadCmd.MarkFlagRequired("path")
 	_ = uploadCmd.MarkFlagRequired("file")
 }

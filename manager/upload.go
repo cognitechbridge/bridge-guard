@@ -12,18 +12,30 @@ type Uploader struct {
 	manger       *Manager
 	path         string
 	friendlyName string
+	force        bool
 }
 
-func (mn *Manager) NewUploader(path string, friendlyName string) *Uploader {
+func (mn *Manager) NewUploader(path string, friendlyName string, force bool) *Uploader {
 	return &Uploader{
 		manger:       mn,
 		path:         path,
 		friendlyName: friendlyName,
+		force:        force,
 	}
 }
 
 func (dn *Uploader) Upload() (string, error) {
 	absPath, _ := filepath.Abs(dn.path)
+
+	if dn.manger.filesystem.PathExist(dn.friendlyName) {
+		if !dn.force {
+			return "", fmt.Errorf("file exist: %s", dn.friendlyName)
+		} else {
+			if err := dn.manger.filesystem.RemovePath(dn.friendlyName); err != nil {
+				return "", err
+			}
+		}
+	}
 
 	//Open input file
 	inputFile, err := os.Open(absPath)

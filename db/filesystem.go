@@ -36,3 +36,11 @@ func (conn *SqlLiteConnection) GetPath(path string) (string, error) {
 		return id, nil
 	}
 }
+
+func (conn *SqlLiteConnection) RemovePath(path string) error {
+	_, err := conn.dbConn.Exec(
+		"DELETE FROM filesystem WHERE path = ?",
+		path,
+	)
+	return err
+}

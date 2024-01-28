@@ -16,11 +16,11 @@ var downloadCmd = &cobra.Command{
 	Short: "Download a file from cloud",
 	Long:  `Download a file from cloud`,
 	Run: func(cmd *cobra.Command, args []string) {
-		file, _ := cmd.Flags().GetString("file")
+		path, _ := cmd.Flags().GetString("path")
 		name, _ := cmd.Flags().GetString("name")
 
 		downloader := manager.Client.NewDownloader(
-			file,
+			path,
 			name,
 		)
 		err := downloader.Download()
@@ -36,7 +36,7 @@ func init() {
 	rootCmd.AddCommand(downloadCmd)
 
 	downloadCmd.Flags().StringP("name", "n", "", "name on cloud")
-	downloadCmd.Flags().StringP("file", "f", "", "File to upload")
+	downloadCmd.Flags().StringP("path", "p", "", "path to download location")
+	_ = downloadCmd.MarkFlagRequired("name")
 	_ = downloadCmd.MarkFlagRequired("path")
-	_ = downloadCmd.MarkFlagRequired("file")
 }
