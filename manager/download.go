@@ -1,4 +1,4 @@
-package secure_storage
+package manager
 
 import (
 	"ctb-cli/encryptor"

@@ -1,31 +1,32 @@
-package secure_storage
+package manager
 
 import (
 	"ctb-cli/encryptor"
 	"fmt"
 	"github.com/google/uuid"
 	"os"
+	"path/filepath"
 )
 
 type Uploader struct {
 	manger       *Manager
 	path         string
 	friendlyName string
-	clientId     string
 }
 
-func (mn *Manager) NewUploader(path string, friendlyName string, clientId string) *Uploader {
+func (mn *Manager) NewUploader(path string, friendlyName string) *Uploader {
 	return &Uploader{
 		manger:       mn,
 		path:         path,
 		friendlyName: friendlyName,
-		clientId:     clientId,
 	}
 }
 
 func (dn *Uploader) Upload() (string, error) {
+	absPath, _ := filepath.Abs(dn.path)
+
 	//Open input file
-	inputFile, err := os.Open(dn.path)
+	inputFile, err := os.Open(absPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open input file: %w", err)
 	}
@@ -39,7 +40,7 @@ func (dn *Uploader) Upload() (string, error) {
 	defer closeFile(outputFile)
 
 	//Create header parameters
-	clientId := dn.clientId
+	clientId := dn.manger.config.ClientId
 	fileUuid, _ := uuid.NewV7()
 	pair, err := dn.manger.store.GenerateKeyPair(fileUuid.String())
 	if err != nil {

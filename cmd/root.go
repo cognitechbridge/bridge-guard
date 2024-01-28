@@ -6,11 +6,17 @@ Copyright © 2024 Mohammad Saadatfar
 package cmd
 
 import (
+	"ctb-cli/config"
+	"ctb-cli/db"
+	"ctb-cli/encryptor"
+	"ctb-cli/file_db/cloud"
+	"ctb-cli/filesyetem"
+	"ctb-cli/keystore"
+	"ctb-cli/manager"
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
 )
 
 var cfgFile string
@@ -71,4 +77,42 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
+
+	initManagerClient()
+}
+
+func initManagerClient() {
+	var key encryptor.Key
+
+	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
+	//cloudClient := file_db.NewDummyClient()
+
+	sqlLiteConnection, _ := db.NewSqlLiteConnection()
+
+	keyStore := keystore.NewKeyStore(key, sqlLiteConnection)
+	path, err := config.Crypto.GetRecoveryPublicCertPath()
+	if err != nil {
+		return
+	}
+	err = keyStore.ReadRecoveryKey(path)
+	if err != nil {
+		fmt.Println("Error reading crt:", err)
+		return
+	}
+
+	filesystem := filesyetem.NewPersistFileSystem(sqlLiteConnection)
+
+	chunkSize, _ := config.Crypto.GetChunkSize()
+	clientId, _ := config.Workspace.GetClientId()
+	managerConfig := manager.Config{
+		EncryptChunkSize: chunkSize,
+		ClientId:         clientId,
+	}
+
+	manager.Client.Init(
+		managerConfig,
+		keyStore,
+		filesystem,
+		cloudClient,
+	)
 }

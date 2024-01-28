@@ -1,4 +1,4 @@
-package secure_storage
+package manager
 
 import (
 	"ctb-cli/file_db"
@@ -10,15 +10,30 @@ type Manager struct {
 	store        *keystore.KeyStore
 	cloudStorage file_db.CloudStorageClient
 	filesystem   *filesyetem.FileSystem
-	config       ManagerConfig
+	config       Config
 }
 
-type ManagerConfig struct {
+type Config struct {
 	EncryptChunkSize uint64
+	ClientId         string
+}
+
+var Client = Manager{}
+
+func (mn *Manager) Init(
+	config Config,
+	keyStore *keystore.KeyStore,
+	filesyetem *filesyetem.FileSystem,
+	cloudStorage file_db.CloudStorageClient,
+) {
+	mn.cloudStorage = cloudStorage
+	mn.filesystem = filesyetem
+	mn.store = keyStore
+	mn.config = config
 }
 
 func NewManager(
-	config ManagerConfig,
+	config Config,
 	keyStore *keystore.KeyStore,
 	filesyetem *filesyetem.FileSystem,
 	cloudStorage file_db.CloudStorageClient,
