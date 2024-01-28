@@ -40,7 +40,7 @@ func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key) (string, error) {
 
 	recovery := Recovery{
 		Version:      "V1",
-		Alg:          "AES-2048",
+		Alg:          "AES",
 		Cipher:       base64.StdEncoding.EncodeToString(encrypted),
 		RecoverySha1: ks.recoverySha1,
 	}

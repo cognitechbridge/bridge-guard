@@ -6,40 +6,41 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
-	"fmt"
+	"errors"
 	"os"
 )
 
 func (ks *KeyStore) ReadRecoveryKey(inPath string) error {
 	path := os.ExpandEnv(inPath)
-
-	// Load the PEM file
-	pemData, err := os.ReadFile(path)
+	pemBytes, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("Failed to read file: %s\n", err)
+		return err
 	}
 
-	// Decode the PEM file
-	block, _ := pem.Decode(pemData)
-	if block == nil || block.Type != "CERTIFICATE" {
-		return fmt.Errorf("Failed to decode PEM block containing certificate\n")
+	block, _ := pem.Decode(pemBytes)
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return err
 	}
 
-	// Parse the certificate
-	cert, err := x509.ParseCertificate(block.Bytes)
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return fmt.Errorf("Failed to parse certificate: %s\n", err)
+		return err
 	}
 
-	rsaPubKey, ok := cert.PublicKey.(*rsa.PublicKey)
+	pubKey, ok := pub.(*rsa.PublicKey)
+
 	if !ok {
-		return fmt.Errorf("Public key is not of RSA type\n")
+		return errors.New("public key is not of type *rsa.PublicKey")
 	}
 
-	ks.recoveryPublicKey = rsaPubKey
+	ks.recoveryPublicKey = pubKey
 
-	sha1Hash := sha1.Sum(cert.Raw)
-	ks.recoverySha1 = hex.EncodeToString(sha1Hash[:])
+	pubASN1, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return err
+	}
+	hash := sha1.Sum(pubASN1)
+	ks.recoverySha1 = hex.EncodeToString(hash[:])
 
 	return nil
 }
