@@ -2,10 +2,12 @@ package keystore
 
 import (
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"ctb-cli/encryptor"
 	"encoding/base64"
 	"encoding/json"
-	"golang.org/x/crypto/chacha20poly1305"
+	"fmt"
 	"io"
 )
 
@@ -19,32 +21,28 @@ type GeneratedKey struct {
 }
 
 type Recovery struct {
-	Version string `json:"version"`
-	Alg     string `json:"alg"`
-	Nonce   string `json:"nonce"`
-	Cipher  string `json:"cipher"`
-	Id      string `json:"id"`
+	Version      string `json:"version"`
+	Alg          string `json:"alg"`
+	Cipher       string `json:"cipher"`
+	RecoverySha1 string `json:"recoverySha1"`
 }
 
-func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key, nonce []byte) (string, error) {
-	recoveryId, recoveryKey, err := ks.GetRecoveryKey()
+func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key) (string, error) {
+	recoveryKey, err := ks.GetRecoveryKey()
+	if err != nil || recoveryKey == nil {
+		return "", fmt.Errorf("recovery key not found. Cannot generate data key")
+	}
+
+	encrypted, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, recoveryKey, key[:], nil)
 	if err != nil {
 		return "", err
 	}
-
-	aead, err := chacha20poly1305.NewX(recoveryKey[:])
-	if err != nil {
-		return "", err
-	}
-
-	encrypted := aead.Seal(nil, nonce[:], key[:], nil)
 
 	recovery := Recovery{
-		Version: "V1",
-		Alg:     "XChaCha20Poly1305",
-		Nonce:   base64.StdEncoding.EncodeToString(nonce[:]),
-		Cipher:  base64.StdEncoding.EncodeToString(encrypted),
-		Id:      recoveryId,
+		Version:      "V1",
+		Alg:          "AES-2048",
+		Cipher:       base64.StdEncoding.EncodeToString(encrypted),
+		RecoverySha1: ks.recoverySha1,
 	}
 
 	serialized, err := json.Marshal(recovery)
@@ -62,12 +60,7 @@ func (ks *KeyStore) GenerateKeyPair(keyId string) (GeneratedKey, error) {
 		return GeneratedKey{}, err
 	}
 
-	nonce := make([]byte, chacha20poly1305.NonceSizeX)
-	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
-		return GeneratedKey{}, err
-	}
-
-	blob, err := ks.GenerateRecoveryBlob(key, nonce)
+	blob, err := ks.GenerateRecoveryBlob(key)
 	if err != nil {
 		return GeneratedKey{}, err
 	}
@@ -83,6 +76,6 @@ func (ks *KeyStore) GenerateKeyPair(keyId string) (GeneratedKey, error) {
 	}, nil
 }
 
-func (ks *KeyStore) GetRecoveryKey() (string, encryptor.Key, error) {
-	return ks.GetWithTag(RecoveryTag)
+func (ks *KeyStore) GetRecoveryKey() (*rsa.PublicKey, error) {
+	return ks.recoveryPublicKey, nil
 }

@@ -1,6 +1,7 @@
 package keystore
 
 import (
+	"crypto/rsa"
 	"ctb-cli/encryptor"
 )
 
@@ -20,8 +21,10 @@ type Persist interface {
 
 // KeyStore represents a key store
 type KeyStore struct {
-	rootKey encryptor.Key
-	persist Persist
+	rootKey           encryptor.Key
+	recoveryPublicKey *rsa.PublicKey
+	recoverySha1      string
+	persist           Persist
 }
 
 // NewKeyStore creates a new instance of KeyStore
