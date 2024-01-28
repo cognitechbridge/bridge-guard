@@ -8,6 +8,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"ctb-cli/cmd"
 	"ctb-cli/db"
 	"ctb-cli/encryptor"
 	"ctb-cli/file_db/cloud"
@@ -71,15 +72,8 @@ func main() {
 	//savePublicKeyAsCertificate("D:/a.crt", pubKey, privKey)
 
 	//fmt.Println("Decrypted Message: ", decryptedMessage)
+	cmd.Execute()
 
-	//cmd.Execute()
-	//
-	viper.SetConfigName("config")            // name of config file (without extension)
-	viper.SetConfigType("yaml")              // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath("/etc/.ctb/")        // path to look for the config file in
-	viper.AddConfigPath("$USERPROFILE/.ctb") // call multiple times to add many search paths
-	viper.AddConfigPath(".")                 // optionally look for config in the working directory
-	err := viper.ReadInConfig()
 	//
 	//if err != nil {
 	//	fmt.Println("Error reading config", err)
@@ -101,7 +95,7 @@ func main() {
 
 	sqlLiteConnection, _ := db.NewSqlLiteConnection()
 	keyStore := keystore.NewKeyStore(key, sqlLiteConnection)
-	err = keyStore.ReadRecoveryKey(
+	err := keyStore.ReadRecoveryKey(
 		viper.GetString("crypto.recovery-public-cert"),
 	)
 	if err != nil {
