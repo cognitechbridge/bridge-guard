@@ -74,7 +74,7 @@ func (dn *Uploader) Upload() (string, error) {
 
 	//Upload
 	//err = dn.manger.s3storage.Upload(efg, fileUuid.String())
-	err = dn.manger.cloudStorage.Upload(efg, fileUuid.String())
+	err = dn.manger.cloudStorage.Upload(efg, fileUuid.String(), dn.friendlyName)
 	if err != nil {
 		return "", err
 	}

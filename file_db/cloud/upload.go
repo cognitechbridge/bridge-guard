@@ -13,12 +13,13 @@ import (
 type Uploader struct {
 	sync.Mutex
 	reader    io.Reader
-	fileName  string
+	fileId    string
 	wg        sync.WaitGroup
 	err       error
 	chunkSize uint64
 	client    *Client
 	bar       *progressbar.ProgressBar
+	fileName  string
 }
 
 type chunk struct {
@@ -26,8 +27,9 @@ type chunk struct {
 	num int32
 }
 
-func (c *Client) Upload(reader io.Reader, fileName string) error {
+func (c *Client) Upload(reader io.Reader, fileId string, fileName string) error {
 	u := Uploader{
+		fileId:    fileId,
 		fileName:  fileName,
 		wg:        sync.WaitGroup{},
 		reader:    reader,
@@ -42,7 +44,7 @@ func (u *Uploader) Upload() error {
 
 	u.bar = progressbar.DefaultBytes(
 		-1,
-		"uploading",
+		fmt.Sprintf("uploading %s", u.fileName),
 	)
 
 	ch := make(chan chunk, Concurrency)
@@ -89,7 +91,7 @@ func (u *Uploader) finishUpload() error {
 	reqURL := fmt.Sprintf(
 		"%s/upload/%s/complete",
 		u.client.baseURL,
-		url.PathEscape(u.fileName),
+		url.PathEscape(u.fileId),
 	)
 	completeReq, err := http.NewRequest("POST", reqURL, nil)
 	if err != nil {
@@ -134,7 +136,7 @@ func (u *Uploader) send(ch chunk) error {
 	reqURL := fmt.Sprintf(
 		"%s/upload/%s?%s",
 		u.client.baseURL,
-		url.PathEscape(u.fileName),
+		url.PathEscape(u.fileId),
 		query.Encode(),
 	)
 

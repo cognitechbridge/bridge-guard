@@ -5,23 +5,23 @@ import (
 	"path/filepath"
 )
 
-type FileWalker struct {
+type DirWalker struct {
 	rootPath string
 	name     string
 	mn       *Manager
 	force    bool
 }
 
-type WalkResult struct {
-	list []File
+type walkResult struct {
+	list []file
 }
 
-type File struct {
+type file struct {
 	path string
 }
 
-func (mn *Manager) NewFileWalker(rootPath string, name string, force bool) *FileWalker {
-	return &FileWalker{
+func (mn *Manager) NewDirWalker(rootPath string, name string, force bool) *DirWalker {
+	return &DirWalker{
 		rootPath: rootPath,
 		name:     name,
 		force:    force,
@@ -29,19 +29,19 @@ func (mn *Manager) NewFileWalker(rootPath string, name string, force bool) *File
 	}
 }
 
-func (f *FileWalker) Read() (*WalkResult, error) {
+func (f *DirWalker) read() (*walkResult, error) {
 	files, err := walkDir(f.rootPath)
 	if err != nil {
 		return nil, err
 	}
-	res := WalkResult{
+	res := walkResult{
 		files,
 	}
 	return &res, nil
 }
 
-func walkDir(rootPath string) ([]File, error) {
-	var files []File
+func walkDir(rootPath string) ([]file, error) {
+	var files []file
 
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -64,7 +64,7 @@ func walkDir(rootPath string) ([]File, error) {
 			return err
 		}
 
-		f := File{
+		f := file{
 			path: relativePath,
 		}
 		files = append(files, f)
@@ -78,8 +78,8 @@ func walkDir(rootPath string) ([]File, error) {
 	return files, nil
 }
 
-func (f *FileWalker) Upload() error {
-	res, err := f.Read()
+func (f *DirWalker) Upload() error {
+	res, err := f.read()
 	if err != nil {
 		return err
 	}
