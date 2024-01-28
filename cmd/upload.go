@@ -45,12 +45,11 @@ var uploadCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(uploadCmd)
+	fileCmd.AddCommand(uploadCmd)
 
 	uploadCmd.Flags().StringP("name", "n", "", "name on cloud")
 	uploadCmd.Flags().StringP("path", "p", "", "path to file to upload")
-	uploadCmd.Flags().BoolP("force", "f", false, "force")
-	uploadCmd.Flags().BoolP("recursive", "r", false, "recursive")
+
 	_ = uploadCmd.MarkFlagRequired("path")
 	_ = uploadCmd.MarkFlagRequired("file")
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// downloadCmd represents the download command
-var downloadCmd = &cobra.Command{
+// DownloadCmd represents the download command
+var DownloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "Download a file from cloud",
 	Long:  `Download a file from cloud`,
@@ -33,10 +33,10 @@ var downloadCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(downloadCmd)
+	fileCmd.AddCommand(DownloadCmd)
 
-	downloadCmd.Flags().StringP("name", "n", "", "name on cloud")
-	downloadCmd.Flags().StringP("path", "p", "", "path to download location")
-	_ = downloadCmd.MarkFlagRequired("name")
-	_ = downloadCmd.MarkFlagRequired("path")
+	DownloadCmd.Flags().StringP("name", "n", "", "name on cloud")
+	DownloadCmd.Flags().StringP("path", "p", "", "path to download location")
+	_ = DownloadCmd.MarkFlagRequired("name")
+	_ = DownloadCmd.MarkFlagRequired("path")
 }
