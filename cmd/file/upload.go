@@ -1,8 +1,9 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Mohammad Saadatfar
+
 */
 
-package cmd
+package file
 
 import (
 	"ctb-cli/manager"
@@ -45,7 +46,7 @@ var uploadCmd = &cobra.Command{
 }
 
 func init() {
-	fileCmd.AddCommand(uploadCmd)
+	FileCmd.AddCommand(uploadCmd)
 
 	uploadCmd.Flags().StringP("name", "n", "", "name on cloud")
 	uploadCmd.Flags().StringP("path", "p", "", "path to file to upload")

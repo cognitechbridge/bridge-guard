@@ -6,6 +6,7 @@ Copyright © 2024 Mohammad Saadatfar
 package cmd
 
 import (
+	"ctb-cli/cmd/file"
 	"ctb-cli/config"
 	"ctb-cli/db"
 	"ctb-cli/encryptor"
@@ -42,6 +43,8 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
+	rootCmd.AddCommand(file.FileCmd)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

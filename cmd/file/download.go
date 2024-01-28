@@ -1,7 +1,8 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Mohammad Saadatfar
 */
-package cmd
+
+package file
 
 import (
 	"ctb-cli/manager"
@@ -33,7 +34,7 @@ var DownloadCmd = &cobra.Command{
 }
 
 func init() {
-	fileCmd.AddCommand(DownloadCmd)
+	FileCmd.AddCommand(DownloadCmd)
 
 	DownloadCmd.Flags().StringP("name", "n", "", "name on cloud")
 	DownloadCmd.Flags().StringP("path", "p", "", "path to download location")
