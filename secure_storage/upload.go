@@ -11,13 +11,15 @@ type Uploader struct {
 	manger       *Manager
 	path         string
 	friendlyName string
+	clientId     string
 }
 
-func (mn *Manager) NewUploader(path string, friendlyName string) *Uploader {
+func (mn *Manager) NewUploader(path string, friendlyName string, clientId string) *Uploader {
 	return &Uploader{
 		manger:       mn,
 		path:         path,
 		friendlyName: friendlyName,
+		clientId:     clientId,
 	}
 }
 
@@ -37,7 +39,7 @@ func (dn *Uploader) Upload() (string, error) {
 	defer closeFile(outputFile)
 
 	//Create header parameters
-	clientId := "CLIENTID"
+	clientId := dn.clientId
 	fileUuid, _ := uuid.NewV7()
 	pair, err := dn.manger.store.GenerateKeyPair(fileUuid.String())
 	if err != nil {
