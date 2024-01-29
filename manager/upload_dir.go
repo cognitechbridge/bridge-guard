@@ -49,6 +49,10 @@ func walkDir(rootPath string) ([]file, error) {
 			return err
 		}
 
+		if info.IsDir() {
+			return nil
+		}
+
 		// Compute the relative path
 		relativePath, err := filepath.Rel(rootPath, path)
 		if err != nil {
@@ -56,8 +60,7 @@ func walkDir(rootPath string) ([]file, error) {
 		}
 
 		f := file{
-			path:  relativePath,
-			isDir: info.IsDir(),
+			path: relativePath,
 		}
 		files = append(files, f)
 		return nil

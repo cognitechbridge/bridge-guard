@@ -31,8 +31,8 @@ func (p *FileSystem) GetPath(path string) (string, error) {
 }
 
 func (p *FileSystem) PathExist(path string) bool {
-	_, err := p.persist.PathExist(path)
-	return err == nil
+	res, _ := p.persist.PathExist(path)
+	return res
 }
 
 func (p *FileSystem) RemovePath(path string) error {

@@ -1,68 +1,87 @@
 package db
 
 import (
+	"ctb-cli/config"
 	"ctb-cli/filesyetem"
-	"database/sql"
-	"errors"
-	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 )
 
 var _ filesyetem.Persist = (*SqlLiteConnection)(nil)
 
 // SavePath saves a serialized key in the database
 func (conn *SqlLiteConnection) SavePath(path string, key string, isDir bool) error {
-	isDirN := 0
-	if isDir == true {
-		isDirN = 1
+	absPath, err := getAbsPath(path)
+	if err != nil {
+		return err
 	}
-	_, err := conn.dbConn.Exec(
-		"INSERT INTO filesystem (id, path, isDir) VALUES (?, ?, ?)",
-		key, path, isDirN,
-	)
-	return err
+	err = os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(absPath)
+	defer file.Close()
+	_, err = file.Write([]byte(key))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetPath retrieves a path id by path
 func (conn *SqlLiteConnection) GetPath(path string) (string, error) {
-	var id string
-	row := conn.dbConn.QueryRow(
-		"SELECT id FROM filesystem WHERE path = ?",
-		path,
-	)
-	err := row.Scan(&id)
-
-	switch {
-	case errors.Is(err, sql.ErrNoRows):
-		return "", fmt.Errorf("path not found in database (path): %s", path)
-	case err != nil:
-		return "", fmt.Errorf("query failed: %v", err)
-	default:
-		return id, nil
+	absPath, err := getAbsPath(path)
+	if err != nil {
+		return "", err
 	}
+	file, err := os.Open(absPath)
+	defer file.Close()
+	id, err := io.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+	return string(id), nil
 }
 
 func (conn *SqlLiteConnection) RemovePath(path string) error {
-	_, err := conn.dbConn.Exec(
-		"DELETE FROM filesystem WHERE path = ?",
-		path,
-	)
-	return err
+	absPath, err := getAbsPath(path)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(absPath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (conn *SqlLiteConnection) PathExist(path string) (bool, error) {
-	var id string
-	row := conn.dbConn.QueryRow(
-		"SELECT id FROM filesystem WHERE path = ? OR path LIKE ?",
-		path, path+"/%",
-	)
-	err := row.Scan(&id)
-
-	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	absPath, err := getAbsPath(path)
+	if err != nil {
+		return false, err
+	}
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("query failed: %v", err)
-	default:
+	} else {
 		return true, nil
 	}
+}
+
+func getAbsPath(path string) (string, error) {
+	basePath, err := getFilesysPath()
+	if err != nil {
+		return "", err
+	}
+	absPath := filepath.Join(basePath, path)
+	return absPath, nil
+}
+
+func getFilesysPath() (string, error) {
+	rootPath, err := config.GetRepoCtbRoot()
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(rootPath, "filesystem")
+	return path, nil
 }
