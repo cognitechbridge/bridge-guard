@@ -26,17 +26,9 @@ func (mn *Manager) NewUploader(path string, friendlyName string, isDir bool, for
 }
 
 func (dn *Uploader) Upload() (string, error) {
-	if dn.isDir {
-		return dn.uploadDir()
-	} else {
-		return dn.uploadFile()
-	}
-
-}
-
-func (dn *Uploader) uploadFile() (string, error) {
 	//Check if path already exist
-	if dn.manger.filesystem.PathExist(dn.friendlyName) {
+	exist, _ := dn.manger.filesystem.PathExist(dn.friendlyName)
+	if exist {
 		if !dn.force {
 			return "", fmt.Errorf("file exist: %s", dn.friendlyName)
 		} else {
@@ -79,7 +71,7 @@ func (dn *Uploader) uploadFile() (string, error) {
 	)
 
 	//Save friendly name
-	err = dn.manger.filesystem.SavePath(fileUuid.String(), dn.friendlyName, false)
+	err = dn.manger.filesystem.SavePath(fileUuid.String(), dn.friendlyName)
 	if err != nil {
 		return "", err
 	}
@@ -91,14 +83,5 @@ func (dn *Uploader) uploadFile() (string, error) {
 	}
 
 	//Return file id
-	return fileUuid.String(), nil
-}
-
-func (dn *Uploader) uploadDir() (string, error) {
-	fileUuid, _ := uuid.NewV7()
-	err := dn.manger.filesystem.SavePath(fileUuid.String(), dn.friendlyName, true)
-	if err != nil {
-		return "", err
-	}
 	return fileUuid.String(), nil
 }

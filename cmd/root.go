@@ -100,7 +100,7 @@ func initManagerClient() {
 		return
 	}
 
-	filesystem := filesyetem.NewPersistFileSystem(sqlLiteConnection)
+	filesystem := filesyetem.NewPersistFileSystem()
 
 	chunkSize, _ := config.Crypto.GetChunkSize()
 	clientId, _ := config.Workspace.GetClientId()
