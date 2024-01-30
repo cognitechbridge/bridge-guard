@@ -9,7 +9,7 @@ import (
 type Manager struct {
 	store        *keystore.KeyStore
 	cloudStorage file_db.CloudStorageClient
-	filesystem   *filesyetem.FileSystem
+	Filesystem   *filesyetem.FileSystem
 	config       Config
 }
 
@@ -27,7 +27,7 @@ func (mn *Manager) Init(
 	cloudStorage file_db.CloudStorageClient,
 ) {
 	mn.cloudStorage = cloudStorage
-	mn.filesystem = filesyetem
+	mn.Filesystem = filesyetem
 	mn.store = keyStore
 	mn.config = config
 }
@@ -40,7 +40,7 @@ func NewManager(
 ) *Manager {
 	return &Manager{
 		store:        keyStore,
-		filesystem:   filesyetem,
+		Filesystem:   filesyetem,
 		cloudStorage: cloudStorage,
 		config:       config,
 	}

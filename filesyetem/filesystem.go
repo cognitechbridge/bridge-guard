@@ -9,11 +9,14 @@ import (
 
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
+	rootPath string
 }
 
 // NewPersistFileSystem creates a new instance of PersistFileSystem
 func NewPersistFileSystem() *FileSystem {
-	return &FileSystem{}
+	fs := FileSystem{}
+	fs.rootPath, _ = getFilesysPath()
+	return &fs
 }
 
 // SavePath saves a serialized key in the database
@@ -72,6 +75,18 @@ func (f *FileSystem) PathExist(path string) (bool, error) {
 	} else {
 		return true, nil
 	}
+}
+
+func (f *FileSystem) IsDir(path string) bool {
+	p := filepath.Join(f.rootPath, path)
+	fileInfo, _ := os.Stat(p)
+	return fileInfo.IsDir()
+}
+
+func (f *FileSystem) GetStat(path string) bool {
+	p := filepath.Join(f.rootPath, path)
+	fileInfo, _ := os.Stat(p)
+	return fileInfo.IsDir()
 }
 
 func getAbsPath(path string) (string, error) {

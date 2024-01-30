@@ -25,7 +25,7 @@ func (mn *Manager) NewDownloader(path string, friendlyName string) *Downloader {
 func (dn *Downloader) Download() error {
 
 	//Find file id
-	id, err := dn.manger.filesystem.GetPath(dn.friendlyName)
+	id, err := dn.manger.Filesystem.GetPath(dn.friendlyName)
 	if err != nil {
 		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}

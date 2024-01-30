@@ -27,12 +27,12 @@ func (mn *Manager) NewUploader(path string, friendlyName string, isDir bool, for
 
 func (dn *Uploader) Upload() (string, error) {
 	//Check if path already exist
-	exist, _ := dn.manger.filesystem.PathExist(dn.friendlyName)
+	exist, _ := dn.manger.Filesystem.PathExist(dn.friendlyName)
 	if exist {
 		if !dn.force {
 			return "", fmt.Errorf("file exist: %s", dn.friendlyName)
 		} else {
-			if err := dn.manger.filesystem.RemovePath(dn.friendlyName); err != nil {
+			if err := dn.manger.Filesystem.RemovePath(dn.friendlyName); err != nil {
 				return "", err
 			}
 		}
@@ -71,7 +71,7 @@ func (dn *Uploader) Upload() (string, error) {
 	)
 
 	//Save friendly name
-	err = dn.manger.filesystem.SavePath(fileUuid.String(), dn.friendlyName)
+	err = dn.manger.Filesystem.SavePath(fileUuid.String(), dn.friendlyName)
 	if err != nil {
 		return "", err
 	}

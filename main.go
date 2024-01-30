@@ -3,13 +3,13 @@ Copyright © 2024 Mohammad Saadatfar
 */
 package main
 
-import (
-	"ctb-cli/cmd"
-)
+import "ctb-cli/fuse"
 
 func main() {
 
 	//var key encryptor.Key
+
+	fuse.Main()
 
 	// Generate RSA keys
 	//const keySize = 2048
@@ -23,7 +23,7 @@ func main() {
 	//savePublicKeyAsCertificate("D:/a.crt", pubKey, privKey)
 
 	//fmt.Println("Decrypted Message: ", decryptedMessage)
-	cmd.Execute()
+	//cmd.Execute()
 
 	//
 	//if err != nil {
