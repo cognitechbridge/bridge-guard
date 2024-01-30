@@ -12,6 +12,11 @@ type FileSystem struct {
 	rootPath string
 }
 
+//type FileInfo struct {
+//	name  string
+//	isDir bool
+//}
+
 // NewPersistFileSystem creates a new instance of PersistFileSystem
 func NewPersistFileSystem() *FileSystem {
 	fs := FileSystem{}
@@ -83,12 +88,12 @@ func (f *FileSystem) IsDir(path string) bool {
 	return fileInfo.IsDir()
 }
 
-func (f *FileSystem) GetSubNames(path string) []string {
+func (f *FileSystem) GetSubNames(path string) []os.FileInfo {
 	p := filepath.Join(f.rootPath, path)
 	file, _ := os.Open(p)
 	defer file.Close()
-	names, _ := file.Readdirnames(0)
-	return names
+	files, _ := file.Readdir(0)
+	return files
 }
 
 func (f *FileSystem) GetStat(path string) bool {

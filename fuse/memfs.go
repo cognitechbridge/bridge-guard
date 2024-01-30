@@ -49,11 +49,12 @@ func resize(slice []byte, size int64, zeroinit bool) []byte {
 }
 
 type node_t struct {
-	stat    fuse.Stat_t
-	xatr    map[string][]byte
-	chld    map[string]*node_t
-	data    []byte
-	opencnt int
+	stat     fuse.Stat_t
+	xatr     map[string][]byte
+	chld     map[string]*node_t
+	data     []byte
+	opencnt  int
+	explored bool
 }
 
 func newNode(dev uint64, ino uint64, mode uint32, uid uint32, gid uint32) *node_t {
@@ -75,7 +76,9 @@ func newNode(dev uint64, ino uint64, mode uint32, uid uint32, gid uint32) *node_
 		nil,
 		nil,
 		nil,
-		0}
+		0,
+		false,
+	}
 	if fuse.S_IFDIR == self.stat.Mode&fuse.S_IFMT {
 		self.chld = map[string]*node_t{}
 	}
@@ -345,7 +348,10 @@ func (self *Memfs) Release(path string, fh uint64) (errc int) {
 func (self *Memfs) Opendir(path string) (errc int, fh uint64) {
 	defer trace(path)(&errc, &fh)
 	defer self.synchronize()()
-	self.Cache.exploreDir(path)
+	_, _, node := self.Cache.lookupNode(path, nil)
+	if node.explored == false {
+		self.Cache.exploreDir(path)
+	}
 	return self.openNode(path, true)
 }
 
@@ -573,10 +579,10 @@ func (self *Memfs) openNode(path string, dir bool) (int, uint64) {
 }
 
 func (self *Memfs) closeNode(fh uint64) int {
-	node := self.openmap[fh]
+	node := self.Cache.openMap[fh]
 	node.opencnt--
 	if 0 == node.opencnt {
-		delete(self.openmap, node.stat.Ino)
+		delete(self.Cache.openMap, node.stat.Ino)
 	}
 	return 0
 }

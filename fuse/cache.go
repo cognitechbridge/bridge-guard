@@ -2,6 +2,7 @@ package fuse
 
 import (
 	"github.com/winfsp/cgofuse/fuse"
+	"strings"
 	"sync"
 )
 
@@ -30,9 +31,14 @@ func NewCache() *Cache {
 }
 
 func (c *Cache) lookupNode(path string, ancestor *node_t) (prnt *node_t, name string, node *node_t) {
-	prnt = c.root
+	if ancestor == nil {
+		prnt = c.root
+		node = c.root
+	} else {
+		prnt = ancestor
+		node = ancestor
+	}
 	name = ""
-	node = c.root
 	for _, c := range split(path) {
 		if "" != c {
 			if 255 < len(c) {
@@ -81,19 +87,19 @@ func (c *Cache) openNode(path string, dir bool) (int, uint64) {
 
 func (c *Cache) exploreDir(path string) {
 	names := fs.GetSubNames(path)
-	for _, name := range names {
-		cpath := path
-		if cpath == "/" {
-			cpath = ""
-		}
-		namePath := cpath + "/" + name
-		parent, _, node := c.lookupNode(namePath, nil)
-		isDir := fs.IsDir(namePath)
+	_, _, parent := c.lookupNode(path, nil)
+	for _, info := range names {
+		_, _, node := c.lookupNode(info.Name(), parent)
 		if node == nil {
-			node := c.newNode(0, isDir)
-			parent.chld[name] = node
+			node := c.newNode(0, info.IsDir())
+			parent.chld[info.Name()] = node
 		}
 	}
+	parent.explored = true
+}
+
+func join(base string, path string) string {
+	return strings.TrimRight(base, "/") + "/" + path
 }
 
 func (c *Cache) newNode(dev uint64, isDir bool) *node_t {
@@ -119,6 +125,7 @@ func (c *Cache) newNode(dev uint64, isDir bool) *node_t {
 		nil,
 		nil,
 		0,
+		false,
 	}
 	if isDir {
 		self.chld = map[string]*node_t{}
