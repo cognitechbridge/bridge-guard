@@ -246,3 +246,35 @@ func (c *Cache) Truncate(path string, size int64, fh uint64) (errc int) {
 	node.stat.Size = size
 	return 0
 }
+
+func (c *Cache) Rename(oldpath string, newpath string) int {
+	oldprnt, oldname, oldnode := c.lookupNode(oldpath, nil)
+	if nil == oldnode {
+		return -fuse.ENOENT
+	}
+	newprnt, newname, newnode := c.lookupNode(newpath, nil)
+	if nil == newprnt {
+		return -fuse.ENOENT
+	}
+	if "" == newname {
+		// guard against directory loop creation
+		return -fuse.EINVAL
+	}
+	if oldprnt == newprnt && oldname == newname {
+		return 0
+	}
+	if nil != newnode {
+		return -fuse.ENOENT
+		//c = c.removeNode(newpath, fuse.S_IFDIR == oldnode.stat.Mode&fuse.S_IFMT)
+		//if 0 != errc {
+		//	return errc
+		//}
+	}
+	err := fs.Rename(oldpath, newpath)
+	if err != nil {
+		return -fuse.ENOENT
+	}
+	delete(oldprnt.chld, oldname)
+	newprnt.chld[newname] = oldnode
+	return 0
+}

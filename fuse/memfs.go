@@ -23,31 +23,6 @@ func split(path string) []string {
 	return strings.Split(path, "/")
 }
 
-func resize(slice []byte, size int64, zeroinit bool) []byte {
-	const allocunit = 64 * 1024 * 1024
-	allocsize := (size + allocunit - 1) / allocunit * allocunit
-	if cap(slice) != int(allocsize) {
-		var newslice []byte
-		{
-			defer func() {
-				if r := recover(); nil != r {
-					panic(fuse.Error(-fuse.ENOSPC))
-				}
-			}()
-			newslice = make([]byte, size, allocsize)
-		}
-		copy(newslice, slice)
-		slice = newslice
-	} else if zeroinit {
-		i := len(slice)
-		slice = slice[:size]
-		for ; len(slice) > i; i++ {
-			slice[i] = 0
-		}
-	}
-	return slice
-}
-
 type node_t struct {
 	stat     fuse.Stat_t
 	xatr     map[string][]byte
@@ -83,11 +58,10 @@ func newNode(dev uint64, ino uint64, mode uint32, uid uint32, gid uint32) *node_
 
 type Memfs struct {
 	fuse.FileSystemBase
-	lock    sync.Mutex
-	ino     uint64
-	root    *node_t
-	openmap map[uint64]*node_t
-	Cache   *Cache
+	lock  sync.Mutex
+	ino   uint64
+	root  *node_t
+	Cache *Cache
 }
 
 func (self *Memfs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
@@ -169,30 +143,7 @@ func (self *Memfs) Readlink(path string) (errc int, target string) {
 func (self *Memfs) Rename(oldpath string, newpath string) (errc int) {
 	defer trace(oldpath, newpath)(&errc)
 	defer self.synchronize()()
-	oldprnt, oldname, oldnode := self.lookupNode(oldpath, nil)
-	if nil == oldnode {
-		return -fuse.ENOENT
-	}
-	newprnt, newname, newnode := self.lookupNode(newpath, oldnode)
-	if nil == newprnt {
-		return -fuse.ENOENT
-	}
-	if "" == newname {
-		// guard against directory loop creation
-		return -fuse.EINVAL
-	}
-	if oldprnt == newprnt && oldname == newname {
-		return 0
-	}
-	if nil != newnode {
-		errc = self.removeNode(newpath, fuse.S_IFDIR == oldnode.stat.Mode&fuse.S_IFMT)
-		if 0 != errc {
-			return errc
-		}
-	}
-	delete(oldprnt.chld, oldname)
-	newprnt.chld[newname] = oldnode
-	return 0
+	return self.Cache.Rename(oldpath, newpath)
 }
 
 func (self *Memfs) Chmod(path string, mode uint32) (errc int) {
@@ -528,7 +479,6 @@ func NewMemfs() *Memfs {
 	defer self.synchronize()()
 	self.ino++
 	self.root = newNode(0, self.ino, fuse.S_IFDIR|00777, 0, 0)
-	self.openmap = map[uint64]*node_t{}
 	self.Cache = NewCache()
 	return &self
 }

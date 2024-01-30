@@ -85,6 +85,7 @@ func (f *FileSystem) GetSubFiles(path string) []FileInfo {
 				Name:  subFile.Name(),
 				Size:  size,
 			})
+			file.Close()
 		}
 
 	}
@@ -120,7 +121,10 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 	}
 	stat, _ := file.Stat()
 	if stat.Size() < ofst+int64(len(buff)) {
-		fsFile.Resize(ofst + int64(len(buff)))
+		err := fsFile.Resize(ofst + int64(len(buff)))
+		if err != nil {
+			return 0, err
+		}
 	}
 	n, err = file.WriteAt(buff, ofst)
 	return
@@ -147,7 +151,7 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 	if err != nil {
 		return err
 	}
-	fs.Resize(size)
+	err = fs.Resize(size)
 	if err != nil {
 		return err
 	}
@@ -160,6 +164,16 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+func (f *FileSystem) Rename(oldPath string, newPath string) error {
+	o := filepath.Join(f.fileSystemPath, oldPath)
+	n := filepath.Join(f.fileSystemPath, newPath)
+	err := os.Rename(o, n)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
