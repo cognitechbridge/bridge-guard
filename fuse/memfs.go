@@ -278,20 +278,7 @@ func (self *Memfs) Truncate(path string, size int64, fh uint64) (errc int) {
 func (self *Memfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	defer trace(path, buff, ofst, fh)(&n)
 	defer self.synchronize()()
-	node := self.getNode(path, fh)
-	if nil == node {
-		return -fuse.ENOENT
-	}
-	endofst := ofst + int64(len(buff))
-	if endofst > node.stat.Size {
-		endofst = node.stat.Size
-	}
-	if endofst < ofst {
-		return 0
-	}
-	n = copy(buff, node.data[ofst:endofst])
-	node.stat.Atim = fuse.Now()
-	return
+	return self.Cache.Read(path, buff, ofst, fh)
 }
 
 func (self *Memfs) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {

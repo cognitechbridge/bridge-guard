@@ -123,6 +123,21 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 	return
 }
 
+func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
+	id, err := f.GetPath(path)
+	if err != nil {
+		return 0, err
+	}
+	p := filepath.Join(f.ObjectCachePath, id)
+	file, err := os.OpenFile(p, os.O_RDONLY, 0666)
+	defer file.Close()
+	if err != nil {
+		return 0, err
+	}
+	n, err = file.ReadAt(buff, ofst)
+	return
+}
+
 func GetRepoCtbRoot() (string, error) {
 	root, err := os.Getwd()
 	if err != nil {

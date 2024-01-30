@@ -173,6 +173,15 @@ func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	return
 }
 
+func (c *Cache) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
+	node := c.getNode(path, fh)
+	if nil == node {
+		return -fuse.ENOENT
+	}
+	n, _ = fs.Read(path, buff, ofst)
+	return
+}
+
 func join(base string, path string) string {
 	return strings.TrimRight(base, "/") + "/" + path
 }
