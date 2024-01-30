@@ -123,6 +123,33 @@ func (c *Cache) createDir(path string) int {
 	return 0
 }
 
+func (c *Cache) rmDir(path string) int {
+	if err := c.removeNode(path, true); err != 0 {
+		return err
+	}
+	fs.RemoveDir(path)
+	return 0
+}
+
+func (c *Cache) removeNode(path string, dir bool) int {
+	prnt, name, node := c.lookupNode(path, nil)
+	if nil == node {
+		return -fuse.ENOENT
+	}
+	if !dir && fuse.S_IFDIR == node.stat.Mode&fuse.S_IFMT {
+		return -fuse.EISDIR
+	}
+	if dir && fuse.S_IFDIR != node.stat.Mode&fuse.S_IFMT {
+		return -fuse.ENOTDIR
+	}
+	if 0 < len(node.chld) {
+		return -fuse.ENOTEMPTY
+	}
+	node.stat.Nlink--
+	delete(prnt.chld, name)
+	return 0
+}
+
 func join(base string, path string) string {
 	return strings.TrimRight(base, "/") + "/" + path
 }

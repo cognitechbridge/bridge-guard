@@ -122,7 +122,7 @@ func (self *Memfs) Unlink(path string) (errc int) {
 func (self *Memfs) Rmdir(path string) (errc int) {
 	defer trace(path)(&errc)
 	defer self.synchronize()()
-	return self.removeNode(path, true)
+	return self.Cache.rmDir(path)
 }
 
 func (self *Memfs) Link(oldpath string, newpath string) (errc int) {

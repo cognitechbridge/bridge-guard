@@ -80,10 +80,9 @@ func (f *FileSystem) GetSubNames(path string) []os.FileInfo {
 	return files
 }
 
-func (f *FileSystem) GetStat(path string) bool {
+func (f *FileSystem) RemoveDir(path string) {
 	p := filepath.Join(f.rootPath, path)
-	fileInfo, _ := os.Stat(p)
-	return fileInfo.IsDir()
+	os.Remove(p)
 }
 
 func getFilesysPath() (string, error) {
