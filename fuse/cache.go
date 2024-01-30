@@ -96,14 +96,15 @@ func (c *Cache) closeNode(fh uint64) int {
 }
 
 func (c *Cache) exploreDir(path string) {
-	names := fs.GetSubNames(path)
+	names := fs.GetSubFiles(path)
 	_, _, parent := c.lookupNode(path, nil)
 	for _, info := range names {
-		_, _, node := c.lookupNode(info.Name(), parent)
+		_, _, node := c.lookupNode(info.Name, parent)
 		if node == nil {
-			node := c.newNode(0, info.IsDir())
-			node.path = join(path, info.Name())
-			parent.chld[info.Name()] = node
+			node := c.newNode(0, info.IsDir)
+			node.path = join(path, info.Name)
+			node.stat.Size = info.Size
+			parent.chld[info.Name] = node
 		}
 	}
 	parent.explored = true
@@ -234,4 +235,14 @@ func (c *Cache) getIno() uint64 {
 	defer c.ino.Unlock()
 	c.ino.counter++
 	return c.ino.counter
+}
+
+func (c *Cache) Truncate(path string, size int64, fh uint64) (errc int) {
+	node := c.getNode(path, fh)
+	if nil == node {
+		return -fuse.ENOENT
+	}
+	fs.Resize(path, size)
+	node.stat.Size = size
+	return 0
 }

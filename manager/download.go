@@ -23,7 +23,7 @@ func (mn *Manager) NewDownloader(friendlyName string) *Downloader {
 func (dn *Downloader) Download() error {
 
 	//Find file id
-	id, err := dn.manger.Filesystem.GetPath(dn.path)
+	id, err := dn.manger.Filesystem.GetFileId(dn.path)
 	if err != nil {
 		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}

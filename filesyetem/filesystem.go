@@ -2,7 +2,6 @@ package filesyetem
 
 import (
 	"github.com/google/uuid"
-	"io"
 	"os"
 	"path/filepath"
 )
@@ -23,34 +22,6 @@ func NewPersistFileSystem() *FileSystem {
 	fs.ObjectPath = filepath.Join(fs.rootPath, "object")
 	fs.ObjectCachePath = filepath.Join(fs.rootPath, "cache")
 	return &fs
-}
-
-// SavePath saves a serialized key in the database
-func (f *FileSystem) SavePath(key string, path string) error {
-	absPath := filepath.Join(f.fileSystemPath, path)
-	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
-	if err != nil {
-		return err
-	}
-	file, err := os.Create(absPath)
-	defer file.Close()
-	_, err = file.Write([]byte(key))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// GetPath retrieves a path id by path
-func (f *FileSystem) GetPath(path string) (string, error) {
-	absPath := filepath.Join(f.fileSystemPath, path)
-	file, err := os.Open(absPath)
-	defer file.Close()
-	id, err := io.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-	return string(id), nil
 }
 
 func (f *FileSystem) CreateDir(path string) error {
@@ -86,12 +57,38 @@ func (f *FileSystem) IsDir(path string) bool {
 	return fileInfo.IsDir()
 }
 
-func (f *FileSystem) GetSubNames(path string) []os.FileInfo {
+type FileInfo struct {
+	Name  string
+	Size  int64
+	IsDir bool
+}
+
+func (f *FileSystem) GetSubFiles(path string) []FileInfo {
 	p := filepath.Join(f.fileSystemPath, path)
 	file, _ := os.Open(p)
 	defer file.Close()
-	files, _ := file.Readdir(0)
-	return files
+	subFiles, _ := file.Readdir(0)
+	infos := make([]FileInfo, 0)
+	for _, subFile := range subFiles {
+		if subFile.IsDir() {
+			infos = append(infos, FileInfo{
+				IsDir: true,
+				Name:  subFile.Name(),
+			})
+			continue
+		} else {
+			p := filepath.Join(path, subFile.Name())
+			file, _ := f.OpenFsFile(p)
+			size, _ := file.ReadSize()
+			infos = append(infos, FileInfo{
+				IsDir: false,
+				Name:  subFile.Name(),
+				Size:  size,
+			})
+		}
+
+	}
+	return infos
 }
 
 func (f *FileSystem) RemoveDir(path string) {
@@ -104,27 +101,33 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return
 	}
-	_ = f.SavePath(key.String(), path)
+	_ = f.CreateFsFile(key.String(), path, 0)
 	return
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	id, err := f.GetPath(path)
+	fsFile, err := f.OpenFsFile(path)
+	defer fsFile.Close()
 	if err != nil {
 		return 0, err
 	}
+	id, _ := fsFile.ReadId()
 	p := filepath.Join(f.ObjectCachePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
 	defer file.Close()
 	if err != nil {
 		return 0, err
 	}
+	stat, _ := file.Stat()
+	if stat.Size() < ofst+int64(len(buff)) {
+		fsFile.Resize(ofst + int64(len(buff)))
+	}
 	n, err = file.WriteAt(buff, ofst)
 	return
 }
 
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
-	id, err := f.GetPath(path)
+	id, err := f.GetFileId(path)
 	if err != nil {
 		return 0, err
 	}
@@ -136,6 +139,28 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	}
 	n, err = file.ReadAt(buff, ofst)
 	return
+}
+
+func (f *FileSystem) Resize(path string, size int64) (err error) {
+	fs, err := f.OpenFsFile(path)
+	defer fs.Close()
+	if err != nil {
+		return err
+	}
+	fs.Resize(size)
+	if err != nil {
+		return err
+	}
+
+	id, err := fs.ReadId()
+	p := filepath.Join(f.ObjectCachePath, id)
+	file, err := os.OpenFile(p, os.O_RDWR, 0666)
+	err = file.Truncate(size)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetRepoCtbRoot() (string, error) {

@@ -263,16 +263,8 @@ func (self *Memfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int)
 func (self *Memfs) Truncate(path string, size int64, fh uint64) (errc int) {
 	defer trace(path, size, fh)(&errc)
 	defer self.synchronize()()
-	node := self.getNode(path, fh)
-	if nil == node {
-		return -fuse.ENOENT
-	}
-	node.data = resize(node.data, size, true)
-	node.stat.Size = size
-	tmsp := fuse.Now()
-	node.stat.Ctim = tmsp
-	node.stat.Mtim = tmsp
-	return 0
+	return self.Cache.Truncate(path, size, fh)
+
 }
 
 func (self *Memfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {

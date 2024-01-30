@@ -71,7 +71,7 @@ func (dn *Uploader) Upload() (string, error) {
 	)
 
 	//Save friendly name
-	err = dn.manger.Filesystem.SavePath(fileUuid.String(), dn.friendlyName)
+	err = dn.manger.Filesystem.CreateFsFile(fileUuid.String(), dn.friendlyName, 0)
 	if err != nil {
 		return "", err
 	}
