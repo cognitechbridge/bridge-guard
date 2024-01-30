@@ -55,12 +55,13 @@ type node_t struct {
 	data     []byte
 	opencnt  int
 	explored bool
+	path     string
 }
 
 func newNode(dev uint64, ino uint64, mode uint32, uid uint32, gid uint32) *node_t {
 	tmsp := fuse.Now()
 	self := node_t{
-		fuse.Stat_t{
+		stat: fuse.Stat_t{
 			Dev:      dev,
 			Ino:      ino,
 			Mode:     mode,
@@ -73,11 +74,6 @@ func newNode(dev uint64, ino uint64, mode uint32, uid uint32, gid uint32) *node_
 			Birthtim: tmsp,
 			Flags:    0,
 		},
-		nil,
-		nil,
-		nil,
-		0,
-		false,
 	}
 	if fuse.S_IFDIR == self.stat.Mode&fuse.S_IFMT {
 		self.chld = map[string]*node_t{}
@@ -87,15 +83,11 @@ func newNode(dev uint64, ino uint64, mode uint32, uid uint32, gid uint32) *node_
 
 type Memfs struct {
 	fuse.FileSystemBase
-	lock     sync.Mutex
-	ino      uint64
-	root     *node_t
-	rootPath string
-	openmap  map[uint64]*node_t
-	Cache    *Cache
-
-	uid uint32
-	gid uint32
+	lock    sync.Mutex
+	ino     uint64
+	root    *node_t
+	openmap map[uint64]*node_t
+	Cache   *Cache
 }
 
 func (self *Memfs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
@@ -117,7 +109,8 @@ func (self *Memfs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 func (self *Memfs) Mkdir(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer self.synchronize()()
-	return self.makeNode(path, fuse.S_IFDIR|(mode&07777), 0, nil)
+	self.Cache.createDir(path)
+	return 0
 }
 
 func (self *Memfs) Unlink(path string) (errc int) {
@@ -253,7 +246,7 @@ func (self *Memfs) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 func (self *Memfs) Open(path string, flags int) (errc int, fh uint64) {
 	defer trace(path, flags)(&errc, &fh)
 	defer self.synchronize()()
-	return self.openNode(path, false)
+	return self.Cache.openNode(path, false)
 }
 
 func (self *Memfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
@@ -266,24 +259,6 @@ func (self *Memfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int)
 	}
 	*stat = node.stat
 	return 0
-
-	//if fuse.S_IFDIR == node.stat.Mode&fuse.S_IFMT {
-	//	stat.Mode = fuse.S_IFDIR | 0777
-	//} else {
-	//	stat.Mode = fuse.S_IFREG | 0777
-	//}
-	//stat.Nlink = 1
-	////stat.Ino = 1
-	//stat.Size = int64(10)
-	//
-	//stat.Uid = self.uid
-	//stat.Gid = self.gid
-	//
-	//stat.Mtim = fuse.Now()
-	//stat.Atim = stat.Mtim
-	//stat.Ctim = stat.Mtim
-	//stat.Birthtim = stat.Mtim
-	//return 0
 }
 
 func (self *Memfs) Truncate(path string, size int64, fh uint64) (errc int) {
@@ -342,7 +317,7 @@ func (self *Memfs) Write(path string, buff []byte, ofst int64, fh uint64) (n int
 func (self *Memfs) Release(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
 	defer self.synchronize()()
-	return self.closeNode(fh)
+	return self.Cache.closeNode(fh)
 }
 
 func (self *Memfs) Opendir(path string) (errc int, fh uint64) {
@@ -352,7 +327,7 @@ func (self *Memfs) Opendir(path string) (errc int, fh uint64) {
 	if node.explored == false {
 		self.Cache.exploreDir(path)
 	}
-	return self.openNode(path, true)
+	return self.Cache.openNode(path, true)
 }
 
 func (self *Memfs) Readdir(path string,
@@ -376,7 +351,7 @@ func (self *Memfs) Readdir(path string,
 func (self *Memfs) Releasedir(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
 	defer self.synchronize()()
-	return self.closeNode(fh)
+	return self.Cache.closeNode(fh)
 }
 
 func (self *Memfs) Setxattr(path string, name string, value []byte, flags int) (errc int) {
@@ -459,7 +434,7 @@ func (self *Memfs) Listxattr(path string, fill func(name string) bool) (errc int
 func (self *Memfs) Chflags(path string, flags uint32) (errc int) {
 	defer trace(path, flags)(&errc)
 	defer self.synchronize()()
-	_, _, node := self.lookupNode(path, nil)
+	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -559,34 +534,6 @@ func (self *Memfs) removeNode(path string, dir bool) int {
 	return 0
 }
 
-func (self *Memfs) openNode(path string, dir bool) (int, uint64) {
-	return self.Cache.openNode(path, dir)
-	//_, _, node := self.lookupNode(path, nil)
-	//if nil == node {
-	//	return -fuse.ENOENT, ^uint64(0)
-	//}
-	//if !dir && fuse.S_IFDIR == node.stat.Mode&fuse.S_IFMT {
-	//	return -fuse.EISDIR, ^uint64(0)
-	//}
-	//if dir && fuse.S_IFDIR != node.stat.Mode&fuse.S_IFMT {
-	//	return -fuse.ENOTDIR, ^uint64(0)
-	//}
-	//node.opencnt++
-	//if 1 == node.opencnt {
-	//	self.openmap[node.stat.Ino] = node
-	//}
-	//return 0, node.stat.Ino
-}
-
-func (self *Memfs) closeNode(fh uint64) int {
-	node := self.Cache.openMap[fh]
-	node.opencnt--
-	if 0 == node.opencnt {
-		delete(self.Cache.openMap, node.stat.Ino)
-	}
-	return 0
-}
-
 func (self *Memfs) getNode(path string, fh uint64) *node_t {
 	if ^uint64(0) == fh {
 		_, _, node := self.lookupNode(path, nil)
@@ -600,14 +547,6 @@ func (self *Memfs) synchronize() func() {
 	self.lock.Lock()
 	return func() {
 		self.lock.Unlock()
-	}
-}
-
-func (self *Memfs) getUid() {
-	uid, gid, _ := fuse.Getcontext()
-	if uid != 0xFFFFFFFF {
-		self.uid = uid
-		self.gid = gid
 	}
 }
 
@@ -626,7 +565,6 @@ func NewMemfs() *Memfs {
 	self.root = newNode(0, self.ino, fuse.S_IFDIR|00777, 0, 0)
 	self.openmap = map[uint64]*node_t{}
 	self.Cache = NewCache()
-	self.rootPath = "D:\\Repo\\.ctb\\filesystem"
 	return &self
 }
 

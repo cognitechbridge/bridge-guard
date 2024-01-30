@@ -2,7 +2,6 @@ package filesyetem
 
 import (
 	"ctb-cli/config"
-	"io"
 	"os"
 	"path/filepath"
 )
@@ -26,11 +25,8 @@ func NewPersistFileSystem() *FileSystem {
 
 // SavePath saves a serialized key in the database
 func (f *FileSystem) SavePath(key string, path string) error {
-	absPath, err := getAbsPath(path)
-	if err != nil {
-		return err
-	}
-	err = os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
+	absPath := filepath.Join(f.rootPath, path)
+	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -43,27 +39,18 @@ func (f *FileSystem) SavePath(key string, path string) error {
 	return nil
 }
 
-// GetPath retrieves a path id by path
-func (f *FileSystem) GetPath(path string) (string, error) {
-	absPath, err := getAbsPath(path)
-	if err != nil {
-		return "", err
-	}
-	file, err := os.Open(absPath)
-	defer file.Close()
-	id, err := io.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-	return string(id), nil
-}
-
-func (f *FileSystem) RemovePath(path string) error {
-	absPath, err := getAbsPath(path)
+func (f *FileSystem) CreateDir(path string) error {
+	absPath := filepath.Join(f.rootPath, path)
+	err := os.MkdirAll(absPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
-	err = os.Remove(absPath)
+	return nil
+}
+
+func (f *FileSystem) RemovePath(path string) error {
+	absPath := filepath.Join(f.rootPath, path)
+	err := os.Remove(absPath)
 	if err != nil {
 		return err
 	}
@@ -71,10 +58,7 @@ func (f *FileSystem) RemovePath(path string) error {
 }
 
 func (f *FileSystem) PathExist(path string) (bool, error) {
-	absPath, err := getAbsPath(path)
-	if err != nil {
-		return false, err
-	}
+	absPath := filepath.Join(f.rootPath, path)
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		return false, nil
 	} else {
@@ -100,15 +84,6 @@ func (f *FileSystem) GetStat(path string) bool {
 	p := filepath.Join(f.rootPath, path)
 	fileInfo, _ := os.Stat(p)
 	return fileInfo.IsDir()
-}
-
-func getAbsPath(path string) (string, error) {
-	basePath, err := getFilesysPath()
-	if err != nil {
-		return "", err
-	}
-	absPath := filepath.Join(basePath, path)
-	return absPath, nil
 }
 
 func getFilesysPath() (string, error) {

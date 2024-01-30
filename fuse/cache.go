@@ -26,6 +26,7 @@ func NewCache() *Cache {
 	c := Cache{}
 	c.openMap = make(map[uint64]*node_t)
 	c.root = c.newNode(0, true)
+	c.root.path = "/"
 	c.rootPath = "D:\\Repo\\.ctb\\filesystem"
 	return &c
 }
@@ -85,6 +86,15 @@ func (c *Cache) openNode(path string, dir bool) (int, uint64) {
 	return 0, node.stat.Ino
 }
 
+func (c *Cache) closeNode(fh uint64) int {
+	node := c.openMap[fh]
+	node.opencnt--
+	if 0 == node.opencnt {
+		delete(c.openMap, node.stat.Ino)
+	}
+	return 0
+}
+
 func (c *Cache) exploreDir(path string) {
 	names := fs.GetSubNames(path)
 	_, _, parent := c.lookupNode(path, nil)
@@ -92,10 +102,25 @@ func (c *Cache) exploreDir(path string) {
 		_, _, node := c.lookupNode(info.Name(), parent)
 		if node == nil {
 			node := c.newNode(0, info.IsDir())
+			node.path = join(path, info.Name())
 			parent.chld[info.Name()] = node
 		}
 	}
 	parent.explored = true
+}
+
+func (c *Cache) createDir(path string) int {
+	_ = fs.CreateDir(path)
+	prnt, name, node := c.lookupNode(path, nil)
+	if nil == prnt {
+		return -fuse.ENOENT
+	}
+	if nil != node {
+		return -fuse.EEXIST
+	}
+	node = c.newNode(0, true)
+	prnt.chld[name] = node
+	return 0
 }
 
 func join(base string, path string) string {
@@ -108,7 +133,7 @@ func (c *Cache) newNode(dev uint64, isDir bool) *node_t {
 	ino := c.getIno()
 	mode := c.getMode(isDir)
 	self := node_t{
-		fuse.Stat_t{
+		stat: fuse.Stat_t{
 			Dev:      dev,
 			Ino:      ino,
 			Mode:     mode,
@@ -121,11 +146,6 @@ func (c *Cache) newNode(dev uint64, isDir bool) *node_t {
 			Birthtim: tmsp,
 			Flags:    0,
 		},
-		nil,
-		nil,
-		nil,
-		0,
-		false,
 	}
 	if isDir {
 		self.chld = map[string]*node_t{}
