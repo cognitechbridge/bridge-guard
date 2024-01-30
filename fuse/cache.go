@@ -265,10 +265,6 @@ func (c *Cache) Rename(oldpath string, newpath string) int {
 	}
 	if nil != newnode {
 		return -fuse.ENOENT
-		//c = c.removeNode(newpath, fuse.S_IFDIR == oldnode.stat.Mode&fuse.S_IFMT)
-		//if 0 != errc {
-		//	return errc
-		//}
 	}
 	err := fs.Rename(oldpath, newpath)
 	if err != nil {
@@ -276,5 +272,16 @@ func (c *Cache) Rename(oldpath string, newpath string) int {
 	}
 	delete(oldprnt.chld, oldname)
 	newprnt.chld[newname] = oldnode
+	return 0
+}
+
+func (c *Cache) RemoveFile(path string) int {
+	err := fs.RemovePath(path)
+	if err != nil {
+		return -fuse.ENOENT
+	}
+	if err := c.removeNode(path, false); err != 0 {
+		return err
+	}
 	return 0
 }
