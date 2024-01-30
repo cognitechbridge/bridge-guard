@@ -83,6 +83,14 @@ func (f *FileSystem) IsDir(path string) bool {
 	return fileInfo.IsDir()
 }
 
+func (f *FileSystem) GetSubNames(path string) []string {
+	p := filepath.Join(f.rootPath, path)
+	file, _ := os.Open(p)
+	defer file.Close()
+	names, _ := file.Readdirnames(0)
+	return names
+}
+
 func (f *FileSystem) GetStat(path string) bool {
 	p := filepath.Join(f.rootPath, path)
 	fileInfo, _ := os.Stat(p)
