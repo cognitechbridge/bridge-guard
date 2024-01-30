@@ -109,6 +109,20 @@ func (c *Cache) exploreDir(path string) {
 	parent.explored = true
 }
 
+func (c *Cache) createFile(path string) int {
+	_ = fs.CreateFile(path)
+	prnt, name, node := c.lookupNode(path, nil)
+	if nil == prnt {
+		return -fuse.ENOENT
+	}
+	if nil != node {
+		return -fuse.EEXIST
+	}
+	node = c.newNode(0, false)
+	prnt.chld[name] = node
+	return 0
+}
+
 func (c *Cache) createDir(path string) int {
 	_ = fs.CreateDir(path)
 	prnt, name, node := c.lookupNode(path, nil)
@@ -148,6 +162,15 @@ func (c *Cache) removeNode(path string, dir bool) int {
 	node.stat.Nlink--
 	delete(prnt.chld, name)
 	return 0
+}
+
+func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
+	node := c.getNode(path, fh)
+	if nil == node {
+		return -fuse.ENOENT
+	}
+	n, _ = fs.Write(path, buff, ofst)
+	return
 }
 
 func join(base string, path string) string {

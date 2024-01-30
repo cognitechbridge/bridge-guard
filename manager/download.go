@@ -2,43 +2,42 @@ package manager
 
 import (
 	"ctb-cli/encryptor"
-	"ctb-cli/utils"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 type Downloader struct {
-	manger       *Manager
-	path         string
-	friendlyName string
+	manger *Manager
+	path   string
 }
 
-func (mn *Manager) NewDownloader(path string, friendlyName string) *Downloader {
+func (mn *Manager) NewDownloader(friendlyName string) *Downloader {
 	return &Downloader{
-		manger:       mn,
-		path:         path,
-		friendlyName: friendlyName,
+		manger: mn,
+		path:   friendlyName,
 	}
 }
 
 func (dn *Downloader) Download() error {
 
 	//Find file id
-	id, err := dn.manger.Filesystem.GetPath(dn.friendlyName)
+	id, err := dn.manger.Filesystem.GetPath(dn.path)
 	if err != nil {
 		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}
 
-	//Create temp download file
-	tempFile, err := utils.CreateTempFile(id)
+	//Create download file
+	downloadPath := filepath.Join(dn.manger.Filesystem.ObjectPath, id)
+	downloadFile, err := dn.createFile(downloadPath)
+	defer closeFile(downloadFile)
 	if err != nil {
-		return fmt.Errorf("error creating FileDecryptor: %w", err)
+		return fmt.Errorf("error creating download file: %w", err)
 	}
-	defer utils.CloseDeleteTempFile(tempFile)
 
 	//Download file
-	err = dn.manger.cloudStorage.Download(id, tempFile)
+	err = dn.manger.cloudStorage.Download(id, downloadFile)
 
 	//Get data key
 	dataKey, err := dn.manger.store.Get(id)
@@ -47,17 +46,18 @@ func (dn *Downloader) Download() error {
 	}
 
 	// Create a new FileDecryptor
-	rd, err := encryptor.NewFileDecryptor(*dataKey, tempFile)
+	rd, err := encryptor.NewFileDecryptor(*dataKey, downloadFile)
 	if err != nil {
 		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}
 
 	// Create or open the output file
-	outputFile, err := os.Create(dn.path) // Specify your output file path
+	outputPath := filepath.Join(dn.manger.Filesystem.ObjectCachePath, id)
+	outputFile, err := dn.createFile(outputPath)
+	defer closeFile(outputFile)
 	if err != nil {
 		return fmt.Errorf("error creating output file: %w", err)
 	}
-	defer closeFile(outputFile)
 
 	//Copy to output
 	_, err = io.Copy(outputFile, rd)
@@ -66,4 +66,12 @@ func (dn *Downloader) Download() error {
 	}
 
 	return nil
+}
+
+func (dn *Downloader) createFile(path string) (*os.File, error) {
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	return os.Create(path)
 }

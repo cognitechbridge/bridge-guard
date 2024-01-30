@@ -103,14 +103,13 @@ func (self *Memfs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 func (self *Memfs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 	defer trace(path, mode, dev)(&errc)
 	defer self.synchronize()()
-	return self.makeNode(path, mode, dev, nil)
+	return self.Cache.createFile(path)
 }
 
 func (self *Memfs) Mkdir(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer self.synchronize()()
-	self.Cache.createDir(path)
-	return 0
+	return self.Cache.createDir(path)
 }
 
 func (self *Memfs) Unlink(path string) (errc int) {
@@ -298,20 +297,7 @@ func (self *Memfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int)
 func (self *Memfs) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	defer trace(path, buff, ofst, fh)(&n)
 	defer self.synchronize()()
-	node := self.getNode(path, fh)
-	if nil == node {
-		return -fuse.ENOENT
-	}
-	endofst := ofst + int64(len(buff))
-	if endofst > node.stat.Size {
-		node.data = resize(node.data, endofst, true)
-		node.stat.Size = endofst
-	}
-	n = copy(node.data[ofst:endofst], buff)
-	tmsp := fuse.Now()
-	node.stat.Ctim = tmsp
-	node.stat.Mtim = tmsp
-	return
+	return self.Cache.Write(path, buff, ofst, fh)
 }
 
 func (self *Memfs) Release(path string, fh uint64) (errc int) {
@@ -536,10 +522,10 @@ func (self *Memfs) removeNode(path string, dir bool) int {
 
 func (self *Memfs) getNode(path string, fh uint64) *node_t {
 	if ^uint64(0) == fh {
-		_, _, node := self.lookupNode(path, nil)
+		_, _, node := self.Cache.lookupNode(path, nil)
 		return node
 	} else {
-		return self.openmap[fh]
+		return self.Cache.openMap[fh]
 	}
 }
 
