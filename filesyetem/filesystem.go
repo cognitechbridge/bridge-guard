@@ -112,6 +112,12 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 		return
 	}
 	_ = f.CreateFsFile(key.String(), path, 0)
+	objPath := filepath.Join(f.ObjectCachePath, key.String())
+	objFile, err := os.Create(objPath)
+	objFile.Close()
+	if err != nil {
+		return
+	}
 	f.UploadQueue.Enqueue(path)
 	return
 }
@@ -223,6 +229,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) error {
 	if err != nil {
 		return err
 	}
+	f.UploadQueue.Rename(oldPath, newPath)
 	return nil
 }
 

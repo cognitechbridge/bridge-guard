@@ -24,6 +24,16 @@ func (q *UploadQueue) Enqueue(path string) {
 	q.items[path] = time.Now()
 }
 
+func (q *UploadQueue) Rename(oldPath string, newPath string) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
+	if _, ex := q.items[oldPath]; ex {
+		delete(q.items, oldPath)
+		q.items[newPath] = time.Now()
+	}
+}
+
 func (q *UploadQueue) processToChannel(output chan<- string) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
