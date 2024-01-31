@@ -2,22 +2,8 @@ package fuse
 
 import (
 	"ctb-cli/filesyetem"
-	"fmt"
-	"strings"
-	"syscall"
-
-	"github.com/winfsp/cgofuse/examples/shared"
 	"github.com/winfsp/cgofuse/fuse"
 )
-
-func trace(vals ...interface{}) func(vals ...interface{}) {
-	uid, gid, _ := fuse.Getcontext()
-	return shared.Trace(1, fmt.Sprintf("[uid=%v,gid=%v]", uid, gid), vals...)
-}
-
-func split(path string) []string {
-	return strings.Split(path, "/")
-}
 
 type Memfs struct {
 	fuse.FileSystemBase
@@ -348,14 +334,6 @@ func (self *Memfs) synchronize() func() {
 	self.Cache.Lock()
 	return func() {
 		self.Cache.Unlock()
-	}
-}
-
-func errno(err error) int {
-	if nil != err {
-		return -int(err.(syscall.Errno))
-	} else {
-		return 0
 	}
 }
 

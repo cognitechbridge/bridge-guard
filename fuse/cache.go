@@ -3,7 +3,6 @@ package fuse
 import (
 	"ctb-cli/filesyetem"
 	"github.com/winfsp/cgofuse/fuse"
-	"strings"
 	"sync"
 )
 
@@ -193,10 +192,6 @@ func (c *Cache) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	}
 	n, _ = c.fs.Read(path, buff, ofst)
 	return
-}
-
-func join(base string, path string) string {
-	return strings.TrimRight(base, "/") + "/" + path
 }
 
 func (c *Cache) newNode(dev uint64, isDir bool) *Node {
