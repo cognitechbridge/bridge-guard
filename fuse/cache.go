@@ -114,7 +114,6 @@ func (c *Cache) exploreDir(path string) {
 }
 
 func (c *Cache) createFile(path string) int {
-	_ = c.fs.CreateFile(path)
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
 		return -fuse.ENOENT
@@ -122,6 +121,7 @@ func (c *Cache) createFile(path string) int {
 	if nil != node {
 		return -fuse.EEXIST
 	}
+	_ = c.fs.CreateFile(path)
 	node = c.newNode(0, false)
 	prnt.chld[name] = node
 	return 0

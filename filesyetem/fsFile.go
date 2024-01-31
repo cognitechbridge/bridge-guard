@@ -97,3 +97,11 @@ func (c *FsFile) Resize(size int64) (err error) {
 	}
 	return
 }
+
+func (c *FsFile) ReId(id string) (err error) {
+	err = c.WriteId(id)
+	if err != nil {
+		return err
+	}
+	return
+}

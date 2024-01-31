@@ -106,12 +106,46 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 		return
 	}
 	_ = f.CreateFsFile(key.String(), path, 0)
+	f.UploadQueue.Enqueue(path)
 	return
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
 	fsFile, err := f.OpenFsFile(path)
 	defer fsFile.Close()
+	if err != nil {
+		return 0, err
+	}
+	if !f.UploadQueue.IsInQueue(path) {
+		i, err := f.changeFileId(fsFile)
+		if err != nil {
+			return i, err
+		}
+	}
+	return f.writeToCache(fsFile, path, buff, ofst)
+}
+
+func (f *FileSystem) changeFileId(fsFile *FsFile) (int, error) {
+	oldId, err := fsFile.ReadId()
+	if err != nil {
+		return 0, err
+	}
+	uui, _ := uuid.NewV7()
+	newId := uui.String()
+	err = fsFile.ReId(newId)
+	if err != nil {
+		return 0, err
+	}
+	oldPath := filepath.Join(f.ObjectCachePath, oldId)
+	newPath := filepath.Join(f.ObjectCachePath, newId)
+	err = os.Rename(oldPath, newPath)
+	if err != nil {
+		return 0, err
+	}
+	return 0, nil
+}
+
+func (f *FileSystem) writeToCache(fsFile *FsFile, path string, buff []byte, ofst int64) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}

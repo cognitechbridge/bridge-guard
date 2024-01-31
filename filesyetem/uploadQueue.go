@@ -1,6 +1,7 @@
 package filesyetem
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -32,6 +33,7 @@ func (q *UploadQueue) processToChannel(output chan<- string) {
 		if currentTime.Sub(t) > 5*time.Second {
 			delete(q.items, path)
 			output <- path
+			fmt.Printf("Upload Queued: %s \n", path)
 		}
 	}
 }
@@ -41,4 +43,11 @@ func (q *UploadQueue) ProcessRoutine(output chan<- string) {
 		q.processToChannel(output)
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func (q *UploadQueue) IsInQueue(path string) bool {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+	_, is := q.items[path]
+	return is
 }

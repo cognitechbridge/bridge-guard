@@ -60,5 +60,6 @@ func (dn *Uploader) upload(path string) (err error) {
 	if err != nil {
 		return
 	}
+	fmt.Printf("File Uploaded: %s \n", path)
 	return nil
 }
