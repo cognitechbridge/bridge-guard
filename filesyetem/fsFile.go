@@ -23,11 +23,7 @@ func (f *FileSystem) CreateFsFile(key string, path string, size int64) error {
 	if err != nil {
 		return err
 	}
-	file, err := f.OpenFsFile(path)
-	defer file.Close()
-	if err != nil {
-		return err
-	}
+	file := f.OpenFsFile(path)
 	err = file.WriteSize(size)
 	if err != nil {
 		return err
@@ -40,29 +36,26 @@ func (f *FileSystem) CreateFsFile(key string, path string, size int64) error {
 }
 
 // OpenFsFile Open FS file
-func (f *FileSystem) OpenFsFile(path string) (fsFile *FsFile, err error) {
-	p := filepath.Join(f.fileSystemPath, path)
-	file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
+func (f *FileSystem) OpenFsFile(path string) (fsFile *FsFile) {
 	return &FsFile{
 		path: path,
-		file: file,
+		file: nil,
 		fs:   f,
-	}, nil
+	}
 }
 
 // GetFileId retrieves the file id by path
-func (f *FileSystem) GetFileId(path string) (string, error) {
-	file, err := f.OpenFsFile(path)
-	defer file.Close()
-	key, err := file.ReadId()
+func (f *FileSystem) GetFileId(path string) (key string, err error) {
+	file := f.OpenFsFile(path)
+	key, err = file.ReadId()
 	return key, err
 }
 
-func (c *FsFile) Close() (err error) {
-	return c.file.Close()
-}
-
 func (c *FsFile) WriteSize(size int64) (err error) {
+	defer c.sync()()
+	if err != nil {
+		return err
+	}
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.BigEndian, size)
 	_, err = c.file.WriteAt(buf.Bytes(), FsSizeOffset)
@@ -70,6 +63,10 @@ func (c *FsFile) WriteSize(size int64) (err error) {
 }
 
 func (c *FsFile) ReadSize() (size int64, err error) {
+	defer c.sync()()
+	if err != nil {
+		return 0, err
+	}
 	buf := make([]byte, 8)
 	_, err = c.file.ReadAt(buf, FsSizeOffset)
 	err = binary.Read(bytes.NewReader(buf), binary.BigEndian, &size)
@@ -80,11 +77,19 @@ func (c *FsFile) ReadSize() (size int64, err error) {
 }
 
 func (c *FsFile) WriteId(key string) (err error) {
+	defer c.sync()()
+	if err != nil {
+		return err
+	}
 	_, err = c.file.WriteAt([]byte(key), FsIdOffset)
 	return
 }
 
 func (c *FsFile) ReadId() (key string, err error) {
+	defer c.sync()()
+	if err != nil {
+		return "", err
+	}
 	id := make([]byte, 36)
 	_, _ = c.file.ReadAt(id, FsIdOffset)
 	return string(id), nil
@@ -103,5 +108,27 @@ func (c *FsFile) ReId(id string) (err error) {
 	if err != nil {
 		return err
 	}
+	return
+}
+
+func (c *FsFile) sync() (fu func()) {
+	_ = c.open()
+	return func() {
+		_ = c.close()
+	}
+}
+
+func (c *FsFile) open() (err error) {
+	if c.file != nil {
+		return nil
+	}
+	p := filepath.Join(c.fs.fileSystemPath, c.path)
+	c.file, err = os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
+	return
+}
+
+func (c *FsFile) close() (err error) {
+	err = c.file.Close()
+	c.file = nil
 	return
 }

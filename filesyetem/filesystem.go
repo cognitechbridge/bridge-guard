@@ -87,14 +87,13 @@ func (f *FileSystem) GetSubFiles(path string) []FileInfo {
 			continue
 		} else {
 			p := filepath.Join(path, subFile.Name())
-			file, _ := f.OpenFsFile(p)
+			file := f.OpenFsFile(p)
 			size, _ := file.ReadSize()
 			infos = append(infos, FileInfo{
 				IsDir: false,
 				Name:  subFile.Name(),
 				Size:  size,
 			})
-			file.Close()
 		}
 
 	}
@@ -123,21 +122,17 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	fsFile, err := f.OpenFsFile(path)
-	defer fsFile.Close()
-	if err != nil {
-		return 0, err
-	}
 	if !f.UploadQueue.IsInQueue(path) {
-		i, err := f.changeFileId(fsFile)
+		i, err := f.changeFileId(path)
 		if err != nil {
 			return i, err
 		}
 	}
-	return f.writeToCache(fsFile, path, buff, ofst)
+	return f.writeToCache(path, buff, ofst)
 }
 
-func (f *FileSystem) changeFileId(fsFile *FsFile) (int, error) {
+func (f *FileSystem) changeFileId(path string) (int, error) {
+	fsFile := f.OpenFsFile(path)
 	oldId, err := fsFile.ReadId()
 	if err != nil {
 		return 0, err
@@ -157,10 +152,8 @@ func (f *FileSystem) changeFileId(fsFile *FsFile) (int, error) {
 	return 0, nil
 }
 
-func (f *FileSystem) writeToCache(fsFile *FsFile, path string, buff []byte, ofst int64) (n int, err error) {
-	if err != nil {
-		return 0, err
-	}
+func (f *FileSystem) writeToCache(path string, buff []byte, ofst int64) (n int, err error) {
+	fsFile := f.OpenFsFile(path)
 	id, _ := fsFile.ReadId()
 	p := filepath.Join(f.ObjectCachePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
@@ -201,11 +194,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
-	fs, err := f.OpenFsFile(path)
-	defer fs.Close()
-	if err != nil {
-		return err
-	}
+	fs := f.OpenFsFile(path)
 	err = fs.Resize(size)
 	if err != nil {
 		return err
