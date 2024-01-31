@@ -12,8 +12,6 @@ type Cache struct {
 	root    *node_t
 	openMap map[uint64]*node_t
 
-	UploadQueue UploadQueue
-
 	ino Ino
 	uid uint32
 	gid uint32
@@ -29,7 +27,6 @@ func NewCache() *Cache {
 	c.openMap = make(map[uint64]*node_t)
 	c.root = c.newNode(0, true)
 	c.root.path = "/"
-	c.UploadQueue = UploadQueue{}
 	return &c
 }
 
@@ -173,7 +170,7 @@ func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 		return -fuse.ENOENT
 	}
 	n, _ = fs.Write(path, buff, ofst)
-	c.UploadQueue.Enqueue(path)
+	fs.UploadQueue.Enqueue(path)
 	return
 }
 

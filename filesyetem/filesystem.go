@@ -8,6 +8,8 @@ import (
 
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
+	UploadQueue *UploadQueue
+
 	rootPath        string
 	fileSystemPath  string
 	ObjectPath      string
@@ -21,6 +23,7 @@ func NewPersistFileSystem() *FileSystem {
 	fs.fileSystemPath = filepath.Join(fs.rootPath, "filesystem")
 	fs.ObjectPath = filepath.Join(fs.rootPath, "object")
 	fs.ObjectCachePath = filepath.Join(fs.rootPath, "cache")
+	fs.UploadQueue = NewUploadQueue()
 	return &fs
 }
 

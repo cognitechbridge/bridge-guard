@@ -15,7 +15,7 @@ var mountCmd = &cobra.Command{
 	Long:  `mount`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ch := make(chan string, 3)
-		go manager.Client.Memfs.Cache.UploadQueue.Process(ch)
+		go manager.Client.Filesystem.UploadQueue.ProcessRoutine(ch)
 		manager.Client.Memfs.Mount()
 	},
 }
