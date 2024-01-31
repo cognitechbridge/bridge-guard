@@ -99,7 +99,7 @@ func initManagerClient() {
 		return
 	}
 
-	filesystem := filesyetem.NewPersistFileSystem()
+	filesystem := filesyetem.NewPersistFileSystem(&manager.Client)
 
 	chunkSize, _ := config.Crypto.GetChunkSize()
 	clientId, _ := config.Workspace.GetClientId()

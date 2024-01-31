@@ -8,39 +8,21 @@ import (
 	"path/filepath"
 )
 
-type Downloader struct {
-	manger *Manager
-	path   string
-}
-
-func (mn *Manager) NewDownloader(friendlyName string) *Downloader {
-	return &Downloader{
-		manger: mn,
-		path:   friendlyName,
-	}
-}
-
-func (dn *Downloader) Download() error {
-
-	//Find file id
-	id, err := dn.manger.Filesystem.GetFileId(dn.path)
-	if err != nil {
-		return fmt.Errorf("error creating FileDecryptor: %w", err)
-	}
+func (mn *Manager) Download(id string) error {
 
 	//Create download file
-	downloadPath := filepath.Join(dn.manger.Filesystem.ObjectPath, id)
-	downloadFile, err := dn.createFile(downloadPath)
+	downloadPath := filepath.Join(mn.Filesystem.ObjectPath, id)
+	downloadFile, err := mn.createFile(downloadPath)
 	defer closeFile(downloadFile)
 	if err != nil {
 		return fmt.Errorf("error creating download file: %w", err)
 	}
 
 	//Download file
-	err = dn.manger.cloudStorage.Download(id, downloadFile)
+	err = mn.cloudStorage.Download(id, downloadFile)
 
 	//Get data key
-	dataKey, err := dn.manger.store.Get(id)
+	dataKey, err := mn.store.Get(id)
 	if err != nil {
 		return fmt.Errorf("error creating FileDecryptor: %w", err)
 	}
@@ -52,8 +34,8 @@ func (dn *Downloader) Download() error {
 	}
 
 	// Create or open the output file
-	outputPath := filepath.Join(dn.manger.Filesystem.ObjectCachePath, id)
-	outputFile, err := dn.createFile(outputPath)
+	outputPath := filepath.Join(mn.Filesystem.ObjectCachePath, id)
+	outputFile, err := mn.createFile(outputPath)
 	defer closeFile(outputFile)
 	if err != nil {
 		return fmt.Errorf("error creating output file: %w", err)
@@ -68,8 +50,9 @@ func (dn *Downloader) Download() error {
 	return nil
 }
 
-func (dn *Downloader) createFile(path string) (*os.File, error) {
-	err := os.MkdirAll(path, os.ModePerm)
+func (mn *Manager) createFile(path string) (*os.File, error) {
+	parent := filepath.Dir(path)
+	err := os.MkdirAll(parent, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}

@@ -9,6 +9,7 @@ import (
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
 	UploadQueue *UploadQueue
+	downloader  Downloader
 
 	rootPath        string
 	fileSystemPath  string
@@ -16,14 +17,19 @@ type FileSystem struct {
 	ObjectCachePath string
 }
 
+type Downloader interface {
+	Download(id string) error
+}
+
 // NewPersistFileSystem creates a new instance of PersistFileSystem
-func NewPersistFileSystem() *FileSystem {
+func NewPersistFileSystem(dn Downloader) *FileSystem {
 	fs := FileSystem{}
 	fs.rootPath, _ = GetRepoCtbRoot()
 	fs.fileSystemPath = filepath.Join(fs.rootPath, "filesystem")
 	fs.ObjectPath = filepath.Join(fs.rootPath, "object")
 	fs.ObjectCachePath = filepath.Join(fs.rootPath, "cache")
 	fs.UploadQueue = NewUploadQueue()
+	fs.downloader = dn
 	return &fs
 }
 
@@ -174,6 +180,11 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	p := filepath.Join(f.ObjectCachePath, id)
+
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		f.downloader.Download(id)
+	}
+
 	file, err := os.OpenFile(p, os.O_RDONLY, 0666)
 	defer file.Close()
 	if err != nil {
