@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"ctb-cli/fuse"
 	"ctb-cli/manager"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +18,8 @@ var mountCmd = &cobra.Command{
 		ch := make(chan string, 3)
 		go manager.Client.Filesystem.UploadQueue.ProcessRoutine(ch)
 		go manager.Client.Uploader.UploadRoutine(ch)
-		manager.Client.Memfs.Mount()
+		ctbFuse := fuse.NewMemfs(manager.Client.Filesystem)
+		ctbFuse.Mount()
 	},
 }
 
