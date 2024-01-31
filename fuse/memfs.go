@@ -10,8 +10,6 @@ import (
 	"github.com/winfsp/cgofuse/fuse"
 )
 
-var fs = filesyetem.NewPersistFileSystem()
-
 func trace(vals ...interface{}) func(vals ...interface{}) {
 	uid, gid, _ := fuse.Getcontext()
 	return shared.Trace(1, fmt.Sprintf("[uid=%v,gid=%v]", uid, gid), vals...)
@@ -371,9 +369,9 @@ func errno(err error) int {
 	}
 }
 
-func NewMemfs() *Memfs {
+func NewMemfs(fs *filesyetem.FileSystem) *Memfs {
 	self := Memfs{}
-	self.Cache = NewCache()
+	self.Cache = NewCache(fs)
 	defer self.synchronize()()
 	return &self
 }

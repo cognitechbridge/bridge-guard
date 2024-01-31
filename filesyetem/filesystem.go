@@ -130,6 +130,7 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 		}
 	}
 	n, err = file.WriteAt(buff, ofst)
+	f.UploadQueue.Enqueue(path)
 	return
 }
 

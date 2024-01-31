@@ -3,61 +3,46 @@ package manager
 import (
 	"ctb-cli/encryptor"
 	"fmt"
-	"github.com/google/uuid"
 	"os"
+	"path/filepath"
 )
 
 type Uploader struct {
-	manger       *Manager
-	path         string
-	friendlyName string
-	isDir        bool
-	force        bool
+	manger *Manager
 }
 
-func (mn *Manager) NewUploader(path string, friendlyName string, isDir bool, force bool) *Uploader {
+func (mn *Manager) NewUploader() *Uploader {
 	return &Uploader{
-		manger:       mn,
-		path:         path,
-		isDir:        isDir,
-		friendlyName: friendlyName,
-		force:        force,
+		manger: mn,
 	}
 }
 
-func (dn *Uploader) Upload() (string, error) {
-	//Check if path already exist
-	exist, _ := dn.manger.Filesystem.PathExist(dn.friendlyName)
-	if exist {
-		if !dn.force {
-			return "", fmt.Errorf("file exist: %s", dn.friendlyName)
-		} else {
-			if err := dn.manger.Filesystem.RemovePath(dn.friendlyName); err != nil {
-				return "", err
-			}
+func (dn *Uploader) UploadRoutine(input <-chan string) {
+	for {
+		path := <-input
+		err := dn.upload(path)
+		if err != nil {
+			continue
 		}
 	}
+}
 
-	//Open input file
-	inputFile, err := os.Open(dn.path)
+func (dn *Uploader) upload(path string) (err error) {
+	fileId, err := dn.manger.Filesystem.GetFileId(path)
+	absPath := filepath.Join(dn.manger.Filesystem.ObjectCachePath, fileId)
+
+	//Open object file
+	inputFile, err := os.Open(absPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to open input file: %w", err)
+		return fmt.Errorf("failed to open input file: %w", err)
 	}
 	defer closeFile(inputFile)
 
-	//Create output file
-	outputFile, err := os.Create("D:\\encrypted.txt")
-	if err != nil {
-		return "", fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer closeFile(outputFile)
-
 	//Create header parameters
 	clientId := dn.manger.config.ClientId
-	fileUuid, _ := uuid.NewV7()
-	pair, err := dn.manger.store.GenerateKeyPair(fileUuid.String())
+	pair, err := dn.manger.store.GenerateKeyPair(fileId)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	//Create reader
@@ -66,22 +51,14 @@ func (dn *Uploader) Upload() (string, error) {
 		pair.Key,
 		dn.manger.config.EncryptChunkSize,
 		clientId,
-		fileUuid.String(),
+		fileId,
 		pair.RecoveryBlob,
 	)
 
-	//Save friendly name
-	err = dn.manger.Filesystem.CreateFsFile(fileUuid.String(), dn.friendlyName, 0)
+	//upload
+	err = dn.manger.cloudStorage.Upload(efg, fileId)
 	if err != nil {
-		return "", err
+		return
 	}
-
-	//Upload
-	err = dn.manger.cloudStorage.Upload(efg, fileUuid.String(), dn.friendlyName)
-	if err != nil {
-		return "", err
-	}
-
-	//Return file id
-	return fileUuid.String(), nil
+	return nil
 }

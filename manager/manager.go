@@ -12,6 +12,7 @@ type Manager struct {
 	cloudStorage file_db.CloudStorageClient
 	Filesystem   *filesyetem.FileSystem
 	Memfs        *fuse.Memfs
+	Uploader     *Uploader
 	config       Config
 }
 
@@ -28,24 +29,12 @@ func (mn *Manager) Init(
 	filesyetem *filesyetem.FileSystem,
 	cloudStorage file_db.CloudStorageClient,
 	memFs *fuse.Memfs,
+	uploader *Uploader,
 ) {
 	mn.cloudStorage = cloudStorage
 	mn.Filesystem = filesyetem
 	mn.store = keyStore
 	mn.config = config
 	mn.Memfs = memFs
-}
-
-func NewManager(
-	config Config,
-	keyStore *keystore.KeyStore,
-	filesyetem *filesyetem.FileSystem,
-	cloudStorage file_db.CloudStorageClient,
-) *Manager {
-	return &Manager{
-		store:        keyStore,
-		Filesystem:   filesyetem,
-		cloudStorage: cloudStorage,
-		config:       config,
-	}
+	mn.Uploader = uploader
 }

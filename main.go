@@ -82,16 +82,16 @@ func main() {
 	//	cloudClient,
 	//)
 
-	//fmt.Println("Upload started")
+	//fmt.Println("upload started")
 	//startTime := time.Now()
 	//
 	//uploader := managerClient.NewUploader("D:\\sample.txt", name)
-	//_, err = uploader.Upload()
+	//_, err = uploader.upload()
 	//if err != nil {
 	//	fmt.Println("Encryption failed:", err)
 	//}
 	//elapsedTime := time.Since(startTime)
-	//fmt.Printf("Upload took %s\n", elapsedTime)
+	//fmt.Printf("upload took %s\n", elapsedTime)
 
 	//downloader := manager_client.NewDownloader("D:\\unencrypted.txt", name)
 	//err = downloader.Download()

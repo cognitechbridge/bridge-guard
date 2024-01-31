@@ -12,7 +12,7 @@ type UploadQueue struct {
 
 func NewUploadQueue() *UploadQueue {
 	return &UploadQueue{
-		items: make(map[string]time.Time),
+		items: make(map[string]time.Time, 100),
 	}
 }
 

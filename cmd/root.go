@@ -6,7 +6,6 @@ Copyright © 2024 Mohammad Saadatfar
 package cmd
 
 import (
-	"ctb-cli/cmd/file"
 	"ctb-cli/config"
 	"ctb-cli/db"
 	"ctb-cli/encryptor"
@@ -43,7 +42,6 @@ func Execute() {
 }
 
 func addSubCommands() {
-	rootCmd.AddCommand(file.FileCmd)
 }
 
 func init() {
@@ -110,7 +108,9 @@ func initManagerClient() {
 		ClientId:         clientId,
 	}
 
-	memFs := fuse.NewMemfs()
+	memFs := fuse.NewMemfs(filesystem)
+
+	uploader := manager.Client.NewUploader()
 
 	manager.Client.Init(
 		managerConfig,
@@ -118,5 +118,6 @@ func initManagerClient() {
 		filesystem,
 		cloudClient,
 		memFs,
+		uploader,
 	)
 }

@@ -1,6 +1,7 @@
 package fuse
 
 import (
+	"ctb-cli/filesyetem"
 	"github.com/winfsp/cgofuse/fuse"
 	"strings"
 	"sync"
@@ -8,6 +9,8 @@ import (
 
 type Cache struct {
 	sync.Mutex
+
+	fs *filesyetem.FileSystem
 
 	root    *node_t
 	openMap map[uint64]*node_t
@@ -22,11 +25,12 @@ type Ino struct {
 	counter uint64
 }
 
-func NewCache() *Cache {
+func NewCache(fs *filesyetem.FileSystem) *Cache {
 	c := Cache{}
 	c.openMap = make(map[uint64]*node_t)
 	c.root = c.newNode(0, true)
 	c.root.path = "/"
+	c.fs = fs
 	return &c
 }
 
@@ -95,7 +99,7 @@ func (c *Cache) closeNode(fh uint64) int {
 }
 
 func (c *Cache) exploreDir(path string) {
-	names := fs.GetSubFiles(path)
+	names := c.fs.GetSubFiles(path)
 	_, _, parent := c.lookupNode(path, nil)
 	for _, info := range names {
 		_, _, node := c.lookupNode(info.Name, parent)
@@ -110,7 +114,7 @@ func (c *Cache) exploreDir(path string) {
 }
 
 func (c *Cache) createFile(path string) int {
-	_ = fs.CreateFile(path)
+	_ = c.fs.CreateFile(path)
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
 		return -fuse.ENOENT
@@ -124,7 +128,7 @@ func (c *Cache) createFile(path string) int {
 }
 
 func (c *Cache) createDir(path string) int {
-	_ = fs.CreateDir(path)
+	_ = c.fs.CreateDir(path)
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
 		return -fuse.ENOENT
@@ -141,7 +145,7 @@ func (c *Cache) rmDir(path string) int {
 	if err := c.removeNode(path, true); err != 0 {
 		return err
 	}
-	fs.RemoveDir(path)
+	c.fs.RemoveDir(path)
 	return 0
 }
 
@@ -169,8 +173,7 @@ func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	if nil == node {
 		return -fuse.ENOENT
 	}
-	n, _ = fs.Write(path, buff, ofst)
-	fs.UploadQueue.Enqueue(path)
+	n, _ = c.fs.Write(path, buff, ofst)
 	return
 }
 
@@ -179,7 +182,7 @@ func (c *Cache) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	if nil == node {
 		return -fuse.ENOENT
 	}
-	n, _ = fs.Read(path, buff, ofst)
+	n, _ = c.fs.Read(path, buff, ofst)
 	return
 }
 
@@ -242,7 +245,7 @@ func (c *Cache) Truncate(path string, size int64, fh uint64) (errc int) {
 	if nil == node {
 		return -fuse.ENOENT
 	}
-	fs.Resize(path, size)
+	c.fs.Resize(path, size)
 	node.stat.Size = size
 	return 0
 }
@@ -266,7 +269,7 @@ func (c *Cache) Rename(oldpath string, newpath string) int {
 	if nil != newnode {
 		return -fuse.ENOENT
 	}
-	err := fs.Rename(oldpath, newpath)
+	err := c.fs.Rename(oldpath, newpath)
 	if err != nil {
 		return -fuse.ENOENT
 	}
@@ -276,7 +279,7 @@ func (c *Cache) Rename(oldpath string, newpath string) int {
 }
 
 func (c *Cache) RemoveFile(path string) int {
-	err := fs.RemovePath(path)
+	err := c.fs.RemovePath(path)
 	if err != nil {
 		return -fuse.ENOENT
 	}

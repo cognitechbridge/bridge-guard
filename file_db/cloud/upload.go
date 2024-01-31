@@ -27,10 +27,9 @@ type chunk struct {
 	num int32
 }
 
-func (c *Client) Upload(reader io.Reader, fileId string, fileName string) error {
+func (c *Client) Upload(reader io.Reader, fileId string) error {
 	u := Uploader{
 		fileId:    fileId,
-		fileName:  fileName,
 		wg:        sync.WaitGroup{},
 		reader:    reader,
 		chunkSize: c.chunkSize,
@@ -41,11 +40,6 @@ func (c *Client) Upload(reader io.Reader, fileId string, fileName string) error 
 
 func (u *Uploader) Upload() error {
 	partNumber := int32(1)
-
-	u.bar = progressbar.DefaultBytes(
-		-1,
-		fmt.Sprintf("uploading %s", u.fileName),
-	)
 
 	ch := make(chan chunk, Concurrency)
 	for i := 0; i < Concurrency; i++ {
