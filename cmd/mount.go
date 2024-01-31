@@ -18,7 +18,7 @@ var mountCmd = &cobra.Command{
 		ch := make(chan string, 3)
 		go manager.Client.Filesystem.UploadQueue.ProcessRoutine(ch)
 		go manager.Client.UploadRoutine(ch)
-		ctbFuse := fuse.NewMemfs(manager.Client.Filesystem)
+		ctbFuse := fuse.NewCache(manager.Client.Filesystem)
 		ctbFuse.Mount()
 	},
 }
