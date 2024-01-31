@@ -19,16 +19,6 @@ func split(path string) []string {
 	return strings.Split(path, "/")
 }
 
-type node_t struct {
-	stat     fuse.Stat_t
-	xatr     map[string][]byte
-	chld     map[string]*node_t
-	data     []byte
-	opencnt  int
-	explored bool
-	path     string
-}
-
 type Memfs struct {
 	fuse.FileSystemBase
 	Cache *Cache

@@ -107,13 +107,10 @@ func initManagerClient() {
 		ClientId:         clientId,
 	}
 
-	uploader := manager.Client.NewUploader()
-
 	manager.Client.Init(
 		managerConfig,
 		keyStore,
 		filesystem,
 		cloudClient,
-		uploader,
 	)
 }

@@ -10,7 +10,6 @@ type Manager struct {
 	store        *keystore.KeyStore
 	cloudStorage file_db.CloudStorageClient
 	Filesystem   *filesyetem.FileSystem
-	Uploader     *Uploader
 	config       Config
 }
 
@@ -26,11 +25,9 @@ func (mn *Manager) Init(
 	keyStore *keystore.KeyStore,
 	filesyetem *filesyetem.FileSystem,
 	cloudStorage file_db.CloudStorageClient,
-	uploader *Uploader,
 ) {
 	mn.cloudStorage = cloudStorage
 	mn.Filesystem = filesyetem
 	mn.store = keyStore
 	mn.config = config
-	mn.Uploader = uploader
 }

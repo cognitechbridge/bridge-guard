@@ -12,12 +12,21 @@ type Cache struct {
 
 	fs *filesyetem.FileSystem
 
-	root    *node_t
-	openMap map[uint64]*node_t
+	root    *Node
+	openMap map[uint64]*Node
 
 	ino Ino
 	uid uint32
 	gid uint32
+}
+
+type Node struct {
+	stat     fuse.Stat_t
+	xatr     map[string][]byte
+	chld     map[string]*Node
+	opencnt  int
+	explored bool
+	path     string
 }
 
 type Ino struct {
@@ -27,14 +36,14 @@ type Ino struct {
 
 func NewCache(fs *filesyetem.FileSystem) *Cache {
 	c := Cache{}
-	c.openMap = make(map[uint64]*node_t)
+	c.openMap = make(map[uint64]*Node)
 	c.root = c.newNode(0, true)
 	c.root.path = "/"
 	c.fs = fs
 	return &c
 }
 
-func (c *Cache) lookupNode(path string, ancestor *node_t) (prnt *node_t, name string, node *node_t) {
+func (c *Cache) lookupNode(path string, ancestor *Node) (prnt *Node, name string, node *Node) {
 	if ancestor == nil {
 		prnt = c.root
 		node = c.root
@@ -62,7 +71,7 @@ func (c *Cache) lookupNode(path string, ancestor *node_t) (prnt *node_t, name st
 	return
 }
 
-func (c *Cache) getNode(path string, fh uint64) *node_t {
+func (c *Cache) getNode(path string, fh uint64) *Node {
 	if ^uint64(0) == fh {
 		_, _, node := c.lookupNode(path, nil)
 		return node
@@ -190,12 +199,12 @@ func join(base string, path string) string {
 	return strings.TrimRight(base, "/") + "/" + path
 }
 
-func (c *Cache) newNode(dev uint64, isDir bool) *node_t {
+func (c *Cache) newNode(dev uint64, isDir bool) *Node {
 	uid, gid := c.getUid()
 	tmsp := fuse.Now()
 	ino := c.getIno()
 	mode := c.getMode(isDir)
-	self := node_t{
+	self := Node{
 		stat: fuse.Stat_t{
 			Dev:      dev,
 			Ino:      ino,
@@ -211,7 +220,7 @@ func (c *Cache) newNode(dev uint64, isDir bool) *node_t {
 		},
 	}
 	if isDir {
-		self.chld = map[string]*node_t{}
+		self.chld = map[string]*Node{}
 	}
 	return &self
 }
