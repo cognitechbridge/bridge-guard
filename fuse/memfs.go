@@ -5,12 +5,12 @@ import (
 	"github.com/winfsp/cgofuse/fuse"
 )
 
-type Memfs struct {
-	fuse.FileSystemBase
-	Cache *Cache
-}
+//type Memfs struct {
+//	fuse.FileSystemBase
+//	Cache *Cache
+//}
 
-func (self *Memfs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
+func (c *Cache) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 	stat.Frsize = 4096
 	stat.Bsize = stat.Frsize
 	stat.Blocks = uint64(2*1024*1024*1024) / stat.Frsize
@@ -20,74 +20,10 @@ func (self *Memfs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 	return 0
 }
 
-func (self *Memfs) Mknod(path string, mode uint32, dev uint64) (errc int) {
-	return self.Cache.Mknod(path, mode, dev)
-}
-
-func (self *Memfs) Mkdir(path string, mode uint32) (errc int) {
-	return self.Cache.Mkdir(path, mode)
-}
-
-func (self *Memfs) Unlink(path string) (errc int) {
-	return self.Cache.Unlink(path)
-}
-
-func (self *Memfs) Rmdir(path string) (errc int) {
-	return self.Cache.Rmdir(path)
-}
-
-// @Todo Implement links later
-//func (self *Memfs) Link(oldpath string, newpath string) (errc int) {
-//	defer trace(oldpath, newpath)(&errc)
-//	defer self.synchronize()()
-//	_, _, oldnode := self.lookupNode(oldpath, nil)
-//	if nil == oldnode {
-//		return -fuse.ENOENT
-//	}
-//	newprnt, newname, newnode := self.lookupNode(newpath, nil)
-//	if nil == newprnt {
-//		return -fuse.ENOENT
-//	}
-//	if nil != newnode {
-//		return -fuse.EEXIST
-//	}
-//	oldnode.stat.Nlink++
-//	newprnt.chld[newname] = oldnode
-//	tmsp := fuse.Now()
-//	oldnode.stat.Ctim = tmsp
-//	newprnt.stat.Ctim = tmsp
-//	newprnt.stat.Mtim = tmsp
-//	return 0
-//}
-//
-//
-//func (self *Memfs) Symlink(target string, newpath string) (errc int) {
-//	defer trace(target, newpath)(&errc)
-//	defer self.synchronize()()
-//	return self.makeNode(newpath, fuse.S_IFLNK|00777, 0, []byte(target))
-//}
-//
-//func (self *Memfs) Readlink(path string) (errc int, target string) {
-//	defer trace(path)(&errc, &target)
-//	defer self.synchronize()()
-//	_, _, node := self.lookupNode(path, nil)
-//	if nil == node {
-//		return -fuse.ENOENT, ""
-//	}
-//	if fuse.S_IFLNK != node.stat.Mode&fuse.S_IFMT {
-//		return -fuse.EINVAL, ""
-//	}
-//	return 0, string(node.data)
-//}
-
-func (self *Memfs) Rename(oldpath string, newpath string) (errc int) {
-	return self.Cache.Rename(oldpath, newpath)
-}
-
-func (self *Memfs) Chmod(path string, mode uint32) (errc int) {
+func (c *Cache) Chmod(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -96,10 +32,10 @@ func (self *Memfs) Chmod(path string, mode uint32) (errc int) {
 	return 0
 }
 
-func (self *Memfs) Chown(path string, uid uint32, gid uint32) (errc int) {
+func (c *Cache) Chown(path string, uid uint32, gid uint32) (errc int) {
 	defer trace(path, uid, gid)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -113,10 +49,10 @@ func (self *Memfs) Chown(path string, uid uint32, gid uint32) (errc int) {
 	return 0
 }
 
-func (self *Memfs) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
+func (c *Cache) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -131,16 +67,16 @@ func (self *Memfs) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 	return 0
 }
 
-func (self *Memfs) Open(path string, flags int) (errc int, fh uint64) {
+func (c *Cache) Open(path string, flags int) (errc int, fh uint64) {
 	defer trace(path, flags)(&errc, &fh)
-	defer self.Cache.synchronize()()
-	return self.Cache.openNode(path, false)
+	defer c.synchronize()()
+	return c.openNode(path, false)
 }
 
-func (self *Memfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+func (c *Cache) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc, stat)
-	defer self.Cache.synchronize()()
-	node := self.Cache.getNode(path, fh)
+	defer c.synchronize()()
+	node := c.getNode(path, fh)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -148,47 +84,30 @@ func (self *Memfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int)
 	return 0
 }
 
-func (self *Memfs) Truncate(path string, size int64, fh uint64) (errc int) {
-	defer trace(path, size, fh)(&errc)
-	defer self.Cache.synchronize()()
-	return self.Cache.Truncate(path, size, fh)
-
-}
-
-func (self *Memfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
-	defer trace(path, buff, ofst, fh)(&n)
-	defer self.Cache.synchronize()()
-	return self.Cache.Read(path, buff, ofst, fh)
-}
-
-func (self *Memfs) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
-	return self.Cache.Write(path, buff, ofst, fh)
-}
-
-func (self *Memfs) Release(path string, fh uint64) (errc int) {
+func (c *Cache) Release(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
-	defer self.Cache.synchronize()()
-	return self.Cache.closeNode(fh)
+	defer c.synchronize()()
+	return c.closeNode(fh)
 }
 
-func (self *Memfs) Opendir(path string) (errc int, fh uint64) {
+func (c *Cache) Opendir(path string) (errc int, fh uint64) {
 	defer trace(path)(&errc, &fh)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if node.explored == false {
-		self.Cache.exploreDir(path)
+		c.exploreDir(path)
 	}
-	return self.Cache.openNode(path, true)
+	return c.openNode(path, true)
 }
 
-func (self *Memfs) Readdir(path string,
+func (c *Cache) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
 
 	defer trace(path, fill, ofst, fh)(&errc)
-	defer self.Cache.synchronize()()
-	node := self.Cache.openMap[fh]
+	defer c.synchronize()()
+	node := c.openMap[fh]
 	fill(".", &node.stat, 0)
 	fill("..", nil, 0)
 	for name, chld := range node.chld {
@@ -199,16 +118,16 @@ func (self *Memfs) Readdir(path string,
 	return 0
 }
 
-func (self *Memfs) Releasedir(path string, fh uint64) (errc int) {
+func (c *Cache) Releasedir(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
-	defer self.Cache.synchronize()()
-	return self.Cache.closeNode(fh)
+	defer c.synchronize()()
+	return c.closeNode(fh)
 }
 
-func (self *Memfs) Setxattr(path string, name string, value []byte, flags int) (errc int) {
+func (c *Cache) Setxattr(path string, name string, value []byte, flags int) (errc int) {
 	defer trace(path, name, value, flags)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -233,10 +152,10 @@ func (self *Memfs) Setxattr(path string, name string, value []byte, flags int) (
 	return 0
 }
 
-func (self *Memfs) Getxattr(path string, name string) (errc int, xatr []byte) {
+func (c *Cache) Getxattr(path string, name string) (errc int, xatr []byte) {
 	defer trace(path, name)(&errc, &xatr)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT, nil
 	}
@@ -250,10 +169,10 @@ func (self *Memfs) Getxattr(path string, name string) (errc int, xatr []byte) {
 	return 0, xatr
 }
 
-func (self *Memfs) Removexattr(path string, name string) (errc int) {
+func (c *Cache) Removexattr(path string, name string) (errc int) {
 	defer trace(path, name)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -267,10 +186,10 @@ func (self *Memfs) Removexattr(path string, name string) (errc int) {
 	return 0
 }
 
-func (self *Memfs) Listxattr(path string, fill func(name string) bool) (errc int) {
+func (c *Cache) Listxattr(path string, fill func(name string) bool) (errc int) {
 	defer trace(path, fill)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -282,10 +201,10 @@ func (self *Memfs) Listxattr(path string, fill func(name string) bool) (errc int
 	return 0
 }
 
-func (self *Memfs) Chflags(path string, flags uint32) (errc int) {
+func (c *Cache) Chflags(path string, flags uint32) (errc int) {
 	defer trace(path, flags)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -294,10 +213,10 @@ func (self *Memfs) Chflags(path string, flags uint32) (errc int) {
 	return 0
 }
 
-func (self *Memfs) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
+func (c *Cache) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -306,10 +225,10 @@ func (self *Memfs) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
 	return 0
 }
 
-func (self *Memfs) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
+func (c *Cache) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
-	defer self.Cache.synchronize()()
-	_, _, node := self.Cache.lookupNode(path, nil)
+	defer c.synchronize()()
+	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
 	}
@@ -317,19 +236,18 @@ func (self *Memfs) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
 	return 0
 }
 
-func NewMemfs(fs *filesyetem.FileSystem) *Memfs {
-	self := Memfs{}
-	self.Cache = NewCache(fs)
-	defer self.Cache.synchronize()()
-	return &self
+func NewMemfs(fs *filesyetem.FileSystem) *Cache {
+	self := NewCache(fs)
+	defer self.synchronize()()
+	return self
 }
 
-var _ fuse.FileSystemChflags = (*Memfs)(nil)
-var _ fuse.FileSystemSetcrtime = (*Memfs)(nil)
-var _ fuse.FileSystemSetchgtime = (*Memfs)(nil)
+var _ fuse.FileSystemChflags = (*Cache)(nil)
+var _ fuse.FileSystemSetcrtime = (*Cache)(nil)
+var _ fuse.FileSystemSetchgtime = (*Cache)(nil)
 
-func (self *Memfs) Mount() {
-	host := fuse.NewFileSystemHost(self)
+func (c *Cache) Mount() {
+	host := fuse.NewFileSystemHost(c)
 	host.SetCapReaddirPlus(true)
 	opts := make([]string, 0)
 	host.Mount("", opts)

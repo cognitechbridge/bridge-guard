@@ -7,6 +7,8 @@ import (
 )
 
 type Cache struct {
+	fuse.FileSystemBase
+
 	sync.Mutex
 
 	fs *filesyetem.FileSystem
@@ -194,6 +196,8 @@ func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 }
 
 func (c *Cache) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
+	defer trace(path, buff, ofst, fh)(&n)
+	defer c.synchronize()()
 	node := c.getNode(path, fh)
 	if nil == node {
 		return -fuse.ENOENT
@@ -257,6 +261,8 @@ func (c *Cache) getIno() uint64 {
 }
 
 func (c *Cache) Truncate(path string, size int64, fh uint64) (errc int) {
+	defer trace(path, size, fh)(&errc)
+	defer c.synchronize()()
 	node := c.getNode(path, fh)
 	if nil == node {
 		return -fuse.ENOENT
