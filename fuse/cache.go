@@ -235,7 +235,11 @@ func (c *Cache) getMode(isDir bool) uint32 {
 
 func (c *Cache) getUid() (uint32, uint32) {
 	uid, gid, _ := fuse.Getcontext()
-	if uid != 0xFFFFFFFF {
+	if uid != ^uint32(0) {
+		if c.root != nil {
+			c.root.stat.Uid = uid
+			c.root.stat.Gid = gid
+		}
 		c.uid = uid
 		c.gid = gid
 	}
