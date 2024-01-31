@@ -12,6 +12,7 @@ import (
 	"ctb-cli/encryptor"
 	"ctb-cli/file_db/cloud"
 	"ctb-cli/filesyetem"
+	"ctb-cli/fuse"
 	"ctb-cli/keystore"
 	"ctb-cli/manager"
 	"fmt"
@@ -109,10 +110,13 @@ func initManagerClient() {
 		ClientId:         clientId,
 	}
 
+	memFs := fuse.NewMemfs()
+
 	manager.Client.Init(
 		managerConfig,
 		keyStore,
 		filesystem,
 		cloudClient,
+		memFs,
 	)
 }

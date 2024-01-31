@@ -7,10 +7,12 @@ import (
 )
 
 type Cache struct {
+	sync.Mutex
+
 	root    *node_t
 	openMap map[uint64]*node_t
 
-	rootPath string
+	UploadQueue UploadQueue
 
 	ino Ino
 	uid uint32
@@ -27,7 +29,7 @@ func NewCache() *Cache {
 	c.openMap = make(map[uint64]*node_t)
 	c.root = c.newNode(0, true)
 	c.root.path = "/"
-	c.rootPath = "D:\\Repo\\.ctb\\filesystem"
+	c.UploadQueue = UploadQueue{}
 	return &c
 }
 
@@ -171,6 +173,7 @@ func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 		return -fuse.ENOENT
 	}
 	n, _ = fs.Write(path, buff, ofst)
+	c.UploadQueue.Enqueue(path)
 	return
 }
 
