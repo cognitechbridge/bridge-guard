@@ -121,7 +121,7 @@ func (c *Cache) exploreDir(path string) {
 	parent.explored = true
 }
 
-func (c *Cache) createFile(path string) int {
+func (c *Cache) Mknod(path string, mode uint32, dev uint64) int {
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
 		return -fuse.ENOENT
@@ -135,7 +135,7 @@ func (c *Cache) createFile(path string) int {
 	return 0
 }
 
-func (c *Cache) createDir(path string) int {
+func (c *Cache) Mkdir(path string, mode uint32) int {
 	_ = c.fs.CreateDir(path)
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
@@ -149,7 +149,7 @@ func (c *Cache) createDir(path string) int {
 	return 0
 }
 
-func (c *Cache) rmDir(path string) int {
+func (c *Cache) Rmdir(path string) int {
 	if err := c.removeNode(path, true); err != 0 {
 		return err
 	}
@@ -286,7 +286,7 @@ func (c *Cache) Rename(oldpath string, newpath string) int {
 	return 0
 }
 
-func (c *Cache) RemoveFile(path string) int {
+func (c *Cache) Unlink(path string) int {
 	err := c.fs.RemovePath(path)
 	if err != nil {
 		return -fuse.ENOENT

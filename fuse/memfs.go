@@ -23,25 +23,25 @@ func (self *Memfs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 func (self *Memfs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 	defer trace(path, mode, dev)(&errc)
 	defer self.synchronize()()
-	return self.Cache.createFile(path)
+	return self.Cache.Mknod(path, mode, dev)
 }
 
 func (self *Memfs) Mkdir(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer self.synchronize()()
-	return self.Cache.createDir(path)
+	return self.Cache.Mkdir(path, mode)
 }
 
 func (self *Memfs) Unlink(path string) (errc int) {
 	defer trace(path)(&errc)
 	defer self.synchronize()()
-	return self.Cache.RemoveFile(path)
+	return self.Cache.Unlink(path)
 }
 
 func (self *Memfs) Rmdir(path string) (errc int) {
 	defer trace(path)(&errc)
 	defer self.synchronize()()
-	return self.Cache.rmDir(path)
+	return self.Cache.Rmdir(path)
 }
 
 // @Todo Implement links later
