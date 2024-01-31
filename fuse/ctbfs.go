@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type Cache struct {
+type CtbFs struct {
 	fuse.FileSystemBase
 
 	sync.Mutex
@@ -35,8 +35,8 @@ type Ino struct {
 	counter uint64
 }
 
-func NewCache(fs *filesyetem.FileSystem) *Cache {
-	c := Cache{
+func NewCache(fs *filesyetem.FileSystem) *CtbFs {
+	c := CtbFs{
 		openMap: make(map[uint64]*Node),
 		fs:      fs,
 	}
@@ -46,14 +46,14 @@ func NewCache(fs *filesyetem.FileSystem) *Cache {
 	return &c
 }
 
-func (c *Cache) Mount() {
+func (c *CtbFs) Mount() {
 	host := fuse.NewFileSystemHost(c)
 	host.SetCapReaddirPlus(true)
 	opts := make([]string, 0)
 	host.Mount("", opts)
 }
 
-func (c *Cache) lookupNode(path string, ancestor *Node) (prnt *Node, name string, node *Node) {
+func (c *CtbFs) lookupNode(path string, ancestor *Node) (prnt *Node, name string, node *Node) {
 	if ancestor == nil {
 		prnt = c.root
 		node = c.root
@@ -81,7 +81,7 @@ func (c *Cache) lookupNode(path string, ancestor *Node) (prnt *Node, name string
 	return
 }
 
-func (c *Cache) getNode(path string, fh uint64) *Node {
+func (c *CtbFs) getNode(path string, fh uint64) *Node {
 	if ^uint64(0) == fh {
 		_, _, node := c.lookupNode(path, nil)
 		return node
@@ -90,7 +90,7 @@ func (c *Cache) getNode(path string, fh uint64) *Node {
 	}
 }
 
-func (c *Cache) openNode(path string, dir bool) (int, uint64) {
+func (c *CtbFs) openNode(path string, dir bool) (int, uint64) {
 	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT, ^uint64(0)
@@ -108,7 +108,7 @@ func (c *Cache) openNode(path string, dir bool) (int, uint64) {
 	return 0, node.stat.Ino
 }
 
-func (c *Cache) closeNode(fh uint64) int {
+func (c *CtbFs) closeNode(fh uint64) int {
 	node := c.openMap[fh]
 	node.opencnt--
 	if 0 == node.opencnt {
@@ -117,7 +117,7 @@ func (c *Cache) closeNode(fh uint64) int {
 	return 0
 }
 
-func (c *Cache) exploreDir(path string) {
+func (c *CtbFs) exploreDir(path string) {
 	names := c.fs.GetSubFiles(path)
 	_, _, parent := c.lookupNode(path, nil)
 	for _, info := range names {
@@ -132,7 +132,7 @@ func (c *Cache) exploreDir(path string) {
 	parent.explored = true
 }
 
-func (c *Cache) Mknod(path string, mode uint32, dev uint64) (errc int) {
+func (c *CtbFs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 	defer trace(path, mode, dev)(&errc)
 	defer c.synchronize()()
 	prnt, name, node := c.lookupNode(path, nil)
@@ -148,7 +148,7 @@ func (c *Cache) Mknod(path string, mode uint32, dev uint64) (errc int) {
 	return 0
 }
 
-func (c *Cache) Mkdir(path string, mode uint32) (errc int) {
+func (c *CtbFs) Mkdir(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer c.synchronize()()
 	_ = c.fs.CreateDir(path)
@@ -164,7 +164,7 @@ func (c *Cache) Mkdir(path string, mode uint32) (errc int) {
 	return 0
 }
 
-func (c *Cache) Rmdir(path string) (errc int) {
+func (c *CtbFs) Rmdir(path string) (errc int) {
 	defer trace(path)(&errc)
 	defer c.synchronize()()
 	if err := c.removeNode(path, true); err != 0 {
@@ -174,7 +174,7 @@ func (c *Cache) Rmdir(path string) (errc int) {
 	return 0
 }
 
-func (c *Cache) removeNode(path string, dir bool) int {
+func (c *CtbFs) removeNode(path string, dir bool) int {
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -193,7 +193,7 @@ func (c *Cache) removeNode(path string, dir bool) int {
 	return 0
 }
 
-func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
+func (c *CtbFs) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	defer trace(path, buff, ofst, fh)(&n)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
@@ -204,7 +204,7 @@ func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	return
 }
 
-func (c *Cache) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
+func (c *CtbFs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	defer trace(path, buff, ofst, fh)(&n)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
@@ -215,7 +215,7 @@ func (c *Cache) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	return
 }
 
-func (c *Cache) newNode(dev uint64, isDir bool) *Node {
+func (c *CtbFs) newNode(dev uint64, isDir bool) *Node {
 	uid, gid := c.getUid()
 	tmsp := fuse.Now()
 	ino := c.getIno()
@@ -241,7 +241,7 @@ func (c *Cache) newNode(dev uint64, isDir bool) *Node {
 	return &self
 }
 
-func (c *Cache) getMode(isDir bool) uint32 {
+func (c *CtbFs) getMode(isDir bool) uint32 {
 	if isDir {
 		return fuse.S_IFDIR | 0777
 	} else {
@@ -249,7 +249,7 @@ func (c *Cache) getMode(isDir bool) uint32 {
 	}
 }
 
-func (c *Cache) getUid() (uint32, uint32) {
+func (c *CtbFs) getUid() (uint32, uint32) {
 	uid, gid, _ := fuse.Getcontext()
 	if uid != ^uint32(0) {
 		if c.root != nil {
@@ -262,14 +262,14 @@ func (c *Cache) getUid() (uint32, uint32) {
 	return c.uid, c.gid
 }
 
-func (c *Cache) getIno() uint64 {
+func (c *CtbFs) getIno() uint64 {
 	c.ino.Lock()
 	defer c.ino.Unlock()
 	c.ino.counter++
 	return c.ino.counter
 }
 
-func (c *Cache) Truncate(path string, size int64, fh uint64) (errc int) {
+func (c *CtbFs) Truncate(path string, size int64, fh uint64) (errc int) {
 	defer trace(path, size, fh)(&errc)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
@@ -281,7 +281,7 @@ func (c *Cache) Truncate(path string, size int64, fh uint64) (errc int) {
 	return 0
 }
 
-func (c *Cache) Rename(oldpath string, newpath string) (errc int) {
+func (c *CtbFs) Rename(oldpath string, newpath string) (errc int) {
 	defer trace(oldpath, newpath)(&errc)
 	defer c.synchronize()()
 	oldprnt, oldname, oldnode := c.lookupNode(oldpath, nil)
@@ -311,7 +311,7 @@ func (c *Cache) Rename(oldpath string, newpath string) (errc int) {
 	return 0
 }
 
-func (c *Cache) Unlink(path string) (errc int) {
+func (c *CtbFs) Unlink(path string) (errc int) {
 	defer trace(path)(&errc)
 	defer c.synchronize()()
 	err := c.fs.RemovePath(path)
@@ -324,7 +324,7 @@ func (c *Cache) Unlink(path string) (errc int) {
 	return 0
 }
 
-func (c *Cache) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
+func (c *CtbFs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 	stat.Frsize = 4096
 	stat.Bsize = stat.Frsize
 	stat.Blocks = uint64(2*1024*1024*1024) / stat.Frsize
@@ -334,7 +334,7 @@ func (c *Cache) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 	return 0
 }
 
-func (c *Cache) Chmod(path string, mode uint32) (errc int) {
+func (c *CtbFs) Chmod(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -346,7 +346,7 @@ func (c *Cache) Chmod(path string, mode uint32) (errc int) {
 	return 0
 }
 
-func (c *Cache) Chown(path string, uid uint32, gid uint32) (errc int) {
+func (c *CtbFs) Chown(path string, uid uint32, gid uint32) (errc int) {
 	defer trace(path, uid, gid)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -363,7 +363,7 @@ func (c *Cache) Chown(path string, uid uint32, gid uint32) (errc int) {
 	return 0
 }
 
-func (c *Cache) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
+func (c *CtbFs) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -381,13 +381,13 @@ func (c *Cache) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 	return 0
 }
 
-func (c *Cache) Open(path string, flags int) (errc int, fh uint64) {
+func (c *CtbFs) Open(path string, flags int) (errc int, fh uint64) {
 	defer trace(path, flags)(&errc, &fh)
 	defer c.synchronize()()
 	return c.openNode(path, false)
 }
 
-func (c *Cache) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+func (c *CtbFs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc, stat)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
@@ -398,13 +398,13 @@ func (c *Cache) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	return 0
 }
 
-func (c *Cache) Release(path string, fh uint64) (errc int) {
+func (c *CtbFs) Release(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
 	defer c.synchronize()()
 	return c.closeNode(fh)
 }
 
-func (c *Cache) Opendir(path string) (errc int, fh uint64) {
+func (c *CtbFs) Opendir(path string) (errc int, fh uint64) {
 	defer trace(path)(&errc, &fh)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -414,7 +414,7 @@ func (c *Cache) Opendir(path string) (errc int, fh uint64) {
 	return c.openNode(path, true)
 }
 
-func (c *Cache) Readdir(path string,
+func (c *CtbFs) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
@@ -432,13 +432,13 @@ func (c *Cache) Readdir(path string,
 	return 0
 }
 
-func (c *Cache) Releasedir(path string, fh uint64) (errc int) {
+func (c *CtbFs) Releasedir(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
 	defer c.synchronize()()
 	return c.closeNode(fh)
 }
 
-func (c *Cache) Setxattr(path string, name string, value []byte, flags int) (errc int) {
+func (c *CtbFs) Setxattr(path string, name string, value []byte, flags int) (errc int) {
 	defer trace(path, name, value, flags)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -466,7 +466,7 @@ func (c *Cache) Setxattr(path string, name string, value []byte, flags int) (err
 	return 0
 }
 
-func (c *Cache) Getxattr(path string, name string) (errc int, xatr []byte) {
+func (c *CtbFs) Getxattr(path string, name string) (errc int, xatr []byte) {
 	defer trace(path, name)(&errc, &xatr)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -483,7 +483,7 @@ func (c *Cache) Getxattr(path string, name string) (errc int, xatr []byte) {
 	return 0, xatr
 }
 
-func (c *Cache) Removexattr(path string, name string) (errc int) {
+func (c *CtbFs) Removexattr(path string, name string) (errc int) {
 	defer trace(path, name)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -500,7 +500,7 @@ func (c *Cache) Removexattr(path string, name string) (errc int) {
 	return 0
 }
 
-func (c *Cache) Listxattr(path string, fill func(name string) bool) (errc int) {
+func (c *CtbFs) Listxattr(path string, fill func(name string) bool) (errc int) {
 	defer trace(path, fill)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -515,7 +515,7 @@ func (c *Cache) Listxattr(path string, fill func(name string) bool) (errc int) {
 	return 0
 }
 
-func (c *Cache) Chflags(path string, flags uint32) (errc int) {
+func (c *CtbFs) Chflags(path string, flags uint32) (errc int) {
 	defer trace(path, flags)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -527,7 +527,7 @@ func (c *Cache) Chflags(path string, flags uint32) (errc int) {
 	return 0
 }
 
-func (c *Cache) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
+func (c *CtbFs) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -539,7 +539,7 @@ func (c *Cache) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
 	return 0
 }
 
-func (c *Cache) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
+func (c *CtbFs) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
@@ -550,7 +550,7 @@ func (c *Cache) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
 	return 0
 }
 
-func (c *Cache) synchronize() func() {
+func (c *CtbFs) synchronize() func() {
 	c.Lock()
 	return func() {
 		c.Unlock()
