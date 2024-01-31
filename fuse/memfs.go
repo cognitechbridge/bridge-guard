@@ -21,26 +21,18 @@ func (self *Memfs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 }
 
 func (self *Memfs) Mknod(path string, mode uint32, dev uint64) (errc int) {
-	defer trace(path, mode, dev)(&errc)
-	defer self.synchronize()()
 	return self.Cache.Mknod(path, mode, dev)
 }
 
 func (self *Memfs) Mkdir(path string, mode uint32) (errc int) {
-	defer trace(path, mode)(&errc)
-	defer self.synchronize()()
 	return self.Cache.Mkdir(path, mode)
 }
 
 func (self *Memfs) Unlink(path string) (errc int) {
-	defer trace(path)(&errc)
-	defer self.synchronize()()
 	return self.Cache.Unlink(path)
 }
 
 func (self *Memfs) Rmdir(path string) (errc int) {
-	defer trace(path)(&errc)
-	defer self.synchronize()()
 	return self.Cache.Rmdir(path)
 }
 
@@ -89,14 +81,12 @@ func (self *Memfs) Rmdir(path string) (errc int) {
 //}
 
 func (self *Memfs) Rename(oldpath string, newpath string) (errc int) {
-	defer trace(oldpath, newpath)(&errc)
-	defer self.synchronize()()
 	return self.Cache.Rename(oldpath, newpath)
 }
 
 func (self *Memfs) Chmod(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -108,7 +98,7 @@ func (self *Memfs) Chmod(path string, mode uint32) (errc int) {
 
 func (self *Memfs) Chown(path string, uid uint32, gid uint32) (errc int) {
 	defer trace(path, uid, gid)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -125,7 +115,7 @@ func (self *Memfs) Chown(path string, uid uint32, gid uint32) (errc int) {
 
 func (self *Memfs) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -143,14 +133,13 @@ func (self *Memfs) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 
 func (self *Memfs) Open(path string, flags int) (errc int, fh uint64) {
 	defer trace(path, flags)(&errc, &fh)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	return self.Cache.openNode(path, false)
 }
 
 func (self *Memfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-
 	defer trace(path, fh)(&errc, stat)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	node := self.Cache.getNode(path, fh)
 	if nil == node {
 		return -fuse.ENOENT
@@ -161,32 +150,30 @@ func (self *Memfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int)
 
 func (self *Memfs) Truncate(path string, size int64, fh uint64) (errc int) {
 	defer trace(path, size, fh)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	return self.Cache.Truncate(path, size, fh)
 
 }
 
 func (self *Memfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	defer trace(path, buff, ofst, fh)(&n)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	return self.Cache.Read(path, buff, ofst, fh)
 }
 
 func (self *Memfs) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
-	defer trace(path, buff, ofst, fh)(&n)
-	defer self.synchronize()()
 	return self.Cache.Write(path, buff, ofst, fh)
 }
 
 func (self *Memfs) Release(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	return self.Cache.closeNode(fh)
 }
 
 func (self *Memfs) Opendir(path string) (errc int, fh uint64) {
 	defer trace(path)(&errc, &fh)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if node.explored == false {
 		self.Cache.exploreDir(path)
@@ -200,7 +187,7 @@ func (self *Memfs) Readdir(path string,
 	fh uint64) (errc int) {
 
 	defer trace(path, fill, ofst, fh)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	node := self.Cache.openMap[fh]
 	fill(".", &node.stat, 0)
 	fill("..", nil, 0)
@@ -214,13 +201,13 @@ func (self *Memfs) Readdir(path string,
 
 func (self *Memfs) Releasedir(path string, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	return self.Cache.closeNode(fh)
 }
 
 func (self *Memfs) Setxattr(path string, name string, value []byte, flags int) (errc int) {
 	defer trace(path, name, value, flags)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -248,7 +235,7 @@ func (self *Memfs) Setxattr(path string, name string, value []byte, flags int) (
 
 func (self *Memfs) Getxattr(path string, name string) (errc int, xatr []byte) {
 	defer trace(path, name)(&errc, &xatr)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT, nil
@@ -265,7 +252,7 @@ func (self *Memfs) Getxattr(path string, name string) (errc int, xatr []byte) {
 
 func (self *Memfs) Removexattr(path string, name string) (errc int) {
 	defer trace(path, name)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -282,7 +269,7 @@ func (self *Memfs) Removexattr(path string, name string) (errc int) {
 
 func (self *Memfs) Listxattr(path string, fill func(name string) bool) (errc int) {
 	defer trace(path, fill)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -297,7 +284,7 @@ func (self *Memfs) Listxattr(path string, fill func(name string) bool) (errc int
 
 func (self *Memfs) Chflags(path string, flags uint32) (errc int) {
 	defer trace(path, flags)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -309,7 +296,7 @@ func (self *Memfs) Chflags(path string, flags uint32) (errc int) {
 
 func (self *Memfs) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -321,7 +308,7 @@ func (self *Memfs) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
 
 func (self *Memfs) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	_, _, node := self.Cache.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT
@@ -330,17 +317,10 @@ func (self *Memfs) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
 	return 0
 }
 
-func (self *Memfs) synchronize() func() {
-	self.Cache.Lock()
-	return func() {
-		self.Cache.Unlock()
-	}
-}
-
 func NewMemfs(fs *filesyetem.FileSystem) *Memfs {
 	self := Memfs{}
 	self.Cache = NewCache(fs)
-	defer self.synchronize()()
+	defer self.Cache.synchronize()()
 	return &self
 }
 

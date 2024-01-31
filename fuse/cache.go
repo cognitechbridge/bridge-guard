@@ -121,7 +121,9 @@ func (c *Cache) exploreDir(path string) {
 	parent.explored = true
 }
 
-func (c *Cache) Mknod(path string, mode uint32, dev uint64) int {
+func (c *Cache) Mknod(path string, mode uint32, dev uint64) (errc int) {
+	defer trace(path, mode, dev)(&errc)
+	defer c.synchronize()()
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
 		return -fuse.ENOENT
@@ -135,7 +137,9 @@ func (c *Cache) Mknod(path string, mode uint32, dev uint64) int {
 	return 0
 }
 
-func (c *Cache) Mkdir(path string, mode uint32) int {
+func (c *Cache) Mkdir(path string, mode uint32) (errc int) {
+	defer trace(path, mode)(&errc)
+	defer c.synchronize()()
 	_ = c.fs.CreateDir(path)
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
@@ -149,7 +153,9 @@ func (c *Cache) Mkdir(path string, mode uint32) int {
 	return 0
 }
 
-func (c *Cache) Rmdir(path string) int {
+func (c *Cache) Rmdir(path string) (errc int) {
+	defer trace(path)(&errc)
+	defer c.synchronize()()
 	if err := c.removeNode(path, true); err != 0 {
 		return err
 	}
@@ -177,6 +183,8 @@ func (c *Cache) removeNode(path string, dir bool) int {
 }
 
 func (c *Cache) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
+	defer trace(path, buff, ofst, fh)(&n)
+	defer c.synchronize()()
 	node := c.getNode(path, fh)
 	if nil == node {
 		return -fuse.ENOENT
@@ -258,7 +266,9 @@ func (c *Cache) Truncate(path string, size int64, fh uint64) (errc int) {
 	return 0
 }
 
-func (c *Cache) Rename(oldpath string, newpath string) int {
+func (c *Cache) Rename(oldpath string, newpath string) (errc int) {
+	defer trace(oldpath, newpath)(&errc)
+	defer c.synchronize()()
 	oldprnt, oldname, oldnode := c.lookupNode(oldpath, nil)
 	if nil == oldnode {
 		return -fuse.ENOENT
@@ -286,7 +296,9 @@ func (c *Cache) Rename(oldpath string, newpath string) int {
 	return 0
 }
 
-func (c *Cache) Unlink(path string) int {
+func (c *Cache) Unlink(path string) (errc int) {
+	defer trace(path)(&errc)
+	defer c.synchronize()()
 	err := c.fs.RemovePath(path)
 	if err != nil {
 		return -fuse.ENOENT
@@ -295,4 +307,11 @@ func (c *Cache) Unlink(path string) int {
 		return err
 	}
 	return 0
+}
+
+func (c *Cache) synchronize() func() {
+	c.Lock()
+	return func() {
+		c.Unlock()
+	}
 }
