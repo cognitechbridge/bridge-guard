@@ -95,22 +95,6 @@ func (c *FsFile) ReadId() (key string, err error) {
 	return string(id), nil
 }
 
-func (c *FsFile) Resize(size int64) (err error) {
-	err = c.WriteSize(size)
-	if err != nil {
-		return err
-	}
-	return
-}
-
-func (c *FsFile) ReId(id string) (err error) {
-	err = c.WriteId(id)
-	if err != nil {
-		return err
-	}
-	return
-}
-
 func (c *FsFile) sync() (fu func()) {
 	_ = c.open()
 	return func() {

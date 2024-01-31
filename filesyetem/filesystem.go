@@ -139,7 +139,7 @@ func (f *FileSystem) changeFileId(path string) (int, error) {
 	}
 	uui, _ := uuid.NewV7()
 	newId := uui.String()
-	err = fsFile.ReId(newId)
+	err = fsFile.WriteId(newId)
 	if err != nil {
 		return 0, err
 	}
@@ -163,7 +163,7 @@ func (f *FileSystem) writeToCache(path string, buff []byte, ofst int64) (n int, 
 	}
 	stat, _ := file.Stat()
 	if stat.Size() < ofst+int64(len(buff)) {
-		err := fsFile.Resize(ofst + int64(len(buff)))
+		err := fsFile.WriteSize(ofst + int64(len(buff)))
 		if err != nil {
 			return 0, err
 		}
@@ -195,7 +195,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
 	fs := f.OpenFsFile(path)
-	err = fs.Resize(size)
+	err = fs.WriteSize(size)
 	if err != nil {
 		return err
 	}
