@@ -281,33 +281,33 @@ func (c *CtbFs) Truncate(path string, size int64, fh uint64) (errc int) {
 	return 0
 }
 
-func (c *CtbFs) Rename(oldpath string, newpath string) (errc int) {
-	defer trace(oldpath, newpath)(&errc)
+func (c *CtbFs) Rename(oldPath string, newPath string) (errc int) {
+	defer trace(oldPath, newPath)(&errc)
 	defer c.synchronize()()
-	oldprnt, oldname, oldnode := c.lookupNode(oldpath, nil)
-	if nil == oldnode {
+	oldPrnt, oldName, oldNode := c.lookupNode(oldPath, nil)
+	if nil == oldNode {
 		return -fuse.ENOENT
 	}
-	newprnt, newname, newnode := c.lookupNode(newpath, nil)
-	if nil == newprnt {
+	newPrnt, newName, newNode := c.lookupNode(newPath, nil)
+	if nil == newPrnt {
 		return -fuse.ENOENT
 	}
-	if "" == newname {
+	if "" == newName {
 		// guard against directory loop creation
 		return -fuse.EINVAL
 	}
-	if oldprnt == newprnt && oldname == newname {
+	if oldPrnt == newPrnt && oldName == newName {
 		return 0
 	}
-	if nil != newnode {
+	if nil != newNode {
 		return -fuse.ENOENT
 	}
-	err := c.fs.Rename(oldpath, newpath)
+	err := c.fs.Rename(oldPath, newPath)
 	if err != nil {
 		return -fuse.ENOENT
 	}
-	delete(oldprnt.chld, oldname)
-	newprnt.chld[newname] = oldnode
+	delete(oldPrnt.chld, oldName)
+	newPrnt.chld[newName] = oldNode
 	return 0
 }
 
