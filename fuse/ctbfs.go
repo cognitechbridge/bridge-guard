@@ -1,8 +1,8 @@
 package fuse
 
 import (
-	"ctb-cli/filesyetem"
 	"github.com/winfsp/cgofuse/fuse"
+	"io/fs"
 	"sync"
 )
 
@@ -11,7 +11,7 @@ type CtbFs struct {
 
 	sync.Mutex
 
-	fs *filesyetem.FileSystem
+	fs FileSystemRepo
 
 	root    *Node
 	openMap map[uint64]*Node
@@ -35,7 +35,19 @@ type Ino struct {
 	counter uint64
 }
 
-func NewCache(fs *filesyetem.FileSystem) *CtbFs {
+type FileSystemRepo interface {
+	GetSubFiles(path string) []fs.FileInfo
+	CreateFile(path string) (err error)
+	CreateDir(path string) error
+	RemoveDir(path string)
+	Write(path string, buff []byte, ofst int64) (n int, err error)
+	Read(path string, buff []byte, ofst int64) (n int, err error)
+	Rename(oldPath string, newPath string) error
+	RemovePath(path string) error
+	Resize(path string, size int64) (err error)
+}
+
+func NewCache(fs FileSystemRepo) *CtbFs {
 	c := CtbFs{
 		openMap: make(map[uint64]*Node),
 		fs:      fs,
@@ -121,12 +133,12 @@ func (c *CtbFs) exploreDir(path string) {
 	names := c.fs.GetSubFiles(path)
 	_, _, parent := c.lookupNode(path, nil)
 	for _, info := range names {
-		_, _, node := c.lookupNode(info.Name, parent)
+		_, _, node := c.lookupNode(info.Name(), parent)
 		if node == nil {
-			node := c.newNode(0, info.IsDir)
-			node.path = join(path, info.Name)
-			node.stat.Size = info.Size
-			parent.chld[info.Name] = node
+			node := c.newNode(0, info.IsDir())
+			node.path = join(path, info.Name())
+			node.stat.Size = info.Size()
+			parent.chld[info.Name()] = node
 		}
 	}
 	parent.explored = true
