@@ -2,6 +2,7 @@ package filesyetem
 
 import (
 	"github.com/google/uuid"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -21,16 +22,16 @@ type Downloader interface {
 	Download(id string) error
 }
 
-// NewPersistFileSystem creates a new instance of PersistFileSystem
-func NewPersistFileSystem(dn Downloader) *FileSystem {
-	fs := FileSystem{}
-	fs.rootPath, _ = GetRepoCtbRoot()
-	fs.fileSystemPath = filepath.Join(fs.rootPath, "filesystem")
-	fs.ObjectPath = filepath.Join(fs.rootPath, "object")
-	fs.ObjectCachePath = filepath.Join(fs.rootPath, "cache")
-	fs.UploadQueue = NewUploadQueue()
-	fs.downloader = dn
-	return &fs
+// NewFileSystem creates a new instance of PersistFileSystem
+func NewFileSystem(dn Downloader) *FileSystem {
+	fileSys := FileSystem{}
+	fileSys.rootPath, _ = GetRepoCtbRoot()
+	fileSys.fileSystemPath = filepath.Join(fileSys.rootPath, "filesystem")
+	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object")
+	fileSys.ObjectCachePath = filepath.Join(fileSys.rootPath, "cache")
+	fileSys.UploadQueue = NewUploadQueue()
+	fileSys.downloader = dn
+	return &fileSys
 }
 
 func (f *FileSystem) CreateDir(path string) error {
@@ -66,34 +67,30 @@ func (f *FileSystem) IsDir(path string) bool {
 	return fileInfo.IsDir()
 }
 
-type FileInfo struct {
-	Name  string
-	Size  int64
-	IsDir bool
-}
-
-func (f *FileSystem) GetSubFiles(path string) []FileInfo {
+func (f *FileSystem) GetSubFiles(path string) []fs.FileInfo {
 	p := filepath.Join(f.fileSystemPath, path)
 	file, _ := os.Open(p)
 	defer file.Close()
 	subFiles, _ := file.Readdir(0)
-	infos := make([]FileInfo, 0)
+	var infos []fs.FileInfo
 	for _, subFile := range subFiles {
 		if subFile.IsDir() {
-			infos = append(infos, FileInfo{
-				IsDir: true,
-				Name:  subFile.Name(),
-			})
+			var info fs.FileInfo = FileInfo{
+				isDir: true,
+				name:  subFile.Name(),
+			}
+			infos = append(infos, info)
 			continue
 		} else {
 			p := filepath.Join(path, subFile.Name())
 			file := f.OpenFsFile(p)
 			size, _ := file.ReadSize()
-			infos = append(infos, FileInfo{
-				IsDir: false,
-				Name:  subFile.Name(),
-				Size:  size,
-			})
+			var info fs.FileInfo = FileInfo{
+				isDir: false,
+				name:  subFile.Name(),
+				size:  size,
+			}
+			infos = append(infos, info)
 		}
 
 	}
