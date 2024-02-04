@@ -13,7 +13,7 @@ type EncryptQueue struct {
 
 func NewEncryptQueue() *EncryptQueue {
 	return &EncryptQueue{
-		items: make(map[string]time.Time, 100),
+		items: make(map[string]time.Time),
 	}
 }
 
