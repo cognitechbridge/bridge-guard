@@ -15,8 +15,8 @@ var (
 	EncryptedFileVersion = []byte{1}          // Define the file version
 )
 
-// FileEncryptor is a struct for generating encrypted files.
-type FileEncryptor struct {
+// EncryptReader is a struct for generating encrypted files.
+type EncryptReader struct {
 	sync.Mutex
 	//
 	source       io.Reader
@@ -31,9 +31,9 @@ type FileEncryptor struct {
 	err error
 }
 
-// NewFileEncryptor creates a new FileEncryptor.
-func NewFileEncryptor(source io.Reader, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlob string) *FileEncryptor {
-	return &FileEncryptor{
+// NewEncryptReader creates a new EncryptReader.
+func NewEncryptReader(source io.Reader, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlob string) *EncryptReader {
+	return &EncryptReader{
 		source:       source,
 		header:       NewEncryptionFileHeader(chunkSize, clientId, fileId, recoveryBlob),
 		buffer:       make([]byte, 0),
@@ -44,8 +44,8 @@ func NewFileEncryptor(source io.Reader, key Key, chunkSize uint64, clientId stri
 	}
 }
 
-// Read implements the io.Reader interface for FileEncryptor.
-func (e *FileEncryptor) Read(buf []byte) (int, error) {
+// Read implements the io.Reader interface for EncryptReader.
+func (e *EncryptReader) Read(buf []byte) (int, error) {
 	if e.chunkCounter == 0 {
 		if err := e.appendHeader(); err != nil {
 			return 0, err
@@ -72,7 +72,7 @@ func (e *FileEncryptor) Read(buf []byte) (int, error) {
 }
 
 // appendHeader appends the header to the buffer.
-func (e *FileEncryptor) appendHeader() error {
+func (e *EncryptReader) appendHeader() error {
 	e.buffer = append(e.buffer, EncryptedFileVersion...)
 	headerBytes, err := json.Marshal(e.header)
 	if err != nil {
@@ -83,7 +83,7 @@ func (e *FileEncryptor) appendHeader() error {
 }
 
 // writeContext writes a string to the buffer with its length.
-func (e *FileEncryptor) writeContext(context string) {
+func (e *EncryptReader) writeContext(context string) {
 	contextLength := len(context)
 	// Assumes context length fits in 2 bytes
 	e.buffer = append(e.buffer, byte(contextLength), byte(contextLength>>8))
@@ -106,7 +106,7 @@ type ChunkResultsMut struct {
 	list []ChunkResult
 }
 
-func (e *FileEncryptor) encryptChunks(dc chan ChunkData, resultChan *ChunkResultsMut) {
+func (e *EncryptReader) encryptChunks(dc chan ChunkData, resultChan *ChunkResultsMut) {
 	defer e.wg.Done()
 	for {
 		chunkData, ok := <-dc
@@ -126,7 +126,7 @@ func (e *FileEncryptor) encryptChunks(dc chan ChunkData, resultChan *ChunkResult
 }
 
 // processWithChunkWorkers processes data using concurrent workers and maintains order.
-func (e *FileEncryptor) processWithChunkWorkers(size int64) error {
+func (e *EncryptReader) processWithChunkWorkers(size int64) error {
 	dataChan := make(chan ChunkData, numWorkers)
 	results := ChunkResultsMut{}
 
@@ -161,7 +161,7 @@ func (e *FileEncryptor) processWithChunkWorkers(size int64) error {
 	return nil
 }
 
-func (e *FileEncryptor) addResultsToBuffer(results *ChunkResultsMut) {
+func (e *EncryptReader) addResultsToBuffer(results *ChunkResultsMut) {
 	slices.SortFunc(results.list, func(a, b ChunkResult) int {
 		return cmp.Compare(a.Sequence, b.Sequence)
 	})
@@ -172,7 +172,7 @@ func (e *FileEncryptor) addResultsToBuffer(results *ChunkResultsMut) {
 	}
 }
 
-func (e *FileEncryptor) getErr() error {
+func (e *EncryptReader) getErr() error {
 	e.Lock()
 	defer e.Unlock()
 
@@ -180,7 +180,7 @@ func (e *FileEncryptor) getErr() error {
 }
 
 // setErr is a thread-safe setter for the error object
-func (e *FileEncryptor) setErr(err error) {
+func (e *EncryptReader) setErr(err error) {
 	e.Lock()
 	defer e.Unlock()
 

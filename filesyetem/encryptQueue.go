@@ -6,25 +6,25 @@ import (
 	"time"
 )
 
-type UploadQueue struct {
+type EncryptQueue struct {
 	items map[string]time.Time
 	lock  sync.Mutex
 }
 
-func NewUploadQueue() *UploadQueue {
-	return &UploadQueue{
+func NewEncryptQueue() *EncryptQueue {
+	return &EncryptQueue{
 		items: make(map[string]time.Time, 100),
 	}
 }
 
-func (q *UploadQueue) Enqueue(path string) {
+func (q *EncryptQueue) Enqueue(path string) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
 	q.items[path] = time.Now()
 }
 
-func (q *UploadQueue) Rename(oldPath string, newPath string) {
+func (q *EncryptQueue) Rename(oldPath string, newPath string) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
@@ -34,7 +34,7 @@ func (q *UploadQueue) Rename(oldPath string, newPath string) {
 	}
 }
 
-func (q *UploadQueue) processToChannel(output chan<- string) {
+func (q *EncryptQueue) processToChannel(output chan<- string) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
@@ -48,14 +48,14 @@ func (q *UploadQueue) processToChannel(output chan<- string) {
 	}
 }
 
-func (q *UploadQueue) ProcessRoutine(output chan<- string) {
+func (q *EncryptQueue) StartQueueRoutine(output chan<- string) {
 	for {
 		q.processToChannel(output)
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func (q *UploadQueue) IsInQueue(path string) bool {
+func (q *EncryptQueue) IsInQueue(path string) bool {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	_, is := q.items[path]

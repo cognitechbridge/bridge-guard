@@ -15,9 +15,9 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `mount`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ch := make(chan string, 3)
-		go manager.Client.Filesystem.UploadQueue.ProcessRoutine(ch)
-		go manager.Client.UploadRoutine(ch)
+		//ch := make(chan string, 3)
+		//go manager.Client.Filesystem.EncryptQueue.StartQueueRoutine(ch)
+		//go manager.Client.UploadRoutine(ch)
 		ctbFuse := fuse.NewCache(manager.Client.Filesystem)
 		ctbFuse.Mount()
 	},

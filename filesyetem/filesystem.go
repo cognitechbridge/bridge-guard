@@ -3,6 +3,7 @@ package filesyetem
 import (
 	"fmt"
 	"github.com/google/uuid"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -10,8 +11,11 @@ import (
 
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
-	UploadQueue *UploadQueue
-	downloader  Downloader
+	encryptChan chan string
+
+	EncryptQueue *EncryptQueue
+	downloader   Downloader
+	encryptor    Encryptor
 
 	rootPath        string
 	fileSystemPath  string
@@ -23,15 +27,28 @@ type Downloader interface {
 	Download(id string) error
 }
 
+type Encryptor interface {
+	Encrypt(reader io.Reader, fileId string) (read io.Reader, err error)
+}
+
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(dn Downloader) *FileSystem {
-	fileSys := FileSystem{}
+func NewFileSystem(dn Downloader, en Encryptor) *FileSystem {
+	fileSys := FileSystem{
+		downloader:   dn,
+		encryptor:    en,
+		EncryptQueue: NewEncryptQueue(),
+	}
+
+	fileSys.encryptChan = make(chan string, 100)
+
 	fileSys.rootPath, _ = GetRepoCtbRoot()
 	fileSys.fileSystemPath = filepath.Join(fileSys.rootPath, "filesystem")
 	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object")
 	fileSys.ObjectCachePath = filepath.Join(fileSys.rootPath, "cache")
-	fileSys.UploadQueue = NewUploadQueue()
-	fileSys.downloader = dn
+
+	go fileSys.EncryptQueue.StartQueueRoutine(fileSys.encryptChan)
+	go fileSys.StartEncryptRoutine(fileSys.encryptChan)
+
 	return &fileSys
 }
 
@@ -122,12 +139,12 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return
 	}
-	f.UploadQueue.Enqueue(path)
+	f.EncryptQueue.Enqueue(path)
 	return
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	if !f.UploadQueue.IsInQueue(path) {
+	if !f.EncryptQueue.IsInQueue(path) {
 		i, err := f.changeFileId(path)
 		if err != nil {
 			return i, err
@@ -174,7 +191,7 @@ func (f *FileSystem) writeToCache(path string, buff []byte, ofst int64) (n int, 
 		}
 	}
 	n, err = file.WriteAt(buff, ofst)
-	f.UploadQueue.Enqueue(path)
+	f.EncryptQueue.Enqueue(path)
 	return
 }
 
@@ -223,7 +240,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	f.UploadQueue.Rename(oldPath, newPath)
+	f.EncryptQueue.Rename(oldPath, newPath)
 	return nil
 }
 
