@@ -27,6 +27,7 @@ type FileSystem struct {
 	fileSystemPath  string
 	ObjectPath      string
 	ObjectCachePath string
+	ObjectWritePath string
 }
 
 type Downloader interface {
@@ -54,6 +55,7 @@ func NewFileSystem(dn Downloader, en Encryptor) *FileSystem {
 	fileSys.fileSystemPath = filepath.Join(fileSys.rootPath, "filesystem")
 	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object")
 	fileSys.ObjectCachePath = filepath.Join(fileSys.rootPath, "cache")
+	fileSys.ObjectWritePath = filepath.Join(fileSys.ObjectCachePath, "write")
 
 	go fileSys.encryptQueue.StartQueueRoutine(fileSys.encryptChan)
 	go fileSys.StartEncryptRoutine()
@@ -142,9 +144,15 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 		return
 	}
 	_ = f.CreateFsFile(key.String(), path, 0)
-	objPath := filepath.Join(f.ObjectCachePath, key.String())
-	objFile, err := os.Create(objPath)
+	//Create write file
+	objWritePath := filepath.Join(f.ObjectWritePath, key.String())
+	objFile, err := os.Create(objWritePath)
 	objFile.Close()
+	if err != nil {
+		return
+	}
+	//Link to object path
+	err = f.createWriteLink(key.String())
 	if err != nil {
 		return
 	}
@@ -174,24 +182,45 @@ func (f *FileSystem) changeFileId(path string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	//Move to write cache path
 	oldPath := filepath.Join(f.ObjectCachePath, oldId)
-	newPath := filepath.Join(f.ObjectCachePath, newId)
+	newPath := filepath.Join(f.ObjectWritePath, newId)
 	err = os.Rename(oldPath, newPath)
+	if err != nil {
+		return 0, err
+	}
+	//Create link
+	err = f.createWriteLink(newId)
 	if err != nil {
 		return 0, err
 	}
 	return 0, nil
 }
 
+func (f *FileSystem) createWriteLink(id string) (err error) {
+	objWritePath := filepath.Join(f.ObjectWritePath, id)
+	objFilePath := filepath.Join(f.ObjectCachePath, id)
+	err = os.Link(objWritePath, objFilePath)
+	return err
+}
+
 func (f *FileSystem) writeToCache(path string, buff []byte, ofst int64) (n int, err error) {
 	fsFile := f.OpenFsFile(path)
 	id, _ := fsFile.ReadId()
-	p := filepath.Join(f.ObjectCachePath, id)
-	file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
+
+	p := filepath.Join(f.ObjectWritePath, id)
+	if _, err := os.Stat(p); os.IsNotExist(err) { // If file not exist
+		err = f.downloader.Download(id)
+		if err != nil {
+			return 0, err
+		}
+	}
+	file, err := os.OpenFile(p, os.O_RDWR, 0666)
 	defer file.Close()
 	if err != nil {
 		return 0, err
 	}
+
 	stat, _ := file.Stat()
 	if stat.Size() < ofst+int64(len(buff)) {
 		err := fsFile.WriteSize(ofst + int64(len(buff)))
@@ -212,7 +241,10 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	p := filepath.Join(f.ObjectCachePath, id)
 
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		f.downloader.Download(id)
+		err = f.downloader.Download(id)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	file, err := os.OpenFile(p, os.O_RDONLY, 0666)
@@ -232,7 +264,7 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 	}
 
 	id, err := fs.ReadId()
-	p := filepath.Join(f.ObjectCachePath, id)
+	p := filepath.Join(f.ObjectWritePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR, 0666)
 	err = file.Truncate(size)
 	if err != nil {
