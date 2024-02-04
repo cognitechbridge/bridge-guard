@@ -19,7 +19,7 @@ func (f *FileSystem) StartEncryptRoutine() {
 
 func (f *FileSystem) encrypt(path string) (err error) {
 	fileId, err := f.GetFileId(path)
-	absPath := filepath.Join(f.ObjectCachePath, fileId)
+	absPath := filepath.Join(f.ObjectWritePath, fileId)
 
 	//Open object file
 	inputFile, err := os.Open(absPath)
@@ -33,7 +33,11 @@ func (f *FileSystem) encrypt(path string) (err error) {
 
 	//Create output file
 	outPath := filepath.Join(f.ObjectPath, fileId)
-	outFile, _ := os.Create(outPath)
+	outFile, err := os.Create(outPath)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer outFile.Close()
 
 	//Copy to output
 	_, err = io.Copy(outFile, encryptedReader)
