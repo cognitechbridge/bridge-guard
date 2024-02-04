@@ -11,12 +11,18 @@ import (
 
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
-	encryptChan chan string
+	//interfaces
+	encryptor  Encryptor
+	downloader Downloader
 
-	EncryptQueue *EncryptQueue
-	downloader   Downloader
-	encryptor    Encryptor
+	//out channels
+	UploadChan chan string
 
+	//internal queues and channels
+	encryptChan  chan string
+	encryptQueue *EncryptQueue
+
+	//path
 	rootPath        string
 	fileSystemPath  string
 	ObjectPath      string
@@ -36,7 +42,10 @@ func NewFileSystem(dn Downloader, en Encryptor) *FileSystem {
 	fileSys := FileSystem{
 		downloader:   dn,
 		encryptor:    en,
-		EncryptQueue: NewEncryptQueue(),
+		encryptQueue: NewEncryptQueue(),
+
+		encryptChan: make(chan string, 100),
+		UploadChan:  make(chan string, 100),
 	}
 
 	fileSys.encryptChan = make(chan string, 100)
@@ -46,8 +55,8 @@ func NewFileSystem(dn Downloader, en Encryptor) *FileSystem {
 	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object")
 	fileSys.ObjectCachePath = filepath.Join(fileSys.rootPath, "cache")
 
-	go fileSys.EncryptQueue.StartQueueRoutine(fileSys.encryptChan)
-	go fileSys.StartEncryptRoutine(fileSys.encryptChan)
+	go fileSys.encryptQueue.StartQueueRoutine(fileSys.encryptChan)
+	go fileSys.StartEncryptRoutine()
 
 	return &fileSys
 }
@@ -139,12 +148,12 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return
 	}
-	f.EncryptQueue.Enqueue(path)
+	f.encryptQueue.Enqueue(path)
 	return
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	if !f.EncryptQueue.IsInQueue(path) {
+	if !f.encryptQueue.IsInQueue(path) {
 		i, err := f.changeFileId(path)
 		if err != nil {
 			return i, err
@@ -191,7 +200,7 @@ func (f *FileSystem) writeToCache(path string, buff []byte, ofst int64) (n int, 
 		}
 	}
 	n, err = file.WriteAt(buff, ofst)
-	f.EncryptQueue.Enqueue(path)
+	f.encryptQueue.Enqueue(path)
 	return
 }
 
@@ -240,7 +249,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	f.EncryptQueue.Rename(oldPath, newPath)
+	f.encryptQueue.Rename(oldPath, newPath)
 	return nil
 }
 

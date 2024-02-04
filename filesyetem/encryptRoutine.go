@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 )
 
-func (f *FileSystem) StartEncryptRoutine(input <-chan string) {
+func (f *FileSystem) StartEncryptRoutine() {
 	for {
-		path := <-input
+		path := <-f.encryptChan
 		err := f.encrypt(path)
 		if err != nil {
 			continue
@@ -42,5 +42,8 @@ func (f *FileSystem) encrypt(path string) (err error) {
 	}
 
 	fmt.Printf("File Encrypted: %s \n", path)
+
+	f.UploadChan <- outPath
+
 	return nil
 }

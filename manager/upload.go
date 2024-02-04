@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"ctb-cli/encryptor"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,38 +17,19 @@ func (mn *Manager) UploadRoutine(input <-chan string) {
 }
 
 func (mn *Manager) upload(path string) (err error) {
-	fileId, err := mn.Filesystem.GetFileId(path)
-	absPath := filepath.Join(mn.Filesystem.ObjectCachePath, fileId)
+	_, fileId := filepath.Split(path)
 
-	//Open object file
-	inputFile, err := os.Open(absPath)
-	if err != nil {
-		return fmt.Errorf("failed to open input file: %w", err)
-	}
-	defer closeFile(inputFile)
-
-	//Create header parameters
-	clientId := mn.config.ClientId
-	pair, err := mn.store.GenerateKeyPair(fileId)
+	file, err := os.Open(path)
 	if err != nil {
 		return
 	}
-
-	//Create reader
-	efg := encryptor.NewEncryptReader(
-		inputFile,
-		pair.Key,
-		mn.config.EncryptChunkSize,
-		clientId,
-		fileId,
-		pair.RecoveryBlob,
-	)
 
 	//upload
-	err = mn.cloudStorage.Upload(efg, fileId)
+	err = mn.cloudStorage.Upload(file, fileId)
 	if err != nil {
 		return
 	}
+
 	fmt.Printf("File Uploaded: %s \n", path)
 	return nil
 }
