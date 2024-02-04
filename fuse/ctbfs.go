@@ -1,6 +1,7 @@
 package fuse
 
 import (
+	"fmt"
 	"github.com/winfsp/cgofuse/fuse"
 	"io/fs"
 	"sync"
@@ -36,14 +37,14 @@ type Ino struct {
 }
 
 type FileSystemRepo interface {
-	GetSubFiles(path string) []fs.FileInfo
+	GetSubFiles(path string) (res []fs.FileInfo, err error)
 	CreateFile(path string) (err error)
-	CreateDir(path string) error
-	RemoveDir(path string)
+	CreateDir(path string) (err error)
+	RemoveDir(path string) (err error)
 	Write(path string, buff []byte, ofst int64) (n int, err error)
 	Read(path string, buff []byte, ofst int64) (n int, err error)
-	Rename(oldPath string, newPath string) error
-	RemovePath(path string) error
+	Rename(oldPath string, newPath string) (err error)
+	RemovePath(path string) (err error)
 	Resize(path string, size int64) (err error)
 }
 
@@ -102,7 +103,7 @@ func (c *CtbFs) getNode(path string, fh uint64) *Node {
 	}
 }
 
-func (c *CtbFs) openNode(path string, dir bool) (int, uint64) {
+func (c *CtbFs) openNode(path string, dir bool) (errc int, fh uint64) {
 	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
 		return -fuse.ENOENT, ^uint64(0)
@@ -129,8 +130,11 @@ func (c *CtbFs) closeNode(fh uint64) int {
 	return 0
 }
 
-func (c *CtbFs) exploreDir(path string) {
-	names := c.fs.GetSubFiles(path)
+func (c *CtbFs) exploreDir(path string) (err error) {
+	names, err := c.fs.GetSubFiles(path)
+	if err != nil {
+		return fmt.Errorf("error exploring directory: %v", err)
+	}
 	_, _, parent := c.lookupNode(path, nil)
 	for _, info := range names {
 		_, _, node := c.lookupNode(info.Name(), parent)
@@ -142,6 +146,7 @@ func (c *CtbFs) exploreDir(path string) {
 		}
 	}
 	parent.explored = true
+	return nil
 }
 
 func (c *CtbFs) Mknod(path string, mode uint32, dev uint64) (errc int) {
@@ -182,7 +187,9 @@ func (c *CtbFs) Rmdir(path string) (errc int) {
 	if err := c.removeNode(path, true); err != 0 {
 		return err
 	}
-	c.fs.RemoveDir(path)
+	if err := c.fs.RemoveDir(path); err != nil {
+		return errno(err)
+	}
 	return 0
 }
 
@@ -288,7 +295,9 @@ func (c *CtbFs) Truncate(path string, size int64, fh uint64) (errc int) {
 	if nil == node {
 		return -fuse.ENOENT
 	}
-	c.fs.Resize(path, size)
+	if err := c.fs.Resize(path, size); err != nil {
+		return errno(err)
+	}
 	node.stat.Size = size
 	return 0
 }
@@ -336,7 +345,7 @@ func (c *CtbFs) Unlink(path string) (errc int) {
 	return 0
 }
 
-func (c *CtbFs) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
+func (c *CtbFs) Statfs(_ string, stat *fuse.Statfs_t) (errc int) {
 	stat.Frsize = 4096
 	stat.Bsize = stat.Frsize
 	stat.Blocks = uint64(2*1024*1024*1024) / stat.Frsize
@@ -421,7 +430,10 @@ func (c *CtbFs) Opendir(path string) (errc int, fh uint64) {
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
 	if node.explored == false {
-		c.exploreDir(path)
+		err := c.exploreDir(path)
+		if err != nil {
+			return errno(err), ^uint64(0)
+		}
 	}
 	return c.openNode(path, true)
 }
