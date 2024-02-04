@@ -44,8 +44,8 @@ func NewFileSystem(dn Downloader, en Encryptor) *FileSystem {
 		encryptor:    en,
 		encryptQueue: NewEncryptQueue(),
 
-		encryptChan: make(chan string, 100),
-		UploadChan:  make(chan string, 100),
+		encryptChan: make(chan string, 10),
+		UploadChan:  make(chan string, 10),
 	}
 
 	fileSys.encryptChan = make(chan string, 100)
