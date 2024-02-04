@@ -1,6 +1,7 @@
 package encryptor
 
 import (
+	"ctb-cli/types"
 	"errors"
 	"golang.org/x/crypto/chacha20poly1305"
 )
@@ -14,8 +15,7 @@ func NewCrypto(key Key, nonce Nonce) Crypto {
 	return Crypto{key: key, nonce: nonce}
 }
 
-// Key represents a 256-bit key used for ChaCha20-Poly1305.
-type Key [chacha20poly1305.KeySize]byte
+type Key = types.Key
 
 // Nonce represents a nonce for ChaCha20-Poly1305.
 type Nonce [chacha20poly1305.NonceSize]byte

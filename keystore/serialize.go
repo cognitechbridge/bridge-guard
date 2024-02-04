@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"crypto/rand"
-	"ctb-cli/encryptor"
 	"encoding/base64"
 	"fmt"
 	"golang.org/x/crypto/chacha20poly1305"
@@ -29,7 +28,7 @@ func (ks *KeyStore) SerializeKeyPair(key []byte) (string, string, error) {
 }
 
 // DeserializeKeyPair decrypts and deserializes the key pair
-func (ks *KeyStore) DeserializeKeyPair(nonceEncoded, cipheredEncoded string) (*encryptor.Key, error) {
+func (ks *KeyStore) DeserializeKeyPair(nonceEncoded, cipheredEncoded string) (*Key, error) {
 	nonce, err := base64.StdEncoding.DecodeString(nonceEncoded)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode nonce: %w", err)
@@ -50,7 +49,7 @@ func (ks *KeyStore) DeserializeKeyPair(nonceEncoded, cipheredEncoded string) (*e
 		return nil, fmt.Errorf("failed to decrypt data: %w", err)
 	}
 
-	key := encryptor.Key{}
+	key := Key{}
 	copy(key[:], deciphered)
 
 	return &key, nil

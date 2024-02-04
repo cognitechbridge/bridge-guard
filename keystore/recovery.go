@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"ctb-cli/encryptor"
+
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -14,7 +14,7 @@ import (
 type RecoveryVersion int
 
 type GeneratedKey struct {
-	Key          encryptor.Key
+	Key          Key
 	RecoveryBlob string
 }
 
@@ -25,7 +25,7 @@ type Recovery struct {
 	RecoverySha1 string `json:"recoverySha1"`
 }
 
-func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key) (string, error) {
+func (ks *KeyStore) GenerateRecoveryBlob(key Key) (string, error) {
 	recoveryKey, err := ks.GetRecoveryKey()
 	if err != nil || recoveryKey == nil {
 		return "", fmt.Errorf("recovery key not found. Cannot generate data key")
@@ -53,7 +53,7 @@ func (ks *KeyStore) GenerateRecoveryBlob(key encryptor.Key) (string, error) {
 }
 
 func (ks *KeyStore) GenerateKeyPair(keyId string) (GeneratedKey, error) {
-	key := encryptor.Key{}
+	key := Key{}
 	if _, err := io.ReadFull(rand.Reader, key[:]); err != nil {
 		return GeneratedKey{}, err
 	}

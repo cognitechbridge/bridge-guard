@@ -36,7 +36,7 @@ func (mn *Manager) upload(path string) (err error) {
 	}
 
 	//Create reader
-	efg := encryptor.NewFileEncryptor(
+	efg := encryptor.NewEncryptReader(
 		inputFile,
 		pair.Key,
 		mn.config.EncryptChunkSize,

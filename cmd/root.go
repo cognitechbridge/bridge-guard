@@ -12,6 +12,7 @@ import (
 	"ctb-cli/file_db/cloud"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
+
 	"ctb-cli/manager"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -98,10 +99,13 @@ func initManagerClient() {
 		return
 	}
 
-	filesystem := filesyetem.NewFileSystem(&manager.Client)
+	chunkSize, err := config.Crypto.GetChunkSize()
+	clientId, err := config.Workspace.GetClientId()
 
-	chunkSize, _ := config.Crypto.GetChunkSize()
-	clientId, _ := config.Workspace.GetClientId()
+	fileEncryptor := encryptor.NewFileEncryptor(keyStore, chunkSize, clientId)
+
+	filesystem := filesyetem.NewFileSystem(&manager.Client, &fileEncryptor)
+
 	managerConfig := manager.Config{
 		EncryptChunkSize: chunkSize,
 		ClientId:         clientId,
