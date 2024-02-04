@@ -1,6 +1,7 @@
 package filesyetem
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"io/fs"
 	"os"
@@ -34,18 +35,18 @@ func NewFileSystem(dn Downloader) *FileSystem {
 	return &fileSys
 }
 
-func (f *FileSystem) CreateDir(path string) error {
+func (f *FileSystem) CreateDir(path string) (err error) {
 	absPath := filepath.Join(f.fileSystemPath, path)
-	err := os.MkdirAll(absPath, os.ModePerm)
+	err = os.MkdirAll(absPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (f *FileSystem) RemovePath(path string) error {
+func (f *FileSystem) RemovePath(path string) (err error) {
 	absPath := filepath.Join(f.fileSystemPath, path)
-	err := os.Remove(absPath)
+	err = os.Remove(absPath)
 	if err != nil {
 		return err
 	}
@@ -67,10 +68,13 @@ func (f *FileSystem) IsDir(path string) bool {
 	return fileInfo.IsDir()
 }
 
-func (f *FileSystem) GetSubFiles(path string) []fs.FileInfo {
+func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 	p := filepath.Join(f.fileSystemPath, path)
-	file, _ := os.Open(p)
+	file, err := os.Open(p)
 	defer file.Close()
+	if err != nil {
+		return nil, fmt.Errorf("error opening dir to read sub files: %v", err)
+	}
 	subFiles, _ := file.Readdir(0)
 	var infos []fs.FileInfo
 	for _, subFile := range subFiles {
@@ -84,7 +88,10 @@ func (f *FileSystem) GetSubFiles(path string) []fs.FileInfo {
 		} else {
 			p := filepath.Join(path, subFile.Name())
 			file := f.OpenFsFile(p)
-			size, _ := file.ReadSize()
+			size, err := file.ReadSize()
+			if err != nil {
+				return nil, fmt.Errorf("error reading file size: %v", err)
+			}
 			var info fs.FileInfo = FileInfo{
 				isDir: false,
 				name:  subFile.Name(),
@@ -94,12 +101,13 @@ func (f *FileSystem) GetSubFiles(path string) []fs.FileInfo {
 		}
 
 	}
-	return infos
+	return infos, nil
 }
 
-func (f *FileSystem) RemoveDir(path string) {
+func (f *FileSystem) RemoveDir(path string) (err error) {
 	p := filepath.Join(f.fileSystemPath, path)
-	os.Remove(p)
+	err = os.Remove(p)
+	return err
 }
 
 func (f *FileSystem) CreateFile(path string) (err error) {
@@ -208,10 +216,10 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 	return nil
 }
 
-func (f *FileSystem) Rename(oldPath string, newPath string) error {
+func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	o := filepath.Join(f.fileSystemPath, oldPath)
 	n := filepath.Join(f.fileSystemPath, newPath)
-	err := os.Rename(o, n)
+	err = os.Rename(o, n)
 	if err != nil {
 		return err
 	}
