@@ -22,6 +22,8 @@ type FileSystem struct {
 	encryptChan  chan string
 	encryptQueue *EncryptQueue
 
+	objectSystem ObjectSystem
+
 	//path
 	rootPath        string
 	fileSystemPath  string
@@ -56,6 +58,8 @@ func NewFileSystem(dn Downloader, en Encryptor) *FileSystem {
 	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object")
 	fileSys.ObjectCachePath = filepath.Join(fileSys.rootPath, "cache")
 	fileSys.ObjectWritePath = filepath.Join(fileSys.ObjectCachePath, "write")
+
+	fileSys.objectSystem = NewObjectSystem(fileSys.ObjectCachePath)
 
 	go fileSys.encryptQueue.StartQueueRoutine(fileSys.encryptChan)
 	go fileSys.StartEncryptRoutine()
@@ -144,15 +148,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 		return
 	}
 	_ = f.CreateFsFile(key.String(), path, 0)
-	//Create write file
-	objWritePath := filepath.Join(f.ObjectWritePath, key.String())
-	objFile, err := os.Create(objWritePath)
-	objFile.Close()
-	if err != nil {
-		return
-	}
-	//Link to object path
-	err = f.createWriteLink(key.String())
+	err = f.objectSystem.createObject(key.String())
 	if err != nil {
 		return
 	}
@@ -161,76 +157,42 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
+	fsFile := f.OpenFsFile(path)
+	id, err := fsFile.ReadId()
 	if !f.encryptQueue.IsInQueue(path) {
-		i, err := f.changeFileId(path)
+		id, err = f.changeFileId(path)
 		if err != nil {
-			return i, err
+			return 0, err
 		}
 	}
-	return f.writeToCache(path, buff, ofst)
+	n, err = f.objectSystem.writeObject(id, buff, ofst)
+	if size, _ := fsFile.ReadSize(); size < ofst+int64(len(buff)) {
+		err = fsFile.WriteSize(ofst + int64(len(buff)))
+		if err != nil {
+			return 0, err
+		}
+	}
+	f.encryptQueue.Enqueue(path)
+	return
 }
 
-func (f *FileSystem) changeFileId(path string) (int, error) {
+func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 	fsFile := f.OpenFsFile(path)
 	oldId, err := fsFile.ReadId()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	uui, _ := uuid.NewV7()
-	newId := uui.String()
+	newId = uui.String()
 	err = fsFile.WriteId(newId)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	//Move to write cache path
-	oldPath := filepath.Join(f.ObjectCachePath, oldId)
-	newPath := filepath.Join(f.ObjectWritePath, newId)
-	err = os.Rename(oldPath, newPath)
+	err = f.objectSystem.moveObject(oldId, newId)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	//Create link
-	err = f.createWriteLink(newId)
-	if err != nil {
-		return 0, err
-	}
-	return 0, nil
-}
-
-func (f *FileSystem) createWriteLink(id string) (err error) {
-	objWritePath := filepath.Join(f.ObjectWritePath, id)
-	objFilePath := filepath.Join(f.ObjectCachePath, id)
-	err = os.Link(objWritePath, objFilePath)
-	return err
-}
-
-func (f *FileSystem) writeToCache(path string, buff []byte, ofst int64) (n int, err error) {
-	fsFile := f.OpenFsFile(path)
-	id, _ := fsFile.ReadId()
-
-	p := filepath.Join(f.ObjectWritePath, id)
-	if _, err := os.Stat(p); os.IsNotExist(err) { // If file not exist
-		err = f.downloader.Download(id)
-		if err != nil {
-			return 0, err
-		}
-	}
-	file, err := os.OpenFile(p, os.O_RDWR, 0666)
-	defer file.Close()
-	if err != nil {
-		return 0, err
-	}
-
-	stat, _ := file.Stat()
-	if stat.Size() < ofst+int64(len(buff)) {
-		err := fsFile.WriteSize(ofst + int64(len(buff)))
-		if err != nil {
-			return 0, err
-		}
-	}
-	n, err = file.WriteAt(buff, ofst)
-	f.encryptQueue.Enqueue(path)
-	return
+	return newId, nil
 }
 
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
@@ -238,39 +200,23 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	if err != nil {
 		return 0, err
 	}
-	p := filepath.Join(f.ObjectCachePath, id)
-
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		err = f.downloader.Download(id)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	file, err := os.OpenFile(p, os.O_RDONLY, 0666)
-	defer file.Close()
-	if err != nil {
-		return 0, err
-	}
-	n, err = file.ReadAt(buff, ofst)
-	return
+	return f.objectSystem.readObject(id, buff, ofst)
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
-	fs := f.OpenFsFile(path)
-	err = fs.WriteSize(size)
+	fsFile := f.OpenFsFile(path)
+	err = fsFile.WriteSize(size)
 	if err != nil {
 		return err
 	}
-
-	id, err := fs.ReadId()
-	p := filepath.Join(f.ObjectWritePath, id)
-	file, err := os.OpenFile(p, os.O_RDWR, 0666)
-	err = file.Truncate(size)
+	id, err := fsFile.ReadId()
 	if err != nil {
 		return err
 	}
-
+	err = f.objectSystem.truncateObject(id, size)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
