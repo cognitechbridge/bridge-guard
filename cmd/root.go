@@ -80,6 +80,8 @@ func initConfig() {
 	initManagerClient()
 }
 
+var fileSystem *filesyetem.FileSystem
+
 func initManagerClient() {
 	var key encryptor.Key
 
@@ -105,11 +107,7 @@ func initManagerClient() {
 	fileEncryptor := encryptor.NewFileEncryptor(keyStore, chunkSize, clientId)
 	fileDecryptor := encryptor.NewFileDecryptor(keyStore)
 
-	filesystem := filesyetem.NewFileSystem(cloudClient, &fileEncryptor, &fileDecryptor)
+	fileSystem = filesyetem.NewFileSystem(cloudClient, &fileEncryptor, &fileDecryptor)
 
-	manager.Client.Init(
-		keyStore,
-		filesystem,
-		cloudClient,
-	)
+	manager.Client.Init(cloudClient)
 }
