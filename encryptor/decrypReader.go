@@ -125,14 +125,14 @@ func (d *DecryptReader) readChunkHeader() error {
 	return errors.New("chunk header is not valid")
 }
 
-func (d *DecryptReader) readHeader() (*EncryptionFileHeader, error) {
+func (d *DecryptReader) readHeader() (*EncryptedFileHeader, error) {
 	headerContext, err := d.readContext()
 	if err != nil {
 		return nil, err
 	}
 
 	// Deserialize file header
-	var fileHeader EncryptionFileHeader
+	var fileHeader EncryptedFileHeader
 	err = json.Unmarshal(headerContext, &fileHeader)
 	if err != nil {
 		return nil, err
