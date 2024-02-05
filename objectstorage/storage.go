@@ -1,4 +1,4 @@
-package file_db
+package objectstorage
 
 import "io"
 
