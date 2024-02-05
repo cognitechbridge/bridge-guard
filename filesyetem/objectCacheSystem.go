@@ -1,18 +1,19 @@
 package filesyetem
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
 type ObjectCacheSystem struct {
-	resolver  func(id string) io.ReadCloser
+	resolver  func(id string, writer io.Writer) (err error)
 	readPath  string
 	writePath string
 }
 
-func NewObjectCacheSystem(path string, resolver func(id string) io.ReadCloser) ObjectCacheSystem {
+func NewObjectCacheSystem(path string, resolver func(id string, writer io.Writer) (err error)) ObjectCacheSystem {
 	return ObjectCacheSystem{
 		readPath:  path,
 		resolver:  resolver,
@@ -38,13 +39,10 @@ func (o *ObjectCacheSystem) Move(oldId string, newId string) (err error) {
 
 func (o *ObjectCacheSystem) Write(id string, buff []byte, ofst int64) (n int, err error) {
 	p := filepath.Join(o.writePath, id)
-	if _, err := os.Stat(p); os.IsNotExist(err) { // If file not exist
-		err = o.resolverFile(id)
-		if err != nil {
-			return 0, err
-		}
-	}
 	file, err := os.OpenFile(p, os.O_RDWR, 0666)
+	if err != nil {
+		return 0, fmt.Errorf("file is not in write cache: %v", err)
+	}
 	defer file.Close()
 	if err != nil {
 		return 0, err
@@ -117,10 +115,8 @@ func (o *ObjectCacheSystem) createWriteLink(id string) (err error) {
 }
 
 func (o *ObjectCacheSystem) resolverFile(id string) (err error) {
-	reader := o.resolver(id)
-	defer reader.Close()
 	file, _ := os.Create(filepath.Join(o.readPath, id))
 	defer file.Close()
-	_, err = io.Copy(file, reader)
+	err = o.resolver(id, file)
 	return
 }

@@ -32,7 +32,7 @@ type FileSystem struct {
 }
 
 type Downloader interface {
-	Download(id string) error
+	Download(id string, writeAt io.WriterAt) error
 }
 
 type Encryptor interface {
@@ -40,7 +40,7 @@ type Encryptor interface {
 }
 
 type Decryptor interface {
-	DecryptFile(file *os.File, fileId string) (read io.ReadCloser, err error)
+	Decrypt(reader io.Reader, fileId string) (read io.Reader, err error)
 }
 
 // NewFileSystem creates a new instance of PersistFileSystem
@@ -243,9 +243,17 @@ func GetRepoCtbRoot() (string, error) {
 	return path, nil
 }
 
-func (f *FileSystem) ObjectResolver(id string) io.ReadCloser {
+func (f *FileSystem) ObjectResolver(id string, writer io.Writer) (err error) {
 	path := filepath.Join(f.ObjectPath, id)
+	if _, err := os.Stat(path); os.IsNotExist(err) { //If object not exist, download it
+		file, _ := os.Create(path)
+		err = f.downloader.Download(id, file)
+		if err != nil {
+			return err
+		}
+	}
 	file, _ := os.Open(path)
-	deReader, _ := f.decryptor.DecryptFile(file, id)
-	return deReader
+	decryptedReader, _ := f.decryptor.Decrypt(file, id)
+	_, err = io.Copy(writer, decryptedReader)
+	return
 }

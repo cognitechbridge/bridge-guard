@@ -9,7 +9,6 @@ import (
 
 type DecryptReader struct {
 	source       io.Reader
-	close        func() error
 	key          *Key
 	nonce        Nonce
 	buffer       []byte
@@ -17,11 +16,10 @@ type DecryptReader struct {
 	chunkCounter uint64
 }
 
-func NewDecryptReader(key *Key, source io.Reader, close func() error) (*DecryptReader, error) {
+func NewDecryptReader(key *Key, source io.Reader) (*DecryptReader, error) {
 
 	return &DecryptReader{
 		source: source,
-		close:  close,
 		key:    key,
 		nonce:  Nonce{},
 		buffer: make([]byte, 0),
@@ -70,10 +68,6 @@ func (d *DecryptReader) Read(p []byte) (int, error) {
 	n := copy(p, d.buffer)
 	d.buffer = d.buffer[n:]
 	return n, nil
-}
-
-func (d *DecryptReader) Close() error {
-	return d.close()
 }
 
 func (d *DecryptReader) readFileHeader() error {

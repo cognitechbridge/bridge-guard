@@ -2,7 +2,6 @@ package encryptor
 
 import (
 	"io"
-	"os"
 )
 
 type FileDecryptor struct {
@@ -15,11 +14,11 @@ func NewFileDecryptor(keystoreRepo KeystoreRepo) FileDecryptor {
 	}
 }
 
-func (f *FileDecryptor) DecryptFile(file *os.File, fileId string) (read io.ReadCloser, err error) {
+func (f *FileDecryptor) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
 	key, err := f.keystoreRepo.Get(fileId)
 	if err != nil {
 		return nil, err
 	}
-	read, err = NewDecryptReader(key, file, file.Close)
+	read, err = NewDecryptReader(key, reader)
 	return read, err
 }
