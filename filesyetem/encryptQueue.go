@@ -9,11 +9,14 @@ import (
 type EncryptQueue struct {
 	items map[string]time.Time
 	lock  sync.Mutex
+
+	fs *FileSystem
 }
 
-func NewEncryptQueue() *EncryptQueue {
+func (f *FileSystem) NewEncryptQueue() *EncryptQueue {
 	return &EncryptQueue{
 		items: make(map[string]time.Time),
+		fs:    f,
 	}
 }
 
@@ -34,7 +37,7 @@ func (q *EncryptQueue) Rename(oldPath string, newPath string) {
 	}
 }
 
-func (q *EncryptQueue) processToChannel(output chan<- string) {
+func (q *EncryptQueue) processToChannel(output chan<- encryptChanItem) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
@@ -42,13 +45,20 @@ func (q *EncryptQueue) processToChannel(output chan<- string) {
 	for path, t := range q.items {
 		if currentTime.Sub(t) > 5*time.Second {
 			delete(q.items, path)
-			output <- path
+			id, err := q.fs.GetFileId(path)
+			if err != nil {
+				continue
+
+			}
+			q.lock.Unlock()
+			output <- encryptChanItem{id: id}
+			q.lock.Lock()
 			fmt.Printf("Upload Queued: %s \n", path)
 		}
 	}
 }
 
-func (q *EncryptQueue) StartQueueRoutine(output chan<- string) {
+func (q *EncryptQueue) StartQueueRoutine(output chan<- encryptChanItem) {
 	for {
 		q.processToChannel(output)
 		time.Sleep(1 * time.Second)
