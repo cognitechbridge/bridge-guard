@@ -13,23 +13,22 @@ import (
 type FileSystem struct {
 	//interfaces
 	encryptor  Encryptor
+	decryptor  Decryptor
 	downloader Downloader
 
 	//out channels
 	UploadChan chan string
 
 	//internal queues and channels
-	encryptChan  chan string
+	encryptChan  chan encryptChanItem
 	encryptQueue *EncryptQueue
 
-	objectSystem ObjectSystem
+	objectCacheSystem ObjectCacheSystem
 
 	//path
-	rootPath        string
-	fileSystemPath  string
-	ObjectPath      string
-	ObjectCachePath string
-	ObjectWritePath string
+	rootPath       string
+	fileSystemPath string
+	ObjectPath     string
 }
 
 type Downloader interface {
@@ -40,26 +39,30 @@ type Encryptor interface {
 	Encrypt(reader io.Reader, fileId string) (read io.Reader, err error)
 }
 
-// NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(dn Downloader, en Encryptor) *FileSystem {
-	fileSys := FileSystem{
-		downloader:   dn,
-		encryptor:    en,
-		encryptQueue: NewEncryptQueue(),
+type Decryptor interface {
+	DecryptFile(file *os.File, fileId string) (read io.ReadCloser, err error)
+}
 
-		encryptChan: make(chan string, 10),
+// NewFileSystem creates a new instance of PersistFileSystem
+func NewFileSystem(dn Downloader, en Encryptor, de Decryptor) *FileSystem {
+	fileSys := FileSystem{
+		downloader: dn,
+		encryptor:  en,
+		decryptor:  de,
+
+		encryptChan: make(chan encryptChanItem, 10),
 		UploadChan:  make(chan string, 10),
 	}
-
-	fileSys.encryptChan = make(chan string, 100)
 
 	fileSys.rootPath, _ = GetRepoCtbRoot()
 	fileSys.fileSystemPath = filepath.Join(fileSys.rootPath, "filesystem")
 	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object")
-	fileSys.ObjectCachePath = filepath.Join(fileSys.rootPath, "cache")
-	fileSys.ObjectWritePath = filepath.Join(fileSys.ObjectCachePath, "write")
 
-	fileSys.objectSystem = NewObjectSystem(fileSys.ObjectCachePath)
+	fileSys.encryptQueue = fileSys.NewEncryptQueue()
+	fileSys.objectCacheSystem = NewObjectCacheSystem(
+		filepath.Join(fileSys.rootPath, "cache"),
+		fileSys.ObjectResolver,
+	)
 
 	go fileSys.encryptQueue.StartQueueRoutine(fileSys.encryptChan)
 	go fileSys.StartEncryptRoutine()
@@ -105,7 +108,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 	file, err := os.Open(p)
 	defer file.Close()
 	if err != nil {
-		return nil, fmt.Errorf("error opening dir to read sub files: %v", err)
+		return nil, fmt.Errorf("error opening dir to Read sub files: %v", err)
 	}
 	subFiles, _ := file.Readdir(0)
 	var infos []fs.FileInfo
@@ -148,7 +151,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 		return
 	}
 	_ = f.CreateFsFile(key.String(), path, 0)
-	err = f.objectSystem.createObject(key.String())
+	err = f.objectCacheSystem.Create(key.String())
 	if err != nil {
 		return
 	}
@@ -165,7 +168,7 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 			return 0, err
 		}
 	}
-	n, err = f.objectSystem.writeObject(id, buff, ofst)
+	n, err = f.objectCacheSystem.Write(id, buff, ofst)
 	if size, _ := fsFile.ReadSize(); size < ofst+int64(len(buff)) {
 		err = fsFile.WriteSize(ofst + int64(len(buff)))
 		if err != nil {
@@ -188,7 +191,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 	if err != nil {
 		return "", err
 	}
-	err = f.objectSystem.moveObject(oldId, newId)
+	err = f.objectCacheSystem.Move(oldId, newId)
 	if err != nil {
 		return "", err
 	}
@@ -200,7 +203,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	if err != nil {
 		return 0, err
 	}
-	return f.objectSystem.readObject(id, buff, ofst)
+	return f.objectCacheSystem.Read(id, buff, ofst)
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
@@ -213,7 +216,7 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 	if err != nil {
 		return err
 	}
-	err = f.objectSystem.truncateObject(id, size)
+	err = f.objectCacheSystem.Truncate(id, size)
 	if err != nil {
 		return err
 	}
@@ -238,4 +241,11 @@ func GetRepoCtbRoot() (string, error) {
 	}
 	path := filepath.Join(root, ".ctb")
 	return path, nil
+}
+
+func (f *FileSystem) ObjectResolver(id string) io.ReadCloser {
+	path := filepath.Join(f.ObjectPath, id)
+	file, _ := os.Open(path)
+	deReader, _ := f.decryptor.DecryptFile(file, id)
+	return deReader
 }

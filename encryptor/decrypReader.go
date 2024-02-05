@@ -7,26 +7,28 @@ import (
 	"io"
 )
 
-type FileDecryptor struct {
+type DecryptReader struct {
 	source       io.Reader
-	key          Key
+	close        func() error
+	key          *Key
 	nonce        Nonce
 	buffer       []byte
 	chunkSize    uint64
 	chunkCounter uint64
 }
 
-func NewFileDecryptor(key Key, source io.Reader) (*FileDecryptor, error) {
+func NewDecryptReader(key *Key, source io.Reader, close func() error) (*DecryptReader, error) {
 
-	return &FileDecryptor{
+	return &DecryptReader{
 		source: source,
+		close:  close,
 		key:    key,
 		nonce:  Nonce{},
 		buffer: make([]byte, 0),
 	}, nil
 }
 
-func (d *FileDecryptor) Read(p []byte) (int, error) {
+func (d *DecryptReader) Read(p []byte) (int, error) {
 	if d.chunkSize == 0 {
 		if err := d.readFileHeader(); err != nil {
 			return 0, err
@@ -50,7 +52,7 @@ func (d *FileDecryptor) Read(p []byte) (int, error) {
 			break
 		}
 
-		crypto := NewCrypto(d.key, d.nonce)
+		crypto := NewCrypto(*d.key, d.nonce)
 		decryptedData, err := crypto.open(buffer[:bytesRead])
 		if err != nil {
 			return 0, err
@@ -70,7 +72,11 @@ func (d *FileDecryptor) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-func (d *FileDecryptor) readFileHeader() error {
+func (d *DecryptReader) Close() error {
+	return d.close()
+}
+
+func (d *DecryptReader) readFileHeader() error {
 	err, err2 := d.readFileVersion()
 	if err2 != nil {
 		return err2
@@ -85,7 +91,7 @@ func (d *FileDecryptor) readFileHeader() error {
 	return err
 }
 
-func (d *FileDecryptor) readFileVersion() (error, error) {
+func (d *DecryptReader) readFileVersion() (error, error) {
 	// Create a buffer to hold the version byte
 	versionBuffer := make([]byte, 1)
 	_, err := io.ReadFull(d.source, versionBuffer)
@@ -101,7 +107,7 @@ func (d *FileDecryptor) readFileVersion() (error, error) {
 	return err, nil
 }
 
-func (d *FileDecryptor) readChunkHeader() error {
+func (d *DecryptReader) readChunkHeader() error {
 	// Define a small buffer for the chunk header (4 bytes as in Rust code)
 	var smallBuffer [4]byte
 
@@ -125,7 +131,7 @@ func (d *FileDecryptor) readChunkHeader() error {
 	return errors.New("chunk header is not valid")
 }
 
-func (d *FileDecryptor) readHeader() (*EncryptionFileHeader, error) {
+func (d *DecryptReader) readHeader() (*EncryptionFileHeader, error) {
 	headerContext, err := d.readContext()
 	if err != nil {
 		return nil, err
@@ -141,7 +147,7 @@ func (d *FileDecryptor) readHeader() (*EncryptionFileHeader, error) {
 	return &fileHeader, nil
 }
 
-func (d *FileDecryptor) readContext() ([]byte, error) {
+func (d *DecryptReader) readContext() ([]byte, error) {
 	// Read context size
 	contextSize, err := d.readContextSize()
 	if err != nil {
@@ -160,7 +166,7 @@ func (d *FileDecryptor) readContext() ([]byte, error) {
 	return bufferContext, nil
 }
 
-func (d *FileDecryptor) readContextSize() (uint16, error) {
+func (d *DecryptReader) readContextSize() (uint16, error) {
 	var buffer2 [2]byte
 	n, err := d.source.Read(buffer2[:])
 	if err != nil {

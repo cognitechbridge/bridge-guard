@@ -103,8 +103,9 @@ func initManagerClient() {
 	clientId, err := config.Workspace.GetClientId()
 
 	fileEncryptor := encryptor.NewFileEncryptor(keyStore, chunkSize, clientId)
+	fileDecryptor := encryptor.NewFileDecryptor(keyStore)
 
-	filesystem := filesyetem.NewFileSystem(&manager.Client, &fileEncryptor)
+	filesystem := filesyetem.NewFileSystem(&manager.Client, &fileEncryptor, &fileDecryptor)
 
 	managerConfig := manager.Config{
 		EncryptChunkSize: chunkSize,

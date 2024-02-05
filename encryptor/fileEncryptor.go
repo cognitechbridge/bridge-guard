@@ -13,6 +13,7 @@ type FileEncryptor struct {
 
 type KeystoreRepo interface {
 	GenerateKeyPair(keyId string) (keystore.GeneratedKey, error)
+	Get(keyID string) (*Key, error)
 }
 
 func NewFileEncryptor(keystoreRepo KeystoreRepo, chunkSize uint64, clientId string) FileEncryptor {

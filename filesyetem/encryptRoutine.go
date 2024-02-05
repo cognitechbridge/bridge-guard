@@ -9,24 +9,21 @@ import (
 
 func (f *FileSystem) StartEncryptRoutine() {
 	for {
-		path := <-f.encryptChan
-		err := f.encrypt(path)
+		item := <-f.encryptChan
+		err := f.encrypt(item.id)
 		if err != nil {
 			continue
 		}
 	}
 }
 
-func (f *FileSystem) encrypt(path string) (err error) {
-	fileId, err := f.GetFileId(path)
-	absPath := filepath.Join(f.ObjectWritePath, fileId)
-
+func (f *FileSystem) encrypt(fileId string) (err error) {
 	//Open object file
-	inputFile, err := os.Open(absPath)
+	inputFile, err := f.objectCacheSystem.AsFile(fileId)
+	defer closeFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
-	defer closeFile(inputFile)
 
 	//Create encrypted reader
 	encryptedReader, err := f.encryptor.Encrypt(inputFile, fileId)
@@ -35,7 +32,7 @@ func (f *FileSystem) encrypt(path string) (err error) {
 	outPath := filepath.Join(f.ObjectPath, fileId)
 	outFile, err := os.Create(outPath)
 	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
+		return fmt.Errorf("failed to Create output file: %w", err)
 	}
 	defer outFile.Close()
 
@@ -45,7 +42,11 @@ func (f *FileSystem) encrypt(path string) (err error) {
 		return
 	}
 
-	fmt.Printf("File Encrypted: %s \n", path)
+	err = f.objectCacheSystem.Flush(fileId)
+	if err != nil {
+		return
+	}
+	fmt.Printf("File Encrypted: %s \n", fileId)
 
 	f.UploadChan <- outPath
 
