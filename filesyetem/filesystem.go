@@ -16,11 +16,9 @@ type FileSystem struct {
 	decryptor  Decryptor
 	downloader Downloader
 
-	//out channels
-	UploadChan chan string
-
 	//internal queues and channels
 	encryptChan  chan encryptChanItem
+	uploadChan   chan uploadChanItem
 	encryptQueue *EncryptQueue
 
 	objectCacheSystem ObjectCacheSystem
@@ -33,6 +31,7 @@ type FileSystem struct {
 
 type Downloader interface {
 	Download(id string, writeAt io.WriterAt) error
+	Upload(reader io.Reader, fileId string) error
 }
 
 type Encryptor interface {
@@ -51,7 +50,7 @@ func NewFileSystem(dn Downloader, en Encryptor, de Decryptor) *FileSystem {
 		decryptor:  de,
 
 		encryptChan: make(chan encryptChanItem, 10),
-		UploadChan:  make(chan string, 10),
+		uploadChan:  make(chan uploadChanItem, 10),
 	}
 
 	fileSys.rootPath, _ = GetRepoCtbRoot()

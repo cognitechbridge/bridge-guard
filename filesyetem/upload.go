@@ -1,4 +1,4 @@
-package manager
+package filesyetem
 
 import (
 	"fmt"
@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 )
 
-func (mn *Manager) UploadRoutine(input <-chan string) {
+func (f *FileSystem) UploadRoutine() {
 	for {
-		path := <-input
-		err := mn.upload(path)
+		item := <-f.uploadChan
+		err := f.upload(item.path)
 		if err != nil {
 			continue
 		}
 	}
 }
 
-func (mn *Manager) upload(path string) (err error) {
+func (f *FileSystem) upload(path string) (err error) {
 	_, fileId := filepath.Split(path)
 
 	file, err := os.Open(path)
@@ -25,7 +25,7 @@ func (mn *Manager) upload(path string) (err error) {
 	}
 
 	//upload
-	err = mn.cloudStorage.Upload(file, fileId)
+	err = f.downloader.Upload(file, fileId)
 	if err != nil {
 		return
 	}
