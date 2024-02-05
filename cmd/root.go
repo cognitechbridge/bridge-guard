@@ -9,9 +9,9 @@ import (
 	"ctb-cli/config"
 	"ctb-cli/db"
 	"ctb-cli/encryptor"
-	"ctb-cli/file_db/cloud"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
+	"ctb-cli/objectstorage/cloud"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -84,7 +84,7 @@ func initManagerClient() {
 	var key encryptor.Key
 
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
-	//cloudClient := file_db.NewDummyClient()
+	//cloudClient := objectstorage.NewDummyClient()
 
 	sqlLiteConnection, _ := db.NewSqlLiteConnection()
 

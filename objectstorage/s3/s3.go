@@ -11,7 +11,7 @@ import (
 	"log"
 )
 
-// Client S3Client represents the file_db configuration for S3
+// Client S3Client represents the objectstorage configuration for S3
 type Client struct {
 	BucketName string
 	ChunkSize  int64

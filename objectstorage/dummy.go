@@ -1,4 +1,4 @@
-package file_db
+package objectstorage
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
