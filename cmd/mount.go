@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"ctb-cli/fuse"
-	"ctb-cli/manager"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +14,7 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `mount`,
 	Run: func(cmd *cobra.Command, args []string) {
-		go manager.Client.UploadRoutine(fileSystem.UploadChan)
+		go fileSystem.UploadRoutine()
 		ctbFuse := fuse.NewCache(fileSystem)
 		ctbFuse.Mount()
 	},

@@ -48,7 +48,7 @@ func (f *FileSystem) encrypt(fileId string) (err error) {
 	}
 	fmt.Printf("File Encrypted: %s \n", fileId)
 
-	f.UploadChan <- outPath
+	f.uploadChan <- uploadChanItem{path: outPath}
 
 	return nil
 }

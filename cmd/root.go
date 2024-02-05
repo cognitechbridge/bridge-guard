@@ -12,8 +12,6 @@ import (
 	"ctb-cli/file_db/cloud"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
-
-	"ctb-cli/manager"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -108,6 +106,4 @@ func initManagerClient() {
 	fileDecryptor := encryptor.NewFileDecryptor(keyStore)
 
 	fileSystem = filesyetem.NewFileSystem(cloudClient, &fileEncryptor, &fileDecryptor)
-
-	manager.Client.Init(cloudClient)
 }
