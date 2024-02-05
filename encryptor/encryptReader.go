@@ -20,7 +20,7 @@ type EncryptReader struct {
 	sync.Mutex
 	//
 	source       io.Reader
-	header       EncryptionFileHeader
+	header       EncryptedFileHeader
 	key          Key
 	buffer       []byte
 	nonce        Nonce
@@ -35,7 +35,7 @@ type EncryptReader struct {
 func NewEncryptReader(source io.Reader, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlob string) *EncryptReader {
 	return &EncryptReader{
 		source:       source,
-		header:       NewEncryptionFileHeader(chunkSize, clientId, fileId, recoveryBlob),
+		header:       NewEncryptedFileHeader(chunkSize, clientId, fileId, recoveryBlob),
 		buffer:       make([]byte, 0),
 		chunkCounter: 0,
 		key:          key,

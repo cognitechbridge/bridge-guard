@@ -2,8 +2,8 @@ package encryptor
 
 const DefaultChunkSize = 1024
 
-// EncryptionFileHeader represents the header of an encryption file
-type EncryptionFileHeader struct {
+// EncryptedFileHeader represents the header of an encryption file
+type EncryptedFileHeader struct {
 	Version   string `json:"version"`
 	Alg       string `json:"alg"`
 	ClientID  string `json:"client_id"`
@@ -12,9 +12,9 @@ type EncryptionFileHeader struct {
 	Recovery  string `json:"recovery"`
 }
 
-// NewEncryptionFileHeader creates a new instance of EncryptionFileHeader with default values
-func NewEncryptionFileHeader(chunkSize uint64, clientId string, fileId string, recoverBlob string) EncryptionFileHeader {
-	return EncryptionFileHeader{
+// NewEncryptedFileHeader creates a new instance of EncryptedFileHeader with default values
+func NewEncryptedFileHeader(chunkSize uint64, clientId string, fileId string, recoverBlob string) EncryptedFileHeader {
+	return EncryptedFileHeader{
 		Version:   "V1",
 		ChunkSize: chunkSize,          // Define this constant as per your requirements
 		Alg:       GetAlgorithmName(), // Set default algorithm
