@@ -93,7 +93,7 @@ func initManagerClient() {
 	if err != nil {
 		return
 	}
-	err = keyStore.ReadRecoveryKey(path)
+	err = keyStore.AddRecoveryKey(path)
 	if err != nil {
 		fmt.Println("Error reading crt:", err)
 		return

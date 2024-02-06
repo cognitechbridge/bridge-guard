@@ -32,10 +32,10 @@ type EncryptReader struct {
 }
 
 // NewEncryptReader creates a new EncryptReader.
-func NewEncryptReader(source io.Reader, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlob string) *EncryptReader {
+func NewEncryptReader(source io.Reader, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlobs []string) *EncryptReader {
 	return &EncryptReader{
 		source:       source,
-		header:       NewEncryptedFileHeader(chunkSize, clientId, fileId, recoveryBlob),
+		header:       NewEncryptedFileHeader(chunkSize, clientId, fileId, recoveryBlobs),
 		buffer:       make([]byte, 0),
 		chunkCounter: 0,
 		key:          key,
