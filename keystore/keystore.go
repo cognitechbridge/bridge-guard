@@ -9,10 +9,14 @@ type Key = types.Key
 
 // KeyStore represents a key store
 type KeyStore struct {
-	rootKey           Key
-	recoveryPublicKey *rsa.PublicKey
-	recoverySha1      string
-	persist           Persist
+	rootKey       Key
+	recoveryItems []StoreRecoveryItem
+	persist       Persist
+}
+
+type StoreRecoveryItem struct {
+	publicKey *rsa.PublicKey
+	sha1      string
 }
 
 // Persist KeyStorePersist is an interface for persisting keys
@@ -32,8 +36,9 @@ type SerializedKey struct {
 // NewKeyStore creates a new instance of KeyStore
 func NewKeyStore(rootKey Key, persist Persist) *KeyStore {
 	return &KeyStore{
-		rootKey: rootKey,
-		persist: persist,
+		rootKey:       rootKey,
+		persist:       persist,
+		recoveryItems: make([]StoreRecoveryItem, 0),
 	}
 }
 

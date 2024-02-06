@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-func (ks *KeyStore) ReadRecoveryKey(inPath string) error {
+func (ks *KeyStore) AddRecoveryKey(inPath string) error {
 	path := os.ExpandEnv(inPath)
 	pemBytes, err := os.ReadFile(path)
 	if err != nil {
@@ -33,14 +33,18 @@ func (ks *KeyStore) ReadRecoveryKey(inPath string) error {
 		return errors.New("public key is not of type RSA Public Key")
 	}
 
-	ks.recoveryPublicKey = pubKey
+	rec := StoreRecoveryItem{}
+
+	rec.publicKey = pubKey
 
 	pubASN1, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
 		return err
 	}
 	hash := sha1.Sum(pubASN1)
-	ks.recoverySha1 = hex.EncodeToString(hash[:])
+	rec.sha1 = hex.EncodeToString(hash[:])
+
+	ks.recoveryItems = append(ks.recoveryItems, rec)
 
 	return nil
 }
