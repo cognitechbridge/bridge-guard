@@ -7,7 +7,6 @@ package cmd
 
 import (
 	"ctb-cli/config"
-	"ctb-cli/db"
 	"ctb-cli/encryptor"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
@@ -86,9 +85,11 @@ func initManagerClient() {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
-	sqlLiteConnection, _ := db.NewSqlLiteConnection()
+	clientId, err := config.Workspace.GetClientId()
 
-	keyStore := keystore.NewKeyStore(key, sqlLiteConnection)
+	keyStorePersist := filesyetem.NewKeyStoreFilesystem(clientId)
+
+	keyStore := keystore.NewKeyStore(key, keyStorePersist)
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {
 		return
@@ -100,7 +101,6 @@ func initManagerClient() {
 	}
 
 	chunkSize, err := config.Crypto.GetChunkSize()
-	clientId, err := config.Workspace.GetClientId()
 
 	fileEncryptor := encryptor.NewFileEncryptor(keyStore, chunkSize, clientId)
 	fileDecryptor := encryptor.NewFileDecryptor(keyStore)
