@@ -63,7 +63,6 @@ func NewFileSystem(dn Downloader, en Encryptor, de Decryptor) *FileSystem {
 		fileSys.ObjectResolver,
 	)
 
-	go fileSys.encryptQueue.StartQueueRoutine(fileSys.encryptChan)
 	go fileSys.StartEncryptRoutine()
 
 	return &fileSys

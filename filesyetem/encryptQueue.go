@@ -14,10 +14,12 @@ type EncryptQueue struct {
 }
 
 func (f *FileSystem) NewEncryptQueue() *EncryptQueue {
-	return &EncryptQueue{
+	q := &EncryptQueue{
 		items: make(map[string]time.Time),
 		fs:    f,
 	}
+	go q.StartQueueRoutine(f.encryptChan)
+	return q
 }
 
 func (q *EncryptQueue) Enqueue(path string) {
