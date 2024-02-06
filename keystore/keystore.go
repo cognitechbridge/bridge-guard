@@ -21,14 +21,8 @@ type StoreRecoveryItem struct {
 
 // Persist KeyStorePersist is an interface for persisting keys
 type Persist interface {
-	SaveKey(serializedKey SerializedKey) error
-	GetKey(keyID string) (*SerializedKey, error)
-}
-
-type SerializedKey struct {
-	ID    string
-	Nonce string
-	Key   string
+	SaveKey(serializedKey types.SerializedKey) error
+	GetKey(keyID string) (*types.SerializedKey, error)
 }
 
 // NewKeyStore creates a new instance of KeyStore
@@ -72,7 +66,7 @@ func (ks *KeyStore) persistKey(keyID string, key Key) error {
 		return err
 	}
 
-	sk := SerializedKey{
+	sk := types.SerializedKey{
 		ID:    keyID,
 		Nonce: nonceHashed,
 		Key:   keyHashed,
