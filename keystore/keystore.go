@@ -23,14 +23,12 @@ type StoreRecoveryItem struct {
 type Persist interface {
 	SaveKey(serializedKey SerializedKey) error
 	GetKey(keyID string) (*SerializedKey, error)
-	GetWithTag(tag string) (*SerializedKey, error)
 }
 
 type SerializedKey struct {
 	ID    string
 	Nonce string
 	Key   string
-	Tag   string
 }
 
 // NewKeyStore creates a new instance of KeyStore
@@ -44,7 +42,7 @@ func NewKeyStore(rootKey Key, persist Persist) *KeyStore {
 
 // Insert inserts a key into the key store
 func (ks *KeyStore) Insert(keyID string, key Key) error {
-	return ks.persistKey(keyID, key, "DK")
+	return ks.persistKey(keyID, key)
 }
 
 // Get retrieves a key from the key store
@@ -66,27 +64,8 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 	return key, nil
 }
 
-// GetWithTag retrieves a key with a specific tag from the key store
-func (ks *KeyStore) GetWithTag(tag string) (string, Key, error) {
-	sk, err := ks.persist.GetWithTag(tag)
-	if err != nil {
-		return "", Key{}, err
-	}
-
-	if sk.ID == "" {
-		return "", Key{}, nil
-	}
-
-	key, err := ks.DeserializeKeyPair(sk.Nonce, sk.Key)
-	if err != nil {
-		return "", Key{}, err
-	}
-
-	return sk.ID, *key, nil
-}
-
 // persistKey handles the logic of persisting a key
-func (ks *KeyStore) persistKey(keyID string, key Key, tag string) error {
+func (ks *KeyStore) persistKey(keyID string, key Key) error {
 	// Implement serialization and hashing logic
 	nonceHashed, keyHashed, err := ks.SerializeKeyPair(key[:])
 	if err != nil {
@@ -97,7 +76,6 @@ func (ks *KeyStore) persistKey(keyID string, key Key, tag string) error {
 		ID:    keyID,
 		Nonce: nonceHashed,
 		Key:   keyHashed,
-		Tag:   tag,
 	}
 
 	return ks.persist.SaveKey(sk)
