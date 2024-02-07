@@ -78,6 +78,7 @@ func initConfig() {
 }
 
 var fileSystem *filesyetem.FileSystem
+var keyStore *keystore.KeyStore
 
 func initManagerClient() {
 	var key encryptor.Key
@@ -89,7 +90,7 @@ func initManagerClient() {
 
 	keyStorePersist := filesyetem.NewKeyStoreFilesystem(clientId)
 
-	keyStore := keystore.NewKeyStore(key, keyStorePersist)
+	keyStore = keystore.NewKeyStore(clientId, key, keyStorePersist)
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {
 		return
