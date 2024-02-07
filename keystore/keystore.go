@@ -25,8 +25,8 @@ type StoreRecoveryItem struct {
 
 // Persist KeyStorePersist is an interface for persisting keys
 type Persist interface {
-	SaveDataKey(keyId string, key string) error
-	GetDataKey(keyID string) (string, error)
+	SaveDataKey(keyId string, key []byte) error
+	GetDataKey(keyID string) ([]byte, error)
 	GetPrivateKey() (string, error)
 	SavePrivateKey(key string) (err error)
 	GetPublicKey(id string) (*rsa.PublicKey, error)

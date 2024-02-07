@@ -108,30 +108,30 @@ func (k *KeyStoreFilesystem) SavePrivateKey(key string) (err error) {
 	return nil
 }
 
-func (k *KeyStoreFilesystem) SaveDataKey(keyId string, key string) error {
+func (k *KeyStoreFilesystem) SaveDataKey(keyId string, key []byte) error {
 	p := filepath.Join(k.getDataPath(), keyId)
 	file, err := os.Create(p)
 	defer file.Close()
 	if err != nil {
 		return err
 	}
-	_, err = file.WriteString(key)
+	_, err = file.Write(key)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (k *KeyStoreFilesystem) GetDataKey(keyID string) (string, error) {
+func (k *KeyStoreFilesystem) GetDataKey(keyID string) ([]byte, error) {
 	p := filepath.Join(k.getDataPath(), keyID)
 	file, err := os.Open(p)
 	defer file.Close()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	content, err := io.ReadAll(file)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(content), err
+	return content, err
 }
