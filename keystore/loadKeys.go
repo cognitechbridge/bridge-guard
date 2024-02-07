@@ -17,7 +17,7 @@ func (ks *KeyStore) LoadKeys() error {
 	if err != nil {
 		return err
 	}
-	ks.privateKey, err = ks.DeserializePrivateKey(privateKey, nil)
+	ks.privateKey, err = ks.DeserializePrivateKey(privateKey, &ks.rootKey)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (ks *KeyStore) GenerateClientKeys() (err error) {
 		return err
 	}
 	//Save private key
-	serialized, err := ks.SerializePrivateKey(privateKey, nil)
+	serialized, err := ks.SerializePrivateKey(privateKey, &ks.rootKey)
 	if err != nil {
 		return err
 	}
