@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"ctb-cli/types"
-	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -14,10 +13,10 @@ import (
 )
 
 // DeserializePrivateKey encrypts and serializes the private key
-func (*KeyStore) DeserializePrivateKey(cipheredEncoded string, rootKey *types.Key) (*rsa.PrivateKey, error) {
-	ciphered, err := base64.StdEncoding.DecodeString(cipheredEncoded)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode ciphered data: %w", err)
+func (*KeyStore) DeserializePrivateKey(ciphered []byte, rootKey *types.Key) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(ciphered)
+	if block == nil {
+		return nil, errors.New("failed to parse PEM block containing the key")
 	}
 
 	aead, err := chacha20poly1305.New(rootKey[:])
@@ -27,17 +26,12 @@ func (*KeyStore) DeserializePrivateKey(cipheredEncoded string, rootKey *types.Ke
 
 	nonce := make([]byte, chacha20poly1305.NonceSize)
 
-	deciphered, err := aead.Open(nil, nonce, ciphered, nil)
+	deciphered, err := aead.Open(nil, nonce, block.Bytes, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt data: %w", err)
 	}
 
-	block, _ := pem.Decode(deciphered)
-	if block == nil {
-		return nil, errors.New("failed to parse PEM block containing the key")
-	}
-
-	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	privateKey, err := x509.ParsePKCS1PrivateKey(deciphered)
 	if err != nil {
 		return nil, err
 	}
@@ -46,26 +40,26 @@ func (*KeyStore) DeserializePrivateKey(cipheredEncoded string, rootKey *types.Ke
 }
 
 // SerializePrivateKey encrypts and serializes the private key
-func (*KeyStore) SerializePrivateKey(privateKey *rsa.PrivateKey, rootKey *types.Key) (string, error) {
+func (*KeyStore) SerializePrivateKey(privateKey *rsa.PrivateKey, rootKey *types.Key) ([]byte, error) {
 	bytes := x509.MarshalPKCS1PrivateKey(privateKey)
-	pem := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: bytes,
-		},
-	)
 
 	aead, err := chacha20poly1305.New(rootKey[:])
 	if err != nil {
-		return "", fmt.Errorf("failed to create cipher: %w", err)
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
 
 	nonce := make([]byte, chacha20poly1305.NonceSize)
 
-	ciphered := aead.Seal(nil, nonce, pem, nil)
-	cipheredEncoded := base64.StdEncoding.EncodeToString(ciphered)
+	ciphered := aead.Seal(nil, nonce, bytes, nil)
 
-	return cipheredEncoded, nil
+	pemBytes := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: ciphered,
+		},
+	)
+
+	return pemBytes, nil
 }
 
 // SerializeDataKey encrypts and serializes the key pair

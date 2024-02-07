@@ -27,8 +27,8 @@ type StoreRecoveryItem struct {
 type Persist interface {
 	SaveDataKey(keyId string, key []byte) error
 	GetDataKey(keyID string) ([]byte, error)
-	GetPrivateKey() (string, error)
-	SavePrivateKey(key string) (err error)
+	GetPrivateKey() ([]byte, error)
+	SavePrivateKey(key []byte) (err error)
 	GetPublicKey(id string) (*rsa.PublicKey, error)
 	SavePublicKey(id string, key *rsa.PublicKey) (err error)
 }

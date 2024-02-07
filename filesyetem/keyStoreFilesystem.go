@@ -84,16 +84,16 @@ func (k *KeyStoreFilesystem) SavePublicKey(id string, key *rsa.PublicKey) (err e
 	return nil
 }
 
-func (k *KeyStoreFilesystem) GetPrivateKey() (string, error) {
+func (k *KeyStoreFilesystem) GetPrivateKey() ([]byte, error) {
 	p := filepath.Join(k.getPrivatePath(), k.clientId)
 	content, err := os.ReadFile(p)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(content), nil
+	return content, nil
 }
 
-func (k *KeyStoreFilesystem) SavePrivateKey(key string) (err error) {
+func (k *KeyStoreFilesystem) SavePrivateKey(key []byte) (err error) {
 	p := filepath.Join(k.getPrivatePath(), k.clientId)
 	file, err := os.Create(p)
 	if err != nil {
@@ -101,7 +101,7 @@ func (k *KeyStoreFilesystem) SavePrivateKey(key string) (err error) {
 	}
 	defer file.Close()
 
-	_, err = io.WriteString(file, key)
+	_, err = file.Write(key)
 	if err != nil {
 		return err
 	}
