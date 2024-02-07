@@ -69,23 +69,17 @@ func (*KeyStore) SerializePrivateKey(privateKey *rsa.PrivateKey, rootKey *types.
 }
 
 // SerializeDataKey encrypts and serializes the key pair
-func (*KeyStore) SerializeDataKey(key []byte, publicKey *rsa.PublicKey) (string, error) {
+func (*KeyStore) SerializeDataKey(key []byte, publicKey *rsa.PublicKey) ([]byte, error) {
 	encrypted, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, publicKey, key[:], nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to create cipher: %w", err)
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
-	cipheredEncoded := base64.StdEncoding.EncodeToString(encrypted)
 
-	return cipheredEncoded, nil
+	return encrypted, nil
 }
 
 // DeserializeDataKey decrypts and deserializes the key pair
-func (*KeyStore) DeserializeDataKey(cipheredEncoded string, privateKey *rsa.PrivateKey) (*Key, error) {
-	ciphered, err := base64.StdEncoding.DecodeString(cipheredEncoded)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode ciphered data: %w", err)
-	}
-
+func (*KeyStore) DeserializeDataKey(ciphered []byte, privateKey *rsa.PrivateKey) (*Key, error) {
 	deciphered, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, privateKey, ciphered, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
