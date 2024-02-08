@@ -11,8 +11,7 @@ import (
 const numWorkers = 4
 
 var (
-	Separator            = []byte{0, 0, 0, 0} // Define the appropriate separator
-	EncryptedFileVersion = []byte{1}          // Define the file version
+	EncryptedFileVersion = []byte{1} // Define the file version
 )
 
 // EncryptReader is a struct for generating encrypted files.
@@ -169,7 +168,6 @@ func (e *EncryptReader) addResultsToBuffer(results *ChunkResultsMut) {
 	})
 	for i := range results.list {
 		res := results.list[i]
-		e.buffer = append(e.buffer, Separator...)
 		e.buffer = append(e.buffer, res.Data...)
 	}
 }
