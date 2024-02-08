@@ -34,13 +34,6 @@ func (d *DecryptReader) Read(p []byte) (int, error) {
 	}
 
 	for len(d.buffer) < len(p) {
-		err := d.readChunkHeader()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return 0, err
-		}
-
 		buffer := make([]byte, d.chunkSize)
 		bytesRead, err := d.source.Read(buffer)
 		if err != nil {
@@ -101,30 +94,6 @@ func (d *DecryptReader) readFileVersion() (error, error) {
 		return nil, errors.New("unsupported file version")
 	}
 	return err, nil
-}
-
-func (d *DecryptReader) readChunkHeader() error {
-	// Define a small buffer for the chunk header (4 bytes as in Rust code)
-	var smallBuffer [4]byte
-
-	// Read 4 bytes into the buffer
-	n, err := d.source.Read(smallBuffer[:])
-	if err != nil {
-		return err
-	}
-
-	// If no bytes were read, return nil (end of stream or chunk)
-	if n == 0 {
-		return nil
-	}
-
-	// Check if all bytes are zero, which is a specific condition
-	if n == 4 && isZeroes(smallBuffer[:]) {
-		return nil
-	}
-
-	// If the header is not valid, return an error
-	return errors.New("chunk header is not valid")
 }
 
 func (d *DecryptReader) readHeader() (*EncryptedFileHeader, error) {
