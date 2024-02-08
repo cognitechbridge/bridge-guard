@@ -49,7 +49,9 @@ func (d *DecryptReader) Read(p []byte) (int, error) {
 		if bytesRead == 0 {
 			break
 		}
-
+		if uint64(bytesRead) < d.chunkSize {
+			d.nonce.setLastChunkFlag()
+		}
 		crypto := NewCrypto(*d.key, d.nonce)
 		decryptedData, err := crypto.open(buffer[:bytesRead])
 		if err != nil {

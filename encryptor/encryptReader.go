@@ -146,7 +146,9 @@ func (e *EncryptReader) processWithChunkWorkers(size int64) error {
 		if err != nil {
 			return err
 		}
-
+		if n < len(buffer) {
+			e.nonce.setLastChunkFlag()
+		}
 		dataChan <- ChunkData{Sequence: sequence, Data: buffer[:n], nonce: e.nonce}
 		e.nonce.increaseBe()
 		sequence++

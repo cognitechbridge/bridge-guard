@@ -5,6 +5,14 @@ import (
 	"math/big"
 )
 
+const (
+	lastChunkFlag = 0x01
+)
+
+func (nc *Nonce) setLastChunkFlag() {
+	nc[len(nc)-1] = lastChunkFlag
+}
+
 func (nc *Nonce) increaseBe() {
 	number := new(big.Int).SetBytes(nc[:])
 	number.Add(number, big.NewInt(1))
