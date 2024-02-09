@@ -1,6 +1,7 @@
 package encryptor
 
 import (
+	"ctb-cli/encryptor/stream"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -8,63 +9,31 @@ import (
 )
 
 type DecryptReader struct {
-	source        io.Reader
-	key           *Key
-	nonce         Nonce
-	buffer        []byte
-	chunkSize     uint64
-	chunkCounter  uint64
-	lastChunkRead bool
+	source       io.Reader
+	chunkSize    uint64
+	chunkCounter uint64
+	reader       *stream.Reader
 }
 
 func NewDecryptReader(key *Key, source io.Reader) (*DecryptReader, error) {
-
+	reader, err := stream.NewReader(key[:], source)
+	if err != nil {
+		return nil, err
+	}
 	return &DecryptReader{
 		source: source,
-		key:    key,
-		nonce:  Nonce{},
-		buffer: make([]byte, 0),
+		reader: reader,
 	}, nil
 }
 
 func (d *DecryptReader) Read(p []byte) (int, error) {
-	if d.chunkSize == 0 {
+	if d.chunkCounter == 0 {
 		if err := d.readFileHeader(); err != nil {
 			return 0, err
 		}
-	}
-
-	for len(d.buffer) < len(p) {
-		buffer := make([]byte, d.chunkSize)
-		bytesRead, err := d.source.Read(buffer)
-		if err != nil {
-			return 0, err
-		}
-		if bytesRead == 0 {
-			break
-		}
-		if uint64(bytesRead) < d.chunkSize {
-			d.lastChunkRead = true
-			d.nonce.setLastChunkFlag()
-		}
-		crypto := NewCrypto(*d.key, d.nonce)
-		decryptedData, err := crypto.open(buffer[:bytesRead])
-		if err != nil {
-			return 0, err
-		}
 		d.chunkCounter++
-
-		d.buffer = append(d.buffer, decryptedData...)
-		d.nonce.increaseBe()
 	}
-
-	if len(d.buffer) == 0 {
-		return 0, io.EOF
-	}
-
-	n := copy(p, d.buffer)
-	d.buffer = d.buffer[n:]
-	return n, nil
+	return d.reader.Read(p)
 }
 
 func (d *DecryptReader) readFileHeader() error {

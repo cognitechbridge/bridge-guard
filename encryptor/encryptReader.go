@@ -4,7 +4,6 @@ import (
 	"ctb-cli/encryptor/stream"
 	"encoding/json"
 	"io"
-	"sync"
 )
 
 const numWorkers = 4
@@ -15,21 +14,17 @@ var (
 
 // EncryptReader is a struct for generating encrypted files.
 type EncryptReader struct {
-	sync.Mutex
-	//
 	header       EncryptedFileHeader
 	chunkCounter uint32
-	//
-	dir io.Writer
-	//
-	writer *stream.Writer
+	dst          io.Writer
+	writer       *stream.Writer
 }
 
 // NewEncryptReader creates a new EncryptReader.
-func NewEncryptReader(source io.Writer, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlobs []string) *EncryptReader {
-	writer, _ := stream.NewWriter(key[:], source)
+func NewEncryptReader(dst io.Writer, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlobs []string) *EncryptReader {
+	writer, _ := stream.NewWriter(key[:], dst)
 	return &EncryptReader{
-		dir:          source,
+		dst:          dst,
 		header:       NewEncryptedFileHeader(chunkSize, clientId, fileId, recoveryBlobs),
 		chunkCounter: 0,
 		writer:       writer,
@@ -48,7 +43,7 @@ func (e *EncryptReader) Write(buf []byte) (int, error) {
 
 // appendHeader appends the header to the buffer.
 func (e *EncryptReader) appendHeader() error {
-	_, err := e.dir.Write(EncryptedFileVersion)
+	_, err := e.dst.Write(EncryptedFileVersion)
 	if err != nil {
 		return err
 	}
@@ -64,8 +59,8 @@ func (e *EncryptReader) appendHeader() error {
 func (e *EncryptReader) writeContext(context string) {
 	contextLength := len(context)
 	// Assumes context length fits in 2 bytes
-	_, _ = e.dir.Write([]byte{byte(contextLength), byte(contextLength >> 8)})
-	_, _ = e.dir.Write([]byte(context))
+	_, _ = e.dst.Write([]byte{byte(contextLength), byte(contextLength >> 8)})
+	_, _ = e.dst.Write([]byte(context))
 }
 
 func (e *EncryptReader) Close() error {
