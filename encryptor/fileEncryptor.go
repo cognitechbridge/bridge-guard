@@ -24,10 +24,10 @@ func NewFileEncryptor(keystoreRepo KeystoreRepo, chunkSize uint64, clientId stri
 	}
 }
 
-func (f *FileEncryptor) Encrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
+func (f *FileEncryptor) Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
 	pair, err := f.keystoreRepo.GenerateKeyPair(fileId)
 	if err != nil {
 		return nil, err
 	}
-	return NewEncryptReader(reader, pair.Key, f.chunkSize, f.clientId, fileId, pair.RecoveryBlobs), nil
+	return NewEncryptReader(writer, pair.Key, f.chunkSize, f.clientId, fileId, pair.RecoveryBlobs), nil
 }

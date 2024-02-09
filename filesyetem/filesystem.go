@@ -35,7 +35,7 @@ type Downloader interface {
 }
 
 type Encryptor interface {
-	Encrypt(reader io.Reader, fileId string) (read io.Reader, err error)
+	Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error)
 }
 
 type Decryptor interface {

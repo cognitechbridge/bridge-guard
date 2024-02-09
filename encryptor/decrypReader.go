@@ -8,12 +8,13 @@ import (
 )
 
 type DecryptReader struct {
-	source       io.Reader
-	key          *Key
-	nonce        Nonce
-	buffer       []byte
-	chunkSize    uint64
-	chunkCounter uint64
+	source        io.Reader
+	key           *Key
+	nonce         Nonce
+	buffer        []byte
+	chunkSize     uint64
+	chunkCounter  uint64
+	lastChunkRead bool
 }
 
 func NewDecryptReader(key *Key, source io.Reader) (*DecryptReader, error) {
@@ -43,6 +44,7 @@ func (d *DecryptReader) Read(p []byte) (int, error) {
 			break
 		}
 		if uint64(bytesRead) < d.chunkSize {
+			d.lastChunkRead = true
 			d.nonce.setLastChunkFlag()
 		}
 		crypto := NewCrypto(*d.key, d.nonce)
