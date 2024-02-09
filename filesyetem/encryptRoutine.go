@@ -25,19 +25,23 @@ func (f *FileSystem) encrypt(fileId string) (err error) {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
 
-	//Create encrypted reader
-	encryptedReader, err := f.encryptor.Encrypt(inputFile, fileId)
-
 	//Create output file
 	outPath := filepath.Join(f.ObjectPath, fileId)
 	outFile, err := os.Create(outPath)
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
-	defer outFile.Close()
+	//defer outFile.Close()
+
+	//Create encrypted reader
+	encryptedWriter, err := f.encryptor.Encrypt(outFile, fileId)
 
 	//Copy to output
-	_, err = io.Copy(outFile, encryptedReader)
+	_, err = io.Copy(encryptedWriter, inputFile)
+	if err != nil {
+		return
+	}
+	err = encryptedWriter.Close()
 	if err != nil {
 		return
 	}
