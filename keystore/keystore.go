@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"ctb-cli/types"
 	"fmt"
+	"golang.org/x/crypto/curve25519"
 )
 
 type Key = types.Key
@@ -59,7 +60,7 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := ks.DeserializeDataKey(sk, ks.privateKey)
+	key, err := ks.OpenDataKey(sk, ks.privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -70,14 +71,18 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 // persistKey handles the logic of persisting a key
 func (ks *KeyStore) persistKey(keyID string, key Key) error {
 	// Implement serialization and hashing logic
-	pk, err := derivePublicFromPrivateKey(ks.privateKey)
+	pk, err := ks.getPublicKey()
 	if err != nil {
 		return err
 	}
-	keyHashed, err := ks.SerializeDataKey(key[:], pk)
+	keyHashed, err := ks.SealDataKey(key[:], pk)
 	if err != nil {
 		return err
 	}
 
 	return ks.persist.SaveDataKey(keyID, keyHashed)
+}
+
+func (ks *KeyStore) getPublicKey() ([]byte, error) {
+	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
 }

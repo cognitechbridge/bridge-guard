@@ -15,7 +15,7 @@ func (ks *KeyStore) LoadKeys() error {
 	if err != nil {
 		return err
 	}
-	ks.privateKey, err = ks.DeserializePrivateKey(serializedPrivateKey, &ks.rootKey)
+	ks.privateKey, err = ks.OpenPrivateKey(serializedPrivateKey, &ks.rootKey)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (ks *KeyStore) GenerateClientKeys() (err error) {
 	privateKey := types.Key{}
 	io.ReadFull(rand.Reader, privateKey[:])
 	//Save private key
-	serialized, err := ks.SerializePrivateKey(privateKey[:], &ks.rootKey)
+	serialized, err := ks.SealPrivateKey(privateKey[:], &ks.rootKey)
 	if err != nil {
 		return err
 	}
