@@ -2,25 +2,28 @@ package keystore
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
+	"ctb-cli/types"
+	"fmt"
+	"io"
 )
 
 func (ks *KeyStore) LoadKeys() error {
-	if err := ks.loadPublicKey(); err != nil {
-		return err
-	}
+	//if err := ks.loadPublicKey(); err != nil {
+	//	return err
+	//}
 
 	if ks.privateKey != nil {
 		return nil
 	}
-	privateKey, err := ks.persist.GetPrivateKey()
+	serializedPrivateKey, err := ks.persist.GetPrivateKey()
 	if err != nil {
 		return err
 	}
-	ks.privateKey, err = ks.DeserializePrivateKey(privateKey, &ks.rootKey)
-	if err != nil {
-		return err
-	}
+	privateKey, err := ks.DeserializePrivateKey(serializedPrivateKey, &ks.rootKey)
+	fmt.Printf("%v", privateKey)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -35,19 +38,10 @@ func (ks *KeyStore) loadPublicKey() error {
 
 func (ks *KeyStore) GenerateClientKeys() (err error) {
 	//Generate private key
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return err
-	}
-	//Generate public key
-	publicKey := &privateKey.PublicKey
-	//Save public key
-	err = ks.persist.SavePublicKey(ks.clintId, publicKey)
-	if err != nil {
-		return err
-	}
+	privateKey := types.Key{}
+	io.ReadFull(rand.Reader, privateKey[:])
 	//Save private key
-	serialized, err := ks.SerializePrivateKey(privateKey, &ks.rootKey)
+	serialized, err := ks.SerializePrivateKey(privateKey[:], &ks.rootKey)
 	if err != nil {
 		return err
 	}

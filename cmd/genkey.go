@@ -17,6 +17,10 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+		err = keyStore.LoadKeys()
+		if err != nil {
+			panic(err)
+		}
 	},
 }
 
