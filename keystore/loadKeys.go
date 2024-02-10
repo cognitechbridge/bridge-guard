@@ -3,14 +3,10 @@ package keystore
 import (
 	"crypto/rand"
 	"ctb-cli/types"
-	"fmt"
 	"io"
 )
 
 func (ks *KeyStore) LoadKeys() error {
-	//if err := ks.loadPublicKey(); err != nil {
-	//	return err
-	//}
 
 	if ks.privateKey != nil {
 		return nil
@@ -19,20 +15,10 @@ func (ks *KeyStore) LoadKeys() error {
 	if err != nil {
 		return err
 	}
-	privateKey, err := ks.DeserializePrivateKey(serializedPrivateKey, &ks.rootKey)
-	fmt.Printf("%v", privateKey)
-	//if err != nil {
-	//	return err
-	//}
-	return nil
-}
-
-func (ks *KeyStore) loadPublicKey() error {
-	pub, err := ks.persist.GetPublicKey(ks.clintId)
+	ks.privateKey, err = ks.DeserializePrivateKey(serializedPrivateKey, &ks.rootKey)
 	if err != nil {
 		return err
 	}
-	ks.publicKey = pub
 	return nil
 }
 
