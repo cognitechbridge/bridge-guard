@@ -29,5 +29,5 @@ func (f *FileEncryptor) Encrypt(writer io.Writer, fileId string) (write io.Write
 	if err != nil {
 		return nil, err
 	}
-	return NewEncryptReader(writer, pair.Key, f.chunkSize, f.clientId, fileId, pair.RecoveryBlobs), nil
+	return NewWriter(writer, pair.Key, f.chunkSize, f.clientId, fileId, pair.RecoveryBlobs)
 }

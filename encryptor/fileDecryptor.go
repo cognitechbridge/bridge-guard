@@ -19,6 +19,6 @@ func (f *FileDecryptor) Decrypt(reader io.Reader, fileId string) (read io.Reader
 	if err != nil {
 		return nil, err
 	}
-	read, err = NewDecryptReader(key, reader)
+	read, err = NewReader(key, reader)
 	return read, err
 }
