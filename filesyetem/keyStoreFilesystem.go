@@ -84,16 +84,16 @@ func (k *KeyStoreFilesystem) SavePublicKey(id string, key *rsa.PublicKey) (err e
 	return nil
 }
 
-func (k *KeyStoreFilesystem) GetPrivateKey() ([]byte, error) {
+func (k *KeyStoreFilesystem) GetPrivateKey() (string, error) {
 	p := filepath.Join(k.getPrivatePath(), k.clientId)
 	content, err := os.ReadFile(p)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return content, nil
+	return string(content), nil
 }
 
-func (k *KeyStoreFilesystem) SavePrivateKey(key []byte) (err error) {
+func (k *KeyStoreFilesystem) SavePrivateKey(key string) (err error) {
 	p := filepath.Join(k.getPrivatePath(), k.clientId)
 	file, err := os.Create(p)
 	if err != nil {
@@ -101,37 +101,37 @@ func (k *KeyStoreFilesystem) SavePrivateKey(key []byte) (err error) {
 	}
 	defer file.Close()
 
-	_, err = file.Write(key)
+	_, err = file.WriteString(key)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (k *KeyStoreFilesystem) SaveDataKey(keyId string, key []byte) error {
+func (k *KeyStoreFilesystem) SaveDataKey(keyId string, key string) error {
 	p := filepath.Join(k.getDataPath(), keyId)
 	file, err := os.Create(p)
 	defer file.Close()
 	if err != nil {
 		return err
 	}
-	_, err = file.Write(key)
+	_, err = file.Write([]byte(key))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (k *KeyStoreFilesystem) GetDataKey(keyID string) ([]byte, error) {
+func (k *KeyStoreFilesystem) GetDataKey(keyID string) (string, error) {
 	p := filepath.Join(k.getDataPath(), keyID)
 	file, err := os.Open(p)
 	defer file.Close()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	content, err := io.ReadAll(file)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return content, err
+	return string(content), err
 }

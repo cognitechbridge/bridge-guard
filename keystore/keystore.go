@@ -12,8 +12,7 @@ type Key = types.Key
 type KeyStore struct {
 	clintId       string
 	rootKey       Key
-	privateKey    *rsa.PrivateKey
-	publicKey     *rsa.PublicKey
+	privateKey    []byte
 	recoveryItems []StoreRecoveryItem
 	persist       Persist
 }
@@ -25,10 +24,10 @@ type StoreRecoveryItem struct {
 
 // Persist KeyStorePersist is an interface for persisting keys
 type Persist interface {
-	SaveDataKey(keyId string, key []byte) error
-	GetDataKey(keyID string) ([]byte, error)
-	GetPrivateKey() ([]byte, error)
-	SavePrivateKey(key []byte) (err error)
+	SaveDataKey(keyId string, key string) error
+	GetDataKey(keyID string) (string, error)
+	GetPrivateKey() (string, error)
+	SavePrivateKey(key string) (err error)
 	GetPublicKey(id string) (*rsa.PublicKey, error)
 	SavePublicKey(id string, key *rsa.PublicKey) (err error)
 }
@@ -71,7 +70,11 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 // persistKey handles the logic of persisting a key
 func (ks *KeyStore) persistKey(keyID string, key Key) error {
 	// Implement serialization and hashing logic
-	keyHashed, err := ks.SerializeDataKey(key[:], ks.publicKey)
+	pk, err := derivePublicFromPrivateKey(ks.privateKey)
+	if err != nil {
+		return err
+	}
+	keyHashed, err := ks.SerializeDataKey(key[:], pk)
 	if err != nil {
 		return err
 	}
