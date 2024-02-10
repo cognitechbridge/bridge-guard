@@ -18,8 +18,8 @@ const (
 	info = "cognitechbridge.com/v1/X25519"
 )
 
-// DeserializePrivateKey encrypts and serializes the private key
-func (*KeyStore) DeserializePrivateKey(serialized string, rootKey *types.Key) ([]byte, error) {
+// OpenPrivateKey encrypts and serializes the private key
+func (*KeyStore) OpenPrivateKey(serialized string, rootKey *types.Key) ([]byte, error) {
 	parts := strings.Split(serialized, "\n")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid serialized key)")
@@ -47,8 +47,8 @@ func (*KeyStore) DeserializePrivateKey(serialized string, rootKey *types.Key) ([
 	return deciphered, nil
 }
 
-// SerializePrivateKey encrypts and serializes the private key
-func (*KeyStore) SerializePrivateKey(privateKey []byte, rootKey *types.Key) (string, error) {
+// SealPrivateKey encrypts and serializes the private key
+func (*KeyStore) SealPrivateKey(privateKey []byte, rootKey *types.Key) (string, error) {
 	salt := make([]byte, 16)
 	_, err := rand.Read(salt)
 	if err != nil {
@@ -80,8 +80,8 @@ func deriveKey(rootKey []byte, salt []byte) (derivedKey types.Key, err error) {
 	return
 }
 
-// SerializeDataKey encrypts and serializes the key pair
-func (*KeyStore) SerializeDataKey(key []byte, publicKey []byte) (string, error) {
+// SealDataKey encrypts and serializes the key pair
+func (*KeyStore) SealDataKey(key []byte, publicKey []byte) (string, error) {
 	ephemeralSecret := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, ephemeralSecret[:])
 	if err != nil {
@@ -119,8 +119,8 @@ func (*KeyStore) SerializeDataKey(key []byte, publicKey []byte) (string, error) 
 	return res, nil
 }
 
-// DeserializeDataKey decrypts and deserializes the key pair
-func (*KeyStore) DeserializeDataKey(serialized string, privateKey []byte) (*Key, error) {
+// OpenDataKey decrypts and deserializes the key pair
+func (*KeyStore) OpenDataKey(serialized string, privateKey []byte) (*Key, error) {
 	parts := strings.Split(serialized, "\n")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid serialized key)")
@@ -132,7 +132,7 @@ func (*KeyStore) DeserializeDataKey(serialized string, privateKey []byte) (*Key,
 		return nil, fmt.Errorf("invalid serialized key")
 	}
 
-	publicKey, err := derivePublicFromPrivateKey(privateKey)
+	publicKey, err := curve25519.X25519(privateKey, curve25519.Basepoint)
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}
@@ -161,8 +161,4 @@ func (*KeyStore) DeserializeDataKey(serialized string, privateKey []byte) (*Key,
 	copy(key[:], deciphered)
 
 	return &key, nil
-}
-
-func derivePublicFromPrivateKey(privateKey []byte) ([]byte, error) {
-	return curve25519.X25519(privateKey, curve25519.Basepoint)
 }
