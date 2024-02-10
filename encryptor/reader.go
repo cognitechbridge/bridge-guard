@@ -8,35 +8,36 @@ import (
 	"io"
 )
 
-type DecryptReader struct {
+type Reader struct {
 	source       io.Reader
-	chunkSize    uint64
-	chunkCounter uint64
-	reader       *stream.Reader
+	header       *EncryptedFileHeader
+	notFirst     bool
+	streamReader *stream.Reader
 }
 
-func NewDecryptReader(key *Key, source io.Reader) (*DecryptReader, error) {
+func NewReader(key *Key, source io.Reader) (*Reader, error) {
 	reader, err := stream.NewReader(key[:], source)
 	if err != nil {
 		return nil, err
 	}
-	return &DecryptReader{
-		source: source,
-		reader: reader,
+	return &Reader{
+		source:       source,
+		notFirst:     false,
+		streamReader: reader,
 	}, nil
 }
 
-func (d *DecryptReader) Read(p []byte) (int, error) {
-	if d.chunkCounter == 0 {
+func (d *Reader) Read(p []byte) (int, error) {
+	if d.notFirst == false {
 		if err := d.readFileHeader(); err != nil {
 			return 0, err
 		}
-		d.chunkCounter++
+		d.notFirst = true
 	}
-	return d.reader.Read(p)
+	return d.streamReader.Read(p)
 }
 
-func (d *DecryptReader) readFileHeader() error {
+func (d *Reader) readFileHeader() error {
 	err, err2 := d.readFileVersion()
 	if err2 != nil {
 		return err2
@@ -46,12 +47,12 @@ func (d *DecryptReader) readFileHeader() error {
 	if err != nil {
 		return err
 	}
-	d.chunkSize = header.ChunkSize + uint64(GetOverHeadSize())
+	d.header = header
 
 	return err
 }
 
-func (d *DecryptReader) readFileVersion() (error, error) {
+func (d *Reader) readFileVersion() (error, error) {
 	// Create a buffer to hold the version byte
 	versionBuffer := make([]byte, 1)
 	_, err := io.ReadFull(d.source, versionBuffer)
@@ -67,7 +68,7 @@ func (d *DecryptReader) readFileVersion() (error, error) {
 	return err, nil
 }
 
-func (d *DecryptReader) readHeader() (*EncryptedFileHeader, error) {
+func (d *Reader) readHeader() (*EncryptedFileHeader, error) {
 	headerContext, err := d.readContext()
 	if err != nil {
 		return nil, err
@@ -83,7 +84,7 @@ func (d *DecryptReader) readHeader() (*EncryptedFileHeader, error) {
 	return &fileHeader, nil
 }
 
-func (d *DecryptReader) readContext() ([]byte, error) {
+func (d *Reader) readContext() ([]byte, error) {
 	// Read context size
 	contextSize, err := d.readContextSize()
 	if err != nil {
@@ -102,7 +103,7 @@ func (d *DecryptReader) readContext() ([]byte, error) {
 	return bufferContext, nil
 }
 
-func (d *DecryptReader) readContextSize() (uint16, error) {
+func (d *Reader) readContextSize() (uint16, error) {
 	var buffer2 [2]byte
 	n, err := d.source.Read(buffer2[:])
 	if err != nil {
@@ -111,6 +112,6 @@ func (d *DecryptReader) readContextSize() (uint16, error) {
 	if n != 2 {
 		return 0, errors.New("error reading context size")
 	}
-	contextSize := binary.LittleEndian.Uint16(buffer2[:])
+	contextSize := binary.BigEndian.Uint16(buffer2[:])
 	return contextSize, nil
 }
