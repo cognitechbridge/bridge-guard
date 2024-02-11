@@ -1,10 +1,12 @@
-package encryptor
+package file_crypto
 
 import (
 	"ctb-cli/encryptor/recovery"
 	"ctb-cli/types"
 	"io"
 )
+
+type Key = types.Key
 
 type FileCrypto struct {
 	keystoreRepo KeystoreRepo
@@ -17,7 +19,7 @@ type KeystoreRepo interface {
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 }
 
-func NewFileCrypto(keystoreRepo KeystoreRepo, clientId string) FileCrypto {
+func New(keystoreRepo KeystoreRepo, clientId string) FileCrypto {
 	return FileCrypto{
 		keystoreRepo: keystoreRepo,
 		clientId:     clientId,
@@ -37,7 +39,7 @@ func (f *FileCrypto) Encrypt(writer io.Writer, fileId string) (write io.WriteClo
 	if err != nil {
 		return nil, err
 	}
-	return NewWriter(writer, pair.Key, f.clientId, fileId, pair.RecoveryBlobs)
+	return newWriter(writer, pair.Key, f.clientId, fileId, pair.RecoveryBlobs)
 }
 
 func (f *FileCrypto) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
@@ -45,6 +47,6 @@ func (f *FileCrypto) Decrypt(reader io.Reader, fileId string) (read io.Reader, e
 	if err != nil {
 		return nil, err
 	}
-	read, err = NewReader(key, reader)
+	read, err = newReader(key, reader)
 	return read, err
 }

@@ -7,10 +7,11 @@ package cmd
 
 import (
 	"ctb-cli/config"
-	"ctb-cli/encryptor"
+	"ctb-cli/encryptor/file_crypto"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
+	"ctb-cli/types"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -81,7 +82,7 @@ var fileSystem *filesyetem.FileSystem
 var keyStore *keystore.KeyStore
 
 func initManagerClient() {
-	var key encryptor.Key
+	var key types.Key
 
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
@@ -101,7 +102,7 @@ func initManagerClient() {
 		return
 	}
 
-	fileCrypto := encryptor.NewFileCrypto(keyStore, clientId)
+	fileCrypto := file_crypto.New(keyStore, clientId)
 
 	fileSystem = filesyetem.NewFileSystem(cloudClient, &fileCrypto)
 }

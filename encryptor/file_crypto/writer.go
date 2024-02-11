@@ -1,7 +1,8 @@
-package encryptor
+package file_crypto
 
 import (
 	"ctb-cli/encryptor/stream"
+	"ctb-cli/types"
 	"encoding/json"
 	"io"
 )
@@ -10,29 +11,29 @@ var (
 	EncryptedFileVersion = []byte{1} // Define the file version
 )
 
-// Writer is a struct for generating encrypted files.
-type Writer struct {
-	header       EncryptedFileHeader
+// writer is a struct for generating encrypted files.
+type writer struct {
+	header       fileHeader
 	notFirst     bool
 	dst          io.Writer
 	streamWriter *stream.Writer
 }
 
-// NewWriter creates a new Writer.
-func NewWriter(dst io.Writer, key Key, clientId string, fileId string, recoveryBlobs []string) (*Writer, error) {
-	writer, err := stream.NewWriter(key[:], dst)
+// newWriter creates a new writer.
+func newWriter(dst io.Writer, key types.Key, clientId string, fileId string, recoveryBlobs []string) (*writer, error) {
+	streamWriter, err := stream.NewWriter(key[:], dst)
 	if err != nil {
 		return nil, err
 	}
-	return &Writer{
+	return &writer{
 		dst:          dst,
-		header:       NewEncryptedFileHeader(clientId, fileId, recoveryBlobs),
+		header:       newEncryptedFileHeader(clientId, fileId, recoveryBlobs),
 		notFirst:     false,
-		streamWriter: writer,
+		streamWriter: streamWriter,
 	}, nil
 }
 
-func (e *Writer) Write(buf []byte) (int, error) {
+func (e *writer) Write(buf []byte) (int, error) {
 	if e.notFirst == false {
 		if err := e.appendHeader(); err != nil {
 			return 0, err
@@ -43,7 +44,7 @@ func (e *Writer) Write(buf []byte) (int, error) {
 }
 
 // appendHeader appends the header to the buffer.
-func (e *Writer) appendHeader() (err error) {
+func (e *writer) appendHeader() (err error) {
 	_, err = e.dst.Write(EncryptedFileVersion)
 	if err != nil {
 		return err
@@ -57,7 +58,7 @@ func (e *Writer) appendHeader() (err error) {
 }
 
 // writeContext writes a string to the buffer with its length.
-func (e *Writer) writeContext(context string) (err error) {
+func (e *writer) writeContext(context string) (err error) {
 	contextLength := len(context)
 	// Assumes context length fits in 2 bytes
 	_, err = e.dst.Write([]byte{byte(contextLength >> 8), byte(contextLength)})
@@ -71,6 +72,6 @@ func (e *Writer) writeContext(context string) (err error) {
 	return nil
 }
 
-func (e *Writer) Close() error {
+func (e *writer) Close() error {
 	return e.streamWriter.Close()
 }
