@@ -7,7 +7,7 @@ package cmd
 
 import (
 	"ctb-cli/config"
-	"ctb-cli/encryptor/file_crypto"
+	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/filesyetem"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
