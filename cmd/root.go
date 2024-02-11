@@ -9,6 +9,7 @@ import (
 	"ctb-cli/config"
 	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/filesyetem"
+	"ctb-cli/filesyetem/key_persist"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/types"
@@ -89,7 +90,9 @@ func initManagerClient() {
 
 	clientId, err := config.Workspace.GetClientId()
 
-	keyStorePersist := filesyetem.NewKeyStoreFilesystem(clientId)
+	root, _ := filesyetem.GetRepoCtbRoot()
+
+	keyStorePersist := key_persist.New(clientId, root)
 
 	keyStore = keystore.NewKeyStore(clientId, key, keyStorePersist)
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
