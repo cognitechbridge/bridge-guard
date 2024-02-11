@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"ctb-cli/keystore"
 	"ctb-cli/types"
 
 	"encoding/base64"
@@ -14,7 +13,7 @@ import (
 )
 
 type GeneratedKey struct {
-	Key           keystore.Key
+	Key           types.Key
 	RecoveryBlobs []string
 }
 
