@@ -3,9 +3,11 @@ package keystore
 import (
 	"crypto/rsa"
 	"ctb-cli/crypto/key_crypto"
+	"ctb-cli/crypto/recovery"
 	"ctb-cli/types"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
+	"os"
 )
 
 type Key = types.Key
@@ -66,6 +68,23 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 
 func (ks *KeyStore) GetRecoveryItems() ([]types.RecoveryItem, error) {
 	return ks.recoveryItems, nil
+}
+
+func (ks *KeyStore) AddRecoveryKey(inPath string) error {
+	path := os.ExpandEnv(inPath)
+	pemBytes, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	rec, err := recovery.UnmarshalRecoveryItem(pemBytes)
+	if err != nil {
+		return err
+	}
+
+	ks.recoveryItems = append(ks.recoveryItems, *rec)
+
+	return nil
 }
 
 // persistKey handles the logic of persisting a key

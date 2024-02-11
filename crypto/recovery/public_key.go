@@ -1,4 +1,4 @@
-package keystore
+package recovery
 
 import (
 	"crypto/rsa"
@@ -8,30 +8,24 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
-	"os"
+	"fmt"
 )
 
-func (ks *KeyStore) AddRecoveryKey(inPath string) error {
-	path := os.ExpandEnv(inPath)
-	pemBytes, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
+func UnmarshalRecoveryItem(pemBytes []byte) (*types.RecoveryItem, error) {
 	block, _ := pem.Decode(pemBytes)
 	if block == nil || block.Type != "PUBLIC KEY" {
-		return err
+		return nil, fmt.Errorf("invalid public key")
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pubKey, ok := pub.(*rsa.PublicKey)
 
 	if !ok {
-		return errors.New("public key is not of type RSA Public Key")
+		return nil, errors.New("public key is not of type RSA Public Key")
 	}
 
 	rec := types.RecoveryItem{}
@@ -40,12 +34,10 @@ func (ks *KeyStore) AddRecoveryKey(inPath string) error {
 
 	pubASN1, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	hash := sha1.Sum(pubASN1)
 	rec.Sha1 = hex.EncodeToString(hash[:])
 
-	ks.recoveryItems = append(ks.recoveryItems, rec)
-
-	return nil
+	return &rec, nil
 }
