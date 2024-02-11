@@ -61,6 +61,7 @@ func NewFileSystem(dn Downloader, fileCrypto FileCrypto) *FileSystem {
 	)
 
 	go fileSys.StartEncryptRoutine()
+	go fileSys.StartUploadRoutine()
 
 	return &fileSys
 }

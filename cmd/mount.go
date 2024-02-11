@@ -14,8 +14,7 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `mount`,
 	Run: func(cmd *cobra.Command, args []string) {
-		go fileSystem.StartUploadRoutine()
-		ctbFuse := fuse.NewCache(fileSystem)
+		ctbFuse := fuse.New(fileSystem)
 		ctbFuse.Mount()
 	},
 }
