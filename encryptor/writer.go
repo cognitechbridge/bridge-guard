@@ -19,14 +19,14 @@ type Writer struct {
 }
 
 // NewWriter creates a new Writer.
-func NewWriter(dst io.Writer, key Key, chunkSize uint64, clientId string, fileId string, recoveryBlobs []string) (*Writer, error) {
+func NewWriter(dst io.Writer, key Key, clientId string, fileId string, recoveryBlobs []string) (*Writer, error) {
 	writer, err := stream.NewWriter(key[:], dst)
 	if err != nil {
 		return nil, err
 	}
 	return &Writer{
 		dst:          dst,
-		header:       NewEncryptedFileHeader(chunkSize, clientId, fileId, recoveryBlobs),
+		header:       NewEncryptedFileHeader(clientId, fileId, recoveryBlobs),
 		notFirst:     false,
 		streamWriter: writer,
 	}, nil
