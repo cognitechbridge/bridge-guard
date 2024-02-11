@@ -101,8 +101,7 @@ func initManagerClient() {
 		return
 	}
 
-	fileEncryptor := encryptor.NewFileEncryptor(keyStore, clientId)
-	fileDecryptor := encryptor.NewFileDecryptor(keyStore)
+	fileCrypto := encryptor.NewFileCrypto(keyStore, clientId)
 
-	fileSystem = filesyetem.NewFileSystem(cloudClient, &fileEncryptor, &fileDecryptor)
+	fileSystem = filesyetem.NewFileSystem(cloudClient, &fileCrypto)
 }

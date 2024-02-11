@@ -12,8 +12,7 @@ import (
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
 	//interfaces
-	encryptor  Encryptor
-	decryptor  Decryptor
+	fileCrypto FileCrypto
 	downloader Downloader
 
 	//internal queues and channels
@@ -34,20 +33,16 @@ type Downloader interface {
 	Upload(reader io.Reader, fileId string) error
 }
 
-type Encryptor interface {
+type FileCrypto interface {
 	Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error)
-}
-
-type Decryptor interface {
 	Decrypt(reader io.Reader, fileId string) (read io.Reader, err error)
 }
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(dn Downloader, en Encryptor, de Decryptor) *FileSystem {
+func NewFileSystem(dn Downloader, fileCrypto FileCrypto) *FileSystem {
 	fileSys := FileSystem{
 		downloader: dn,
-		encryptor:  en,
-		decryptor:  de,
+		fileCrypto: fileCrypto,
 
 		encryptChan: make(chan encryptChanItem, 10),
 		uploadChan:  make(chan uploadChanItem, 10),
@@ -251,7 +246,7 @@ func (f *FileSystem) ObjectResolver(id string, writer io.Writer) (err error) {
 		}
 	}
 	file, _ := os.Open(path)
-	decryptedReader, _ := f.decryptor.Decrypt(file, id)
+	decryptedReader, _ := f.fileCrypto.Decrypt(file, id)
 	_, err = io.Copy(writer, decryptedReader)
 	return
 }
