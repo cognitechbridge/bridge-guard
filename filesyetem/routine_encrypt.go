@@ -31,7 +31,7 @@ func (f *FileSystem) encrypt(fileId string) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
-	//defer outFile.Close()
+	defer outFile.Close()
 
 	//Create encrypted reader
 	encryptedWriter, err := f.fileCrypto.Encrypt(outFile, fileId)
