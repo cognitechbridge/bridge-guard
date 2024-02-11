@@ -1,7 +1,7 @@
 package file_crypto
 
 import (
-	"ctb-cli/encryptor/stream"
+	"ctb-cli/crypto/stream"
 	"ctb-cli/types"
 	"encoding/binary"
 	"encoding/json"

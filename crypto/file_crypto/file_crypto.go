@@ -1,7 +1,7 @@
 package file_crypto
 
 import (
-	"ctb-cli/encryptor/recovery"
+	"ctb-cli/crypto/recovery"
 	"ctb-cli/types"
 	"io"
 )
