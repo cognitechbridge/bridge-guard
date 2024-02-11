@@ -1,7 +1,5 @@
 package encryptor
 
-const DefaultChunkSize = 1024
-
 // EncryptedFileHeader represents the header of an encryption file
 type EncryptedFileHeader struct {
 	Version    string   `json:"version"`
