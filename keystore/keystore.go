@@ -23,7 +23,7 @@ type KeyStore struct {
 
 // Persist KeyStorePersist is an interface for persisting keys
 type Persist interface {
-	SaveDataKey(keyId string, key string) error
+	SaveDataKey(keyId, key, recipient string) error
 	GetDataKey(keyID string) (string, error)
 	GetPrivateKey() (string, error)
 	SavePrivateKey(key string) (err error)
@@ -46,7 +46,17 @@ func (ks *KeyStore) Insert(keyID string, key Key) error {
 	if err := ks.LoadKeys(); err != nil {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
-	return ks.persistKey(keyID, key)
+
+	pk, err := ks.getPublicKey()
+	if err != nil {
+		return err
+	}
+	keyHashed, err := key_crypto.SealDataKey(key[:], pk)
+	if err != nil {
+		return err
+	}
+
+	return ks.persist.SaveDataKey(keyID, keyHashed, ks.clintId)
 }
 
 // Get retrieves a key from the key store
@@ -64,6 +74,24 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 	}
 
 	return key, nil
+}
+
+func (ks *KeyStore) Share(keyId string, recipient []byte, recipientClientId string) error {
+	if err := ks.LoadKeys(); err != nil {
+		return fmt.Errorf("cannot load keys: %v", err)
+	}
+
+	key, err := ks.Get(keyId)
+	if err != nil {
+		return fmt.Errorf("cannot load key: %v", err)
+	}
+
+	keyHashed, err := key_crypto.SealDataKey(key[:], recipient)
+	if err != nil {
+		return err
+	}
+
+	return ks.persist.SaveDataKey(keyId, keyHashed, recipientClientId)
 }
 
 func (ks *KeyStore) GetRecoveryItems() ([]types.RecoveryItem, error) {
@@ -85,21 +113,6 @@ func (ks *KeyStore) AddRecoveryKey(inPath string) error {
 	ks.recoveryItems = append(ks.recoveryItems, *rec)
 
 	return nil
-}
-
-// persistKey handles the logic of persisting a key
-func (ks *KeyStore) persistKey(keyID string, key Key) error {
-	// Implement serialization and hashing logic
-	pk, err := ks.getPublicKey()
-	if err != nil {
-		return err
-	}
-	keyHashed, err := key_crypto.SealDataKey(key[:], pk)
-	if err != nil {
-		return err
-	}
-
-	return ks.persist.SaveDataKey(keyID, keyHashed)
 }
 
 func (ks *KeyStore) getPublicKey() ([]byte, error) {

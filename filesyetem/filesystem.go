@@ -145,7 +145,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return
 	}
-	_ = f.openLinkFile(key.String()).Create(path, 0)
+	_ = f.openLinkFile(path).Create(key.String(), 0)
 	err = f.objectCacheSystem.Create(key.String())
 	if err != nil {
 		return
@@ -254,5 +254,5 @@ func (f *FileSystem) ObjectResolver(id string, writer io.Writer) (err error) {
 }
 
 func (f *FileSystem) openLinkFile(path string) *link.Link {
-	return link.New(path, f.rootPath)
+	return link.New(path, f.fileSystemPath)
 }
