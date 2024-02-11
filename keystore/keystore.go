@@ -30,7 +30,7 @@ type Persist interface {
 	GetPrivateKey() (string, error)
 	SavePrivateKey(key string) (err error)
 	GetPublicKey(id string) (*rsa.PublicKey, error)
-	SavePublicKey(id string, key *rsa.PublicKey) (err error)
+	SavePublicKey(id string, key string) (err error)
 }
 
 // NewKeyStore creates a new instance of KeyStore

@@ -64,12 +64,8 @@ func (k *KeyStoreFilesystem) GetPublicKey(id string) (*rsa.PublicKey, error) {
 	return publicKey, nil
 }
 
-func (k *KeyStoreFilesystem) SavePublicKey(id string, key *rsa.PublicKey) (err error) {
+func (k *KeyStoreFilesystem) SavePublicKey(id string, key string) (err error) {
 	p := filepath.Join(k.getPublicPath(), id)
-	var privateKey = &pem.Block{
-		Type:  "RSA PUBLIC KEY",
-		Bytes: x509.MarshalPKCS1PublicKey(key),
-	}
 
 	file, err := os.Create(p)
 	if err != nil {
@@ -77,7 +73,7 @@ func (k *KeyStoreFilesystem) SavePublicKey(id string, key *rsa.PublicKey) (err e
 	}
 	defer file.Close()
 
-	err = pem.Encode(file, privateKey)
+	_, err = file.WriteString(key)
 	if err != nil {
 		return err
 	}
