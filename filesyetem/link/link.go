@@ -1,4 +1,4 @@
-package filesyetem
+package link
 
 import (
 	"bytes"
@@ -7,51 +7,46 @@ import (
 	"path/filepath"
 )
 
-type FsFile struct {
-	path string
-	file *os.File
-	fs   *FileSystem
+type Link struct {
+	rootPath string
+	path     string
+	file     *os.File
 }
 
 const FsSizeOffset = 0
 const FsIdOffset = 8
 
-// CreateFsFile Create FS file
-func (f *FileSystem) CreateFsFile(key string, path string, size int64) error {
-	absPath := filepath.Join(f.fileSystemPath, path)
+func New(path string, rootPath string) *Link {
+	return &Link{
+		path:     path,
+		file:     nil,
+		rootPath: rootPath,
+	}
+}
+
+// Create link file
+func (c *Link) Create(key string, size int64) error {
+	absPath := filepath.Join(c.rootPath, c.path)
 	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	file := f.OpenFsFile(path)
-	err = file.WriteSize(size)
+	err = c.open()
 	if err != nil {
 		return err
 	}
-	err = file.WriteId(key)
+	err = c.WriteSize(size)
+	if err != nil {
+		return err
+	}
+	err = c.WriteId(key)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// OpenFsFile Open FS file
-func (f *FileSystem) OpenFsFile(path string) (fsFile *FsFile) {
-	return &FsFile{
-		path: path,
-		file: nil,
-		fs:   f,
-	}
-}
-
-// GetFileId retrieves the file id by path
-func (f *FileSystem) GetFileId(path string) (key string, err error) {
-	file := f.OpenFsFile(path)
-	key, err = file.ReadId()
-	return key, err
-}
-
-func (c *FsFile) WriteSize(size int64) (err error) {
+func (c *Link) WriteSize(size int64) (err error) {
 	defer c.sync()()
 	if err != nil {
 		return err
@@ -62,7 +57,7 @@ func (c *FsFile) WriteSize(size int64) (err error) {
 	return
 }
 
-func (c *FsFile) ReadSize() (size int64, err error) {
+func (c *Link) ReadSize() (size int64, err error) {
 	defer c.sync()()
 	if err != nil {
 		return 0, err
@@ -76,7 +71,7 @@ func (c *FsFile) ReadSize() (size int64, err error) {
 	return
 }
 
-func (c *FsFile) WriteId(key string) (err error) {
+func (c *Link) WriteId(key string) (err error) {
 	defer c.sync()()
 	if err != nil {
 		return err
@@ -85,7 +80,7 @@ func (c *FsFile) WriteId(key string) (err error) {
 	return
 }
 
-func (c *FsFile) ReadId() (key string, err error) {
+func (c *Link) ReadId() (key string, err error) {
 	defer c.sync()()
 	if err != nil {
 		return "", err
@@ -95,23 +90,23 @@ func (c *FsFile) ReadId() (key string, err error) {
 	return string(id), nil
 }
 
-func (c *FsFile) sync() (fu func()) {
+func (c *Link) sync() (fu func()) {
 	_ = c.open()
 	return func() {
 		_ = c.close()
 	}
 }
 
-func (c *FsFile) open() (err error) {
+func (c *Link) open() (err error) {
 	if c.file != nil {
 		return nil
 	}
-	p := filepath.Join(c.fs.fileSystemPath, c.path)
+	p := filepath.Join(c.rootPath, c.path)
 	c.file, err = os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
 	return
 }
 
-func (c *FsFile) close() (err error) {
+func (c *Link) close() (err error) {
 	err = c.file.Close()
 	c.file = nil
 	return

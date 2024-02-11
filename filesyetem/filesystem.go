@@ -1,6 +1,7 @@
 package filesyetem
 
 import (
+	"ctb-cli/filesyetem/link"
 	"fmt"
 	"github.com/google/uuid"
 	"io"
@@ -115,7 +116,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 			continue
 		} else {
 			p := filepath.Join(path, subFile.Name())
-			file := f.OpenFsFile(p)
+			file := f.openLinkFile(p)
 			size, err := file.ReadSize()
 			if err != nil {
 				return nil, fmt.Errorf("error reading file size: %v", err)
@@ -143,7 +144,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return
 	}
-	_ = f.CreateFsFile(key.String(), path, 0)
+	_ = f.openLinkFile(key.String()).Create(path, 0)
 	err = f.objectCacheSystem.Create(key.String())
 	if err != nil {
 		return
@@ -153,7 +154,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	fsFile := f.OpenFsFile(path)
+	fsFile := f.openLinkFile(path)
 	id, err := fsFile.ReadId()
 	if !f.encryptQueue.IsInQueue(path) {
 		id, err = f.changeFileId(path)
@@ -173,7 +174,7 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 }
 
 func (f *FileSystem) changeFileId(path string) (newId string, err error) {
-	fsFile := f.OpenFsFile(path)
+	fsFile := f.openLinkFile(path)
 	oldId, err := fsFile.ReadId()
 	if err != nil {
 		return "", err
@@ -192,7 +193,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 }
 
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
-	id, err := f.GetFileId(path)
+	id, err := f.openLinkFile(path).ReadId()
 	if err != nil {
 		return 0, err
 	}
@@ -200,7 +201,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
-	fsFile := f.OpenFsFile(path)
+	fsFile := f.openLinkFile(path)
 	err = fsFile.WriteSize(size)
 	if err != nil {
 		return err
@@ -249,4 +250,8 @@ func (f *FileSystem) ObjectResolver(id string, writer io.Writer) (err error) {
 	decryptedReader, _ := f.fileCrypto.Decrypt(file, id)
 	_, err = io.Copy(writer, decryptedReader)
 	return
+}
+
+func (f *FileSystem) openLinkFile(path string) *link.Link {
+	return link.New(path, f.rootPath)
 }
