@@ -2,6 +2,7 @@ package keystore
 
 import (
 	"crypto/rand"
+	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/types"
 	"io"
 )
@@ -15,7 +16,7 @@ func (ks *KeyStore) LoadKeys() error {
 	if err != nil {
 		return err
 	}
-	ks.privateKey, err = ks.OpenPrivateKey(serializedPrivateKey, &ks.rootKey)
+	ks.privateKey, err = key_crypto.OpenPrivateKey(serializedPrivateKey, &ks.rootKey)
 	if err != nil {
 		return err
 	}
@@ -27,7 +28,7 @@ func (ks *KeyStore) GenerateClientKeys() (err error) {
 	privateKey := types.Key{}
 	io.ReadFull(rand.Reader, privateKey[:])
 	//Save private key
-	sealPrivateKey, err := ks.SealPrivateKey(privateKey[:], &ks.rootKey)
+	sealPrivateKey, err := key_crypto.SealPrivateKey(privateKey[:], &ks.rootKey)
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,7 @@ func (ks *KeyStore) GenerateClientKeys() (err error) {
 	if err != nil {
 		return err
 	}
-	serializedPublic, err := ks.SerializePublicKey(publicKey)
+	serializedPublic, err := key_crypto.SerializePublicKey(publicKey)
 	if err != nil {
 		return err
 	}
