@@ -101,9 +101,7 @@ func initManagerClient() {
 		return
 	}
 
-	chunkSize, err := config.Crypto.GetChunkSize()
-
-	fileEncryptor := encryptor.NewFileEncryptor(keyStore, chunkSize, clientId)
+	fileEncryptor := encryptor.NewFileEncryptor(keyStore, clientId)
 	fileDecryptor := encryptor.NewFileDecryptor(keyStore)
 
 	fileSystem = filesyetem.NewFileSystem(cloudClient, &fileEncryptor, &fileDecryptor)
