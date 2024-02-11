@@ -34,7 +34,7 @@ func (f *FileSystem) encrypt(fileId string) (err error) {
 	//defer outFile.Close()
 
 	//Create encrypted reader
-	encryptedWriter, err := f.encryptor.Encrypt(outFile, fileId)
+	encryptedWriter, err := f.fileCrypto.Encrypt(outFile, fileId)
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)

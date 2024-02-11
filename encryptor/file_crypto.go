@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-type FileEncryptor struct {
+type FileCrypto struct {
 	keystoreRepo KeystoreRepo
 	clientId     string
 }
@@ -17,14 +17,14 @@ type KeystoreRepo interface {
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 }
 
-func NewFileEncryptor(keystoreRepo KeystoreRepo, clientId string) FileEncryptor {
-	return FileEncryptor{
+func NewFileCrypto(keystoreRepo KeystoreRepo, clientId string) FileCrypto {
+	return FileCrypto{
 		keystoreRepo: keystoreRepo,
 		clientId:     clientId,
 	}
 }
 
-func (f *FileEncryptor) Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
+func (f *FileCrypto) Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
 	recoveryItems, err := f.keystoreRepo.GetRecoveryItems()
 	if err != nil {
 		return nil, err
@@ -40,17 +40,7 @@ func (f *FileEncryptor) Encrypt(writer io.Writer, fileId string) (write io.Write
 	return NewWriter(writer, pair.Key, f.clientId, fileId, pair.RecoveryBlobs)
 }
 
-type FileDecryptor struct {
-	keystoreRepo KeystoreRepo
-}
-
-func NewFileDecryptor(keystoreRepo KeystoreRepo) FileDecryptor {
-	return FileDecryptor{
-		keystoreRepo: keystoreRepo,
-	}
-}
-
-func (f *FileDecryptor) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
+func (f *FileCrypto) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
 	key, err := f.keystoreRepo.Get(fileId)
 	if err != nil {
 		return nil, err
