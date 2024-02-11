@@ -1,4 +1,4 @@
-package keystore
+package key_crypto
 
 import (
 	"crypto/rand"
@@ -19,7 +19,7 @@ const (
 )
 
 // OpenPrivateKey encrypts and serializes the private key
-func (*KeyStore) OpenPrivateKey(serialized string, rootKey *types.Key) ([]byte, error) {
+func OpenPrivateKey(serialized string, rootKey *types.Key) ([]byte, error) {
 	parts := strings.Split(serialized, "\n")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid serialized key)")
@@ -48,7 +48,7 @@ func (*KeyStore) OpenPrivateKey(serialized string, rootKey *types.Key) ([]byte, 
 }
 
 // SealPrivateKey encrypts and serializes the private key
-func (*KeyStore) SealPrivateKey(privateKey []byte, rootKey *types.Key) (string, error) {
+func SealPrivateKey(privateKey []byte, rootKey *types.Key) (string, error) {
 	salt := make([]byte, 16)
 	_, err := rand.Read(salt)
 	if err != nil {
@@ -81,7 +81,7 @@ func deriveKey(rootKey []byte, salt []byte) (derivedKey types.Key, err error) {
 }
 
 // SealDataKey encrypts and serializes the key pair
-func (*KeyStore) SealDataKey(key []byte, publicKey []byte) (string, error) {
+func SealDataKey(key []byte, publicKey []byte) (string, error) {
 	ephemeralSecret := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, ephemeralSecret[:])
 	if err != nil {
@@ -120,7 +120,7 @@ func (*KeyStore) SealDataKey(key []byte, publicKey []byte) (string, error) {
 }
 
 // OpenDataKey decrypts and deserializes the key pair
-func (*KeyStore) OpenDataKey(serialized string, privateKey []byte) (*Key, error) {
+func OpenDataKey(serialized string, privateKey []byte) (*types.Key, error) {
 	parts := strings.Split(serialized, "\n")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid serialized key)")
@@ -157,13 +157,13 @@ func (*KeyStore) OpenDataKey(serialized string, privateKey []byte) (*Key, error)
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}
 
-	key := Key{}
+	key := types.Key{}
 	copy(key[:], deciphered)
 
 	return &key, nil
 }
 
-func (ks *KeyStore) SerializePublicKey(publicKey []byte) (string, error) {
+func SerializePublicKey(publicKey []byte) (string, error) {
 	res := base64.RawStdEncoding.EncodeToString(publicKey)
 	return res, nil
 }

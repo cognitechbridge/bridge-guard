@@ -2,6 +2,7 @@ package keystore
 
 import (
 	"crypto/rsa"
+	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/types"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
@@ -55,7 +56,7 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := ks.OpenDataKey(sk, ks.privateKey)
+	key, err := key_crypto.OpenDataKey(sk, ks.privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (ks *KeyStore) persistKey(keyID string, key Key) error {
 	if err != nil {
 		return err
 	}
-	keyHashed, err := ks.SealDataKey(key[:], pk)
+	keyHashed, err := key_crypto.SealDataKey(key[:], pk)
 	if err != nil {
 		return err
 	}
