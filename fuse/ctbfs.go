@@ -48,7 +48,7 @@ type FileSystemRepo interface {
 	Resize(path string, size int64) (err error)
 }
 
-func NewCache(fs FileSystemRepo) *CtbFs {
+func New(fs FileSystemRepo) *CtbFs {
 	c := CtbFs{
 		openMap: make(map[uint64]*Node),
 		fs:      fs,
