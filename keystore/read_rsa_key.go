@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/x509"
+	"ctb-cli/types"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
@@ -33,16 +34,16 @@ func (ks *KeyStore) AddRecoveryKey(inPath string) error {
 		return errors.New("public key is not of type RSA Public Key")
 	}
 
-	rec := StoreRecoveryItem{}
+	rec := types.RecoveryItem{}
 
-	rec.publicKey = pubKey
+	rec.PublicKey = pubKey
 
 	pubASN1, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
 		return err
 	}
 	hash := sha1.Sum(pubASN1)
-	rec.sha1 = hex.EncodeToString(hash[:])
+	rec.Sha1 = hex.EncodeToString(hash[:])
 
 	ks.recoveryItems = append(ks.recoveryItems, rec)
 
