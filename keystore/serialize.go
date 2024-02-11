@@ -162,3 +162,8 @@ func (*KeyStore) OpenDataKey(serialized string, privateKey []byte) (*Key, error)
 
 	return &key, nil
 }
+
+func (ks *KeyStore) SerializePublicKey(publicKey []byte) (string, error) {
+	res := base64.RawStdEncoding.EncodeToString(publicKey)
+	return res, nil
+}

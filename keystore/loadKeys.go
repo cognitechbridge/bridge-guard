@@ -27,13 +27,23 @@ func (ks *KeyStore) GenerateClientKeys() (err error) {
 	privateKey := types.Key{}
 	io.ReadFull(rand.Reader, privateKey[:])
 	//Save private key
-	serialized, err := ks.SealPrivateKey(privateKey[:], &ks.rootKey)
+	sealPrivateKey, err := ks.SealPrivateKey(privateKey[:], &ks.rootKey)
 	if err != nil {
 		return err
 	}
-	err = ks.persist.SavePrivateKey(serialized)
+	err = ks.persist.SavePrivateKey(sealPrivateKey)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	publicKey, err := ks.getPublicKey()
+	if err != nil {
+		return err
+	}
+	serializedPublic, err := ks.SerializePublicKey(publicKey)
+	if err != nil {
+		return err
+	}
+	err = ks.persist.SavePublicKey(ks.clintId, serializedPublic)
+	return
 }
