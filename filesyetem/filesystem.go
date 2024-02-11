@@ -2,6 +2,7 @@ package filesyetem
 
 import (
 	"ctb-cli/filesyetem/link"
+	"ctb-cli/filesyetem/object"
 	"fmt"
 	"github.com/google/uuid"
 	"io"
@@ -21,7 +22,7 @@ type FileSystem struct {
 	uploadChan   chan uploadChanItem
 	encryptQueue *EncryptQueue
 
-	objectCacheSystem ObjectCacheSystem
+	objectCacheSystem object.Object
 
 	//path
 	rootPath       string
@@ -54,7 +55,7 @@ func NewFileSystem(dn Downloader, fileCrypto FileCrypto) *FileSystem {
 	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object")
 
 	fileSys.encryptQueue = fileSys.NewEncryptQueue()
-	fileSys.objectCacheSystem = NewObjectCacheSystem(
+	fileSys.objectCacheSystem = object.New(
 		filepath.Join(fileSys.rootPath, "cache"),
 		fileSys.ObjectResolver,
 	)
