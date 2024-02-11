@@ -14,13 +14,8 @@ type KeyStore struct {
 	clintId       string
 	rootKey       Key
 	privateKey    []byte
-	recoveryItems []StoreRecoveryItem
+	recoveryItems []types.RecoveryItem
 	persist       Persist
-}
-
-type StoreRecoveryItem struct {
-	publicKey *rsa.PublicKey
-	sha1      string
 }
 
 // Persist KeyStorePersist is an interface for persisting keys
@@ -39,7 +34,7 @@ func NewKeyStore(clientId string, rootKey Key, persist Persist) *KeyStore {
 		clintId:       clientId,
 		rootKey:       rootKey,
 		persist:       persist,
-		recoveryItems: make([]StoreRecoveryItem, 0),
+		recoveryItems: make([]types.RecoveryItem, 0),
 	}
 }
 
@@ -66,6 +61,10 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 	}
 
 	return key, nil
+}
+
+func (ks *KeyStore) GetRecoveryItems() ([]types.RecoveryItem, error) {
+	return ks.recoveryItems, nil
 }
 
 // persistKey handles the logic of persisting a key
