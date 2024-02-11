@@ -1,33 +1,34 @@
-package encryptor
+package file_crypto
 
 import (
 	"ctb-cli/encryptor/stream"
+	"ctb-cli/types"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"io"
 )
 
-type Reader struct {
+type reader struct {
 	source       io.Reader
-	header       *EncryptedFileHeader
+	header       *fileHeader
 	notFirst     bool
 	streamReader *stream.Reader
 }
 
-func NewReader(key *Key, source io.Reader) (*Reader, error) {
-	reader, err := stream.NewReader(key[:], source)
+func newReader(key *types.Key, source io.Reader) (*reader, error) {
+	streamReader, err := stream.NewReader(key[:], source)
 	if err != nil {
 		return nil, err
 	}
-	return &Reader{
+	return &reader{
 		source:       source,
 		notFirst:     false,
-		streamReader: reader,
+		streamReader: streamReader,
 	}, nil
 }
 
-func (d *Reader) Read(p []byte) (int, error) {
+func (d *reader) Read(p []byte) (int, error) {
 	if d.notFirst == false {
 		if err := d.readFileHeader(); err != nil {
 			return 0, err
@@ -37,7 +38,7 @@ func (d *Reader) Read(p []byte) (int, error) {
 	return d.streamReader.Read(p)
 }
 
-func (d *Reader) readFileHeader() error {
+func (d *reader) readFileHeader() error {
 	err, err2 := d.readFileVersion()
 	if err2 != nil {
 		return err2
@@ -52,7 +53,7 @@ func (d *Reader) readFileHeader() error {
 	return err
 }
 
-func (d *Reader) readFileVersion() (error, error) {
+func (d *reader) readFileVersion() (error, error) {
 	// Create a buffer to hold the version byte
 	versionBuffer := make([]byte, 1)
 	_, err := io.ReadFull(d.source, versionBuffer)
@@ -68,14 +69,14 @@ func (d *Reader) readFileVersion() (error, error) {
 	return err, nil
 }
 
-func (d *Reader) readHeader() (*EncryptedFileHeader, error) {
+func (d *reader) readHeader() (*fileHeader, error) {
 	headerContext, err := d.readContext()
 	if err != nil {
 		return nil, err
 	}
 
 	// Deserialize file header
-	var fileHeader EncryptedFileHeader
+	var fileHeader fileHeader
 	err = json.Unmarshal(headerContext, &fileHeader)
 	if err != nil {
 		return nil, err
@@ -84,7 +85,7 @@ func (d *Reader) readHeader() (*EncryptedFileHeader, error) {
 	return &fileHeader, nil
 }
 
-func (d *Reader) readContext() ([]byte, error) {
+func (d *reader) readContext() ([]byte, error) {
 	// Read context size
 	contextSize, err := d.readContextSize()
 	if err != nil {
@@ -103,7 +104,7 @@ func (d *Reader) readContext() ([]byte, error) {
 	return bufferContext, nil
 }
 
-func (d *Reader) readContextSize() (uint16, error) {
+func (d *reader) readContextSize() (uint16, error) {
 	var buffer2 [2]byte
 	n, err := d.source.Read(buffer2[:])
 	if err != nil {
