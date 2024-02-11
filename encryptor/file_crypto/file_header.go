@@ -1,5 +1,9 @@
 package file_crypto
 
+var (
+	fileVersion = []byte{1} // Define the file version
+)
+
 // fileHeader represents the header of an encryption file
 type fileHeader struct {
 	Version    string   `json:"version"`
@@ -13,7 +17,7 @@ type fileHeader struct {
 func newEncryptedFileHeader(clientId string, fileId string, recoveryBlobs []string) fileHeader {
 	return fileHeader{
 		Version:    "V1",
-		Alg:        GetAlgorithmName(), // Set default algorithm
+		Alg:        getAlgorithmName(), // Set default algorithm
 		ClientID:   clientId,
 		FileID:     fileId,
 		Recoveries: recoveryBlobs,

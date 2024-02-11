@@ -7,10 +7,6 @@ import (
 	"io"
 )
 
-var (
-	EncryptedFileVersion = []byte{1} // Define the file version
-)
-
 // writer is a struct for generating encrypted files.
 type writer struct {
 	header       fileHeader
@@ -45,7 +41,7 @@ func (e *writer) Write(buf []byte) (int, error) {
 
 // appendHeader appends the header to the buffer.
 func (e *writer) appendHeader() (err error) {
-	_, err = e.dst.Write(EncryptedFileVersion)
+	_, err = e.dst.Write(fileVersion)
 	if err != nil {
 		return err
 	}

@@ -6,20 +6,18 @@ import (
 	"io"
 )
 
-type Key = types.Key
-
 type FileCrypto struct {
-	keystoreRepo KeystoreRepo
+	keystoreRepo keystoreRepo
 	clientId     string
 }
 
-type KeystoreRepo interface {
-	Get(keyID string) (*Key, error)
-	Insert(keyID string, key Key) error
+type keystoreRepo interface {
+	Get(keyID string) (*key, error)
+	Insert(keyID string, key key) error
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 }
 
-func New(keystoreRepo KeystoreRepo, clientId string) FileCrypto {
+func New(keystoreRepo keystoreRepo, clientId string) FileCrypto {
 	return FileCrypto{
 		keystoreRepo: keystoreRepo,
 		clientId:     clientId,
