@@ -22,8 +22,8 @@ func New(clientId string, rootPath string) *KeyPersist {
 	}
 }
 
-func (k *KeyPersist) getDataPath() string {
-	p := filepath.Join(k.rootPath, "keys", "data", k.clientId)
+func (k *KeyPersist) getDataPath(recipient string) string {
+	p := filepath.Join(k.rootPath, "keys", "data", recipient)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		os.MkdirAll(p, os.ModePerm)
 	}
@@ -103,8 +103,8 @@ func (k *KeyPersist) SavePrivateKey(key string) (err error) {
 	return nil
 }
 
-func (k *KeyPersist) SaveDataKey(keyId string, key string) error {
-	p := filepath.Join(k.getDataPath(), keyId)
+func (k *KeyPersist) SaveDataKey(keyId, key, recipient string) error {
+	p := filepath.Join(k.getDataPath(recipient), keyId)
 	file, err := os.Create(p)
 	defer file.Close()
 	if err != nil {
@@ -118,7 +118,7 @@ func (k *KeyPersist) SaveDataKey(keyId string, key string) error {
 }
 
 func (k *KeyPersist) GetDataKey(keyID string) (string, error) {
-	p := filepath.Join(k.getDataPath(), keyID)
+	p := filepath.Join(k.getDataPath(k.clientId), keyID)
 	file, err := os.Open(p)
 	defer file.Close()
 	if err != nil {
