@@ -39,3 +39,22 @@ func (f *FileEncryptor) Encrypt(writer io.Writer, fileId string) (write io.Write
 	}
 	return NewWriter(writer, pair.Key, f.clientId, fileId, pair.RecoveryBlobs)
 }
+
+type FileDecryptor struct {
+	keystoreRepo KeystoreRepo
+}
+
+func NewFileDecryptor(keystoreRepo KeystoreRepo) FileDecryptor {
+	return FileDecryptor{
+		keystoreRepo: keystoreRepo,
+	}
+}
+
+func (f *FileDecryptor) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
+	key, err := f.keystoreRepo.Get(fileId)
+	if err != nil {
+		return nil, err
+	}
+	read, err = NewReader(key, reader)
+	return read, err
+}
