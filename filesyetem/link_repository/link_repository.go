@@ -1,4 +1,4 @@
-package link
+package link_repository
 
 import (
 	"bytes"
@@ -7,47 +7,45 @@ import (
 	"path/filepath"
 )
 
-type Link struct {
+type LinkRepository struct {
 	rootPath string
-	path     string
 	file     *os.File
 }
 
 const FsSizeOffset = 0
 const FsIdOffset = 8
 
-func New(path string, rootPath string) *Link {
-	return &Link{
-		path:     path,
+func New(rootPath string) *LinkRepository {
+	return &LinkRepository{
 		file:     nil,
 		rootPath: rootPath,
 	}
 }
 
 // Create link file
-func (c *Link) Create(key string, size int64) error {
-	absPath := filepath.Join(c.rootPath, c.path)
+func (c *LinkRepository) Create(path string, key string, size int64) error {
+	absPath := filepath.Join(c.rootPath, path)
 	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	err = c.open()
+	err = c.open(path)
 	if err != nil {
 		return err
 	}
-	err = c.WriteSize(size)
+	err = c.WriteSize(path, size)
 	if err != nil {
 		return err
 	}
-	err = c.WriteId(key)
+	err = c.WriteId(path, key)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Link) WriteSize(size int64) (err error) {
-	defer c.sync()()
+func (c *LinkRepository) WriteSize(path string, size int64) (err error) {
+	defer c.openClose(path)()
 	if err != nil {
 		return err
 	}
@@ -57,8 +55,8 @@ func (c *Link) WriteSize(size int64) (err error) {
 	return
 }
 
-func (c *Link) ReadSize() (size int64, err error) {
-	defer c.sync()()
+func (c *LinkRepository) ReadSize(path string) (size int64, err error) {
+	defer c.openClose(path)()
 	if err != nil {
 		return 0, err
 	}
@@ -71,8 +69,8 @@ func (c *Link) ReadSize() (size int64, err error) {
 	return
 }
 
-func (c *Link) WriteId(key string) (err error) {
-	defer c.sync()()
+func (c *LinkRepository) WriteId(path string, key string) (err error) {
+	defer c.openClose(path)()
 	if err != nil {
 		return err
 	}
@@ -80,8 +78,8 @@ func (c *Link) WriteId(key string) (err error) {
 	return
 }
 
-func (c *Link) ReadId() (key string, err error) {
-	defer c.sync()()
+func (c *LinkRepository) ReadId(path string) (key string, err error) {
+	defer c.openClose(path)()
 	if err != nil {
 		return "", err
 	}
@@ -90,23 +88,23 @@ func (c *Link) ReadId() (key string, err error) {
 	return string(id), nil
 }
 
-func (c *Link) sync() (fu func()) {
-	_ = c.open()
+func (c *LinkRepository) openClose(path string) (fu func()) {
+	_ = c.open(path)
 	return func() {
 		_ = c.close()
 	}
 }
 
-func (c *Link) open() (err error) {
+func (c *LinkRepository) open(path string) (err error) {
 	if c.file != nil {
 		return nil
 	}
-	p := filepath.Join(c.rootPath, c.path)
+	p := filepath.Join(c.rootPath, path)
 	c.file, err = os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
 	return
 }
 
-func (c *Link) close() (err error) {
+func (c *LinkRepository) close() (err error) {
 	err = c.file.Close()
 	c.file = nil
 	return

@@ -1,7 +1,7 @@
 package filesyetem
 
 import (
-	"ctb-cli/filesyetem/link"
+	"ctb-cli/filesyetem/link_repository"
 	"ctb-cli/filesyetem/object_cache"
 	"fmt"
 	"github.com/google/uuid"
@@ -23,6 +23,8 @@ type FileSystem struct {
 	encryptQueue *EncryptQueue
 
 	objectCacheSystem object_cache.ObjectCache
+
+	linkRepo *link_repository.LinkRepository
 
 	//path
 	rootPath       string
@@ -59,6 +61,8 @@ func NewFileSystem(dn Downloader, fileCrypto FileCrypto) *FileSystem {
 		filepath.Join(fileSys.rootPath, "cache"),
 		fileSys.ObjectResolver,
 	)
+
+	fileSys.linkRepo = link_repository.New(fileSys.rootPath)
 
 	go fileSys.StartEncryptRoutine()
 	go fileSys.StartUploadRoutine()
@@ -118,8 +122,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 			continue
 		} else {
 			p := filepath.Join(path, subFile.Name())
-			file := f.openLinkFile(p)
-			size, err := file.ReadSize()
+			size, err := f.linkRepo.ReadSize(p)
 			if err != nil {
 				return nil, fmt.Errorf("error reading file size: %v", err)
 			}
@@ -146,7 +149,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return
 	}
-	_ = f.openLinkFile(path).Create(key.String(), 0)
+	_ = f.linkRepo.Create(path, key.String(), 0)
 	err = f.objectCacheSystem.Create(key.String())
 	if err != nil {
 		return
@@ -156,8 +159,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	fsFile := f.openLinkFile(path)
-	id, err := fsFile.ReadId()
+	id, err := f.linkRepo.ReadId(path)
 	if !f.encryptQueue.IsInQueue(path) {
 		id, err = f.changeFileId(path)
 		if err != nil {
@@ -165,8 +167,8 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 		}
 	}
 	n, err = f.objectCacheSystem.Write(id, buff, ofst)
-	if size, _ := fsFile.ReadSize(); size < ofst+int64(len(buff)) {
-		err = fsFile.WriteSize(ofst + int64(len(buff)))
+	if size, _ := f.linkRepo.ReadSize(path); size < ofst+int64(len(buff)) {
+		err = f.linkRepo.WriteSize(path, ofst+int64(len(buff)))
 		if err != nil {
 			return 0, err
 		}
@@ -176,14 +178,13 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 }
 
 func (f *FileSystem) changeFileId(path string) (newId string, err error) {
-	fsFile := f.openLinkFile(path)
-	oldId, err := fsFile.ReadId()
+	oldId, err := f.linkRepo.ReadId(path)
 	if err != nil {
 		return "", err
 	}
 	uui, _ := uuid.NewV7()
 	newId = uui.String()
-	err = fsFile.WriteId(newId)
+	err = f.linkRepo.WriteId(path, newId)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +196,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 }
 
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
-	id, err := f.openLinkFile(path).ReadId()
+	id, err := f.linkRepo.ReadId(path)
 	if err != nil {
 		return 0, err
 	}
@@ -203,12 +204,11 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
-	fsFile := f.openLinkFile(path)
-	err = fsFile.WriteSize(size)
+	err = f.linkRepo.WriteSize(path, size)
 	if err != nil {
 		return err
 	}
-	id, err := fsFile.ReadId()
+	id, err := f.linkRepo.ReadId(path)
 	if err != nil {
 		return err
 	}
@@ -252,8 +252,4 @@ func (f *FileSystem) ObjectResolver(id string, writer io.Writer) (err error) {
 	decryptedReader, _ := f.fileCrypto.Decrypt(file, id)
 	_, err = io.Copy(writer, decryptedReader)
 	return
-}
-
-func (f *FileSystem) openLinkFile(path string) *link.Link {
-	return link.New(path, f.fileSystemPath)
 }
