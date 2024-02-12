@@ -1,4 +1,4 @@
-package object
+package object_cache
 
 import (
 	"fmt"
@@ -7,21 +7,21 @@ import (
 	"path/filepath"
 )
 
-type Object struct {
+type ObjectCache struct {
 	resolver  func(id string, writer io.Writer) (err error)
 	readPath  string
 	writePath string
 }
 
-func New(path string, resolver func(id string, writer io.Writer) (err error)) Object {
-	return Object{
+func New(path string, resolver func(id string, writer io.Writer) (err error)) ObjectCache {
+	return ObjectCache{
 		readPath:  path,
 		resolver:  resolver,
 		writePath: filepath.Join(path, "Write"),
 	}
 }
 
-func (o *Object) Move(oldId string, newId string) (err error) {
+func (o *ObjectCache) Move(oldId string, newId string) (err error) {
 	//Move to Write cache path
 	oldPath := filepath.Join(o.readPath, oldId)
 	newPath := filepath.Join(o.writePath, newId)
@@ -37,7 +37,7 @@ func (o *Object) Move(oldId string, newId string) (err error) {
 	return nil
 }
 
-func (o *Object) Write(id string, buff []byte, ofst int64) (n int, err error) {
+func (o *ObjectCache) Write(id string, buff []byte, ofst int64) (n int, err error) {
 	p := filepath.Join(o.writePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR, 0666)
 	if err != nil {
@@ -51,7 +51,7 @@ func (o *Object) Write(id string, buff []byte, ofst int64) (n int, err error) {
 	return
 }
 
-func (o *Object) Truncate(id string, size int64) (err error) {
+func (o *ObjectCache) Truncate(id string, size int64) (err error) {
 	p := filepath.Join(o.writePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR, 0666)
 	defer file.Close()
@@ -62,7 +62,7 @@ func (o *Object) Truncate(id string, size int64) (err error) {
 	return nil
 }
 
-func (o *Object) Create(id string) (err error) {
+func (o *ObjectCache) Create(id string) (err error) {
 	objWritePath := filepath.Join(o.writePath, id)
 	objFile, err := os.Create(objWritePath)
 	objFile.Close()
@@ -76,7 +76,7 @@ func (o *Object) Create(id string) (err error) {
 	return nil
 }
 
-func (o *Object) Read(id string, buff []byte, ofst int64) (n int, err error) {
+func (o *ObjectCache) Read(id string, buff []byte, ofst int64) (n int, err error) {
 	p := filepath.Join(o.readPath, id)
 
 	if _, err := os.Stat(p); os.IsNotExist(err) {
@@ -95,26 +95,26 @@ func (o *Object) Read(id string, buff []byte, ofst int64) (n int, err error) {
 	return
 }
 
-func (o *Object) Flush(id string) (err error) {
+func (o *ObjectCache) Flush(id string) (err error) {
 	p := filepath.Join(o.writePath, id)
 	err = os.Remove(p)
 	return
 }
 
-func (o *Object) AsFile(id string) (file *os.File, err error) {
+func (o *ObjectCache) AsFile(id string) (file *os.File, err error) {
 	p := filepath.Join(o.readPath, id)
 	file, err = os.OpenFile(p, os.O_RDONLY, 0666)
 	return file, err
 }
 
-func (o *Object) createWriteLink(id string) (err error) {
+func (o *ObjectCache) createWriteLink(id string) (err error) {
 	objWritePath := filepath.Join(o.writePath, id)
 	objFilePath := filepath.Join(o.readPath, id)
 	err = os.Link(objWritePath, objFilePath)
 	return err
 }
 
-func (o *Object) resolverFile(id string) (err error) {
+func (o *ObjectCache) resolverFile(id string) (err error) {
 	file, _ := os.Create(filepath.Join(o.readPath, id))
 	defer file.Close()
 	err = o.resolver(id, file)
