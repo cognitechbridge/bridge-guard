@@ -1,4 +1,4 @@
-package key_persist
+package key_repository
 
 import (
 	"crypto/rsa"
@@ -10,43 +10,19 @@ import (
 	"path/filepath"
 )
 
-type KeyPersist struct {
+type KeyRepository struct {
 	clientId string
 	rootPath string
 }
 
-func New(clientId string, rootPath string) *KeyPersist {
-	return &KeyPersist{
+func New(clientId string, rootPath string) *KeyRepository {
+	return &KeyRepository{
 		rootPath: rootPath,
 		clientId: clientId,
 	}
 }
 
-func (k *KeyPersist) getDataPath(recipient string) string {
-	p := filepath.Join(k.rootPath, "keys", "data", recipient)
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		os.MkdirAll(p, os.ModePerm)
-	}
-	return p
-}
-
-func (k *KeyPersist) getPrivatePath() string {
-	p := filepath.Join(k.rootPath, "keys", "private")
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		os.MkdirAll(p, os.ModePerm)
-	}
-	return p
-}
-
-func (k *KeyPersist) getPublicPath() string {
-	p := filepath.Join(k.rootPath, "keys", "public")
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		os.MkdirAll(p, os.ModePerm)
-	}
-	return p
-}
-
-func (k *KeyPersist) GetPublicKey(id string) (*rsa.PublicKey, error) {
+func (k *KeyRepository) GetPublicKey(id string) (*rsa.PublicKey, error) {
 	p := filepath.Join(k.getPublicPath(), id)
 	file, err := os.ReadFile(p)
 	if err != nil {
@@ -63,7 +39,7 @@ func (k *KeyPersist) GetPublicKey(id string) (*rsa.PublicKey, error) {
 	return publicKey, nil
 }
 
-func (k *KeyPersist) SavePublicKey(id string, key string) (err error) {
+func (k *KeyRepository) SavePublicKey(id string, key string) (err error) {
 	p := filepath.Join(k.getPublicPath(), id)
 
 	file, err := os.Create(p)
@@ -79,7 +55,7 @@ func (k *KeyPersist) SavePublicKey(id string, key string) (err error) {
 	return nil
 }
 
-func (k *KeyPersist) GetPrivateKey() (string, error) {
+func (k *KeyRepository) GetPrivateKey() (string, error) {
 	p := filepath.Join(k.getPrivatePath(), k.clientId)
 	content, err := os.ReadFile(p)
 	if err != nil {
@@ -88,7 +64,7 @@ func (k *KeyPersist) GetPrivateKey() (string, error) {
 	return string(content), nil
 }
 
-func (k *KeyPersist) SavePrivateKey(key string) (err error) {
+func (k *KeyRepository) SavePrivateKey(key string) (err error) {
 	p := filepath.Join(k.getPrivatePath(), k.clientId)
 	file, err := os.Create(p)
 	if err != nil {
@@ -103,7 +79,7 @@ func (k *KeyPersist) SavePrivateKey(key string) (err error) {
 	return nil
 }
 
-func (k *KeyPersist) SaveDataKey(keyId, key, recipient string) error {
+func (k *KeyRepository) SaveDataKey(keyId, key, recipient string) error {
 	p := filepath.Join(k.getDataPath(recipient), keyId)
 	file, err := os.Create(p)
 	defer file.Close()
@@ -117,7 +93,7 @@ func (k *KeyPersist) SaveDataKey(keyId, key, recipient string) error {
 	return nil
 }
 
-func (k *KeyPersist) GetDataKey(keyID string) (string, error) {
+func (k *KeyRepository) GetDataKey(keyID string) (string, error) {
 	p := filepath.Join(k.getDataPath(k.clientId), keyID)
 	file, err := os.Open(p)
 	defer file.Close()
@@ -129,4 +105,28 @@ func (k *KeyPersist) GetDataKey(keyID string) (string, error) {
 		return "", err
 	}
 	return string(content), err
+}
+
+func (k *KeyRepository) getDataPath(recipient string) string {
+	p := filepath.Join(k.rootPath, "keys", "data", recipient)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		os.MkdirAll(p, os.ModePerm)
+	}
+	return p
+}
+
+func (k *KeyRepository) getPrivatePath() string {
+	p := filepath.Join(k.rootPath, "keys", "private")
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		os.MkdirAll(p, os.ModePerm)
+	}
+	return p
+}
+
+func (k *KeyRepository) getPublicPath() string {
+	p := filepath.Join(k.rootPath, "keys", "public")
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		os.MkdirAll(p, os.ModePerm)
+	}
+	return p
 }
