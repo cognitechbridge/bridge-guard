@@ -7,9 +7,9 @@ package cmd
 
 import (
 	"ctb-cli/config"
-	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/filesyetem"
 	"ctb-cli/filesyetem/key_persist"
+	"ctb-cli/filesyetem/object"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/types"
@@ -105,7 +105,7 @@ func initManagerClient() {
 		return
 	}
 
-	fileCrypto := file_crypto.New(keyStore, clientId)
+	objectService := object.NewService(keyStore, clientId)
 
-	fileSystem = filesyetem.NewFileSystem(cloudClient, &fileCrypto)
+	fileSystem = filesyetem.NewFileSystem(cloudClient, &objectService)
 }

@@ -16,7 +16,7 @@ type reader struct {
 	streamReader *stream.Reader
 }
 
-func newReader(key *types.Key, source io.Reader) (*reader, error) {
+func NewReader(key *types.Key, source io.Reader) (*reader, error) {
 	streamReader, err := stream.NewReader(key[:], source)
 	if err != nil {
 		return nil, err

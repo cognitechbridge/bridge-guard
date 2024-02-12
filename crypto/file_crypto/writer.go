@@ -15,8 +15,8 @@ type writer struct {
 	streamWriter *stream.Writer
 }
 
-// newWriter creates a new writer.
-func newWriter(dst io.Writer, key types.Key, clientId string, fileId string, recoveryBlobs []string) (*writer, error) {
+// NewWriter creates a new writer.
+func NewWriter(dst io.Writer, key types.Key, clientId string, fileId string, recoveryBlobs []string) (*writer, error) {
 	streamWriter, err := stream.NewWriter(key[:], dst)
 	if err != nil {
 		return nil, err

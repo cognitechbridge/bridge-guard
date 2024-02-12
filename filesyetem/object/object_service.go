@@ -1,30 +1,31 @@
-package file_crypto
+package object
 
 import (
+	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/types"
 	"io"
 )
 
-type FileCrypto struct {
+type Service struct {
 	keystoreRepo keystoreRepo
 	clientId     string
 }
 
 type keystoreRepo interface {
-	Get(keyID string) (*key, error)
-	Insert(keyID string, key key) error
+	Get(keyID string) (*types.Key, error)
+	Insert(keyID string, key types.Key) error
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 }
 
-func New(keystoreRepo keystoreRepo, clientId string) FileCrypto {
-	return FileCrypto{
+func NewService(keystoreRepo keystoreRepo, clientId string) Service {
+	return Service{
 		keystoreRepo: keystoreRepo,
 		clientId:     clientId,
 	}
 }
 
-func (f *FileCrypto) Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
+func (f *Service) Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
 	recoveryItems, err := f.keystoreRepo.GetRecoveryItems()
 	if err != nil {
 		return nil, err
@@ -37,14 +38,14 @@ func (f *FileCrypto) Encrypt(writer io.Writer, fileId string) (write io.WriteClo
 	if err != nil {
 		return nil, err
 	}
-	return newWriter(writer, pair.Key, f.clientId, fileId, pair.RecoveryBlobs)
+	return file_crypto.NewWriter(writer, pair.Key, f.clientId, fileId, pair.RecoveryBlobs)
 }
 
-func (f *FileCrypto) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
+func (f *Service) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
 	key, err := f.keystoreRepo.Get(fileId)
 	if err != nil {
 		return nil, err
 	}
-	read, err = newReader(key, reader)
+	read, err = file_crypto.NewReader(key, reader)
 	return read, err
 }
