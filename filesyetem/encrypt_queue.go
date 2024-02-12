@@ -47,7 +47,7 @@ func (q *EncryptQueue) processToChannel(output chan<- encryptChanItem) {
 	for path, t := range q.items {
 		if currentTime.Sub(t) > 5*time.Second {
 			delete(q.items, path)
-			id, err := q.fs.openLinkFile(path).ReadId()
+			id, err := q.fs.linkRepo.ReadId(path)
 			if err != nil {
 				continue
 

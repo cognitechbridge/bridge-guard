@@ -18,11 +18,11 @@ type KeyStore struct {
 	rootKey       Key
 	privateKey    []byte
 	recoveryItems []types.RecoveryItem
-	persist       Persist
+	persist       KeyRepository
 }
 
-// Persist KeyStorePersist is an interface for persisting keys
-type Persist interface {
+// KeyRepository KeyStorePersist is an interface for persisting keys
+type KeyRepository interface {
 	SaveDataKey(keyId, key, recipient string) error
 	GetDataKey(keyID string) (string, error)
 	GetPrivateKey() (string, error)
@@ -32,7 +32,7 @@ type Persist interface {
 }
 
 // NewKeyStore creates a new instance of KeyStore
-func NewKeyStore(clientId string, rootKey Key, persist Persist) *KeyStore {
+func NewKeyStore(clientId string, rootKey Key, persist KeyRepository) *KeyStore {
 	return &KeyStore{
 		clintId:       clientId,
 		rootKey:       rootKey,

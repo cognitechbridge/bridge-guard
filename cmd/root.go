@@ -92,9 +92,9 @@ func initManagerClient() {
 
 	root, _ := filesyetem.GetRepoCtbRoot()
 
-	keyStorePersist := key_repository.New(clientId, root)
+	keyRepository := key_repository.New(clientId, root)
 
-	keyStore = keystore.NewKeyStore(clientId, key, keyStorePersist)
+	keyStore = keystore.NewKeyStore(clientId, key, keyRepository)
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {
 		return
