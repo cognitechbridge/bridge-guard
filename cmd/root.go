@@ -83,7 +83,7 @@ func initConfig() {
 }
 
 var fileSystem *filesyetem.FileSystem
-var keyStore *keystore.KeyStoreDefault
+var keyStore keystore.KeyStorer
 
 func initManagerClient() {
 	var key types.Key

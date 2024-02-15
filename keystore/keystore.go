@@ -16,6 +16,8 @@ type KeyStorer interface {
 	Get(keyID string) (*types.Key, error)
 	Insert(keyID string, key types.Key) error
 	GetRecoveryItems() ([]types.RecoveryItem, error)
+	AddRecoveryKey(inPath string) error
+	GenerateClientKeys() (err error)
 }
 
 type Key = types.Key
@@ -154,6 +156,10 @@ func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 		return err
 	}
 	err = ks.keyRepository.SavePublicKey(ks.clintId, serializedPublic)
+	if err != nil {
+		return err
+	}
+	err = ks.LoadKeys()
 	return
 }
 
