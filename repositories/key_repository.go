@@ -1,4 +1,4 @@
-package key_repository
+package repositories
 
 import (
 	"crypto/rsa"
@@ -27,7 +27,7 @@ type KeyRepositoryFile struct {
 
 var _ KeyRepository = &KeyRepositoryFile{}
 
-func New(clientId string, rootPath string) *KeyRepositoryFile {
+func NewKeyRepositoryFile(clientId string, rootPath string) *KeyRepositoryFile {
 	return &KeyRepositoryFile{
 		rootPath: rootPath,
 		clientId: clientId,

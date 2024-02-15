@@ -1,4 +1,4 @@
-package filesyetem
+package filesyetem_service
 
 import (
 	"io/fs"

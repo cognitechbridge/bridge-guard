@@ -1,4 +1,4 @@
-package object_cache
+package repositories
 
 import (
 	"fmt"
@@ -7,20 +7,20 @@ import (
 	"path/filepath"
 )
 
-type ObjectCache struct {
+type ObjectCacheRepository struct {
 	resolver  func(id string, writer io.Writer) (err error)
 	readPath  string
 	writePath string
 }
 
-func New(path string) ObjectCache {
-	return ObjectCache{
+func NewObjectCacheRepository(path string) ObjectCacheRepository {
+	return ObjectCacheRepository{
 		readPath:  path,
 		writePath: filepath.Join(path, "Write"),
 	}
 }
 
-func (o *ObjectCache) Move(oldId string, newId string) (err error) {
+func (o *ObjectCacheRepository) Move(oldId string, newId string) (err error) {
 	//Move to Write cache path
 	oldPath := filepath.Join(o.readPath, oldId)
 	newPath := filepath.Join(o.writePath, newId)
@@ -36,13 +36,13 @@ func (o *ObjectCache) Move(oldId string, newId string) (err error) {
 	return nil
 }
 
-func (o *ObjectCache) CacheObjectWriter(id string) (io.WriteCloser, error) {
+func (o *ObjectCacheRepository) CacheObjectWriter(id string) (io.WriteCloser, error) {
 	p := filepath.Join(o.readPath, id)
 	file, err := os.Create(p)
 	return file, err
 }
 
-func (o *ObjectCache) Write(id string, buff []byte, ofst int64) (n int, err error) {
+func (o *ObjectCacheRepository) Write(id string, buff []byte, ofst int64) (n int, err error) {
 	p := filepath.Join(o.writePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR, 0666)
 	if err != nil {
@@ -56,7 +56,7 @@ func (o *ObjectCache) Write(id string, buff []byte, ofst int64) (n int, err erro
 	return
 }
 
-func (o *ObjectCache) Truncate(id string, size int64) (err error) {
+func (o *ObjectCacheRepository) Truncate(id string, size int64) (err error) {
 	p := filepath.Join(o.writePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR, 0666)
 	defer file.Close()
@@ -67,7 +67,7 @@ func (o *ObjectCache) Truncate(id string, size int64) (err error) {
 	return nil
 }
 
-func (o *ObjectCache) Create(id string) (err error) {
+func (o *ObjectCacheRepository) Create(id string) (err error) {
 	objWritePath := filepath.Join(o.writePath, id)
 	objFile, err := os.Create(objWritePath)
 	objFile.Close()
@@ -81,7 +81,7 @@ func (o *ObjectCache) Create(id string) (err error) {
 	return nil
 }
 
-func (o *ObjectCache) Read(id string, buff []byte, ofst int64) (n int, err error) {
+func (o *ObjectCacheRepository) Read(id string, buff []byte, ofst int64) (n int, err error) {
 	p := filepath.Join(o.readPath, id)
 
 	if _, err := os.Stat(p); os.IsNotExist(err) {
@@ -100,7 +100,7 @@ func (o *ObjectCache) Read(id string, buff []byte, ofst int64) (n int, err error
 	return
 }
 
-func (o *ObjectCache) IsInCache(id string) (is bool) {
+func (o *ObjectCacheRepository) IsInCache(id string) (is bool) {
 	p := filepath.Join(o.readPath, id)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		return false
@@ -108,26 +108,26 @@ func (o *ObjectCache) IsInCache(id string) (is bool) {
 	return true
 }
 
-func (o *ObjectCache) Flush(id string) (err error) {
+func (o *ObjectCacheRepository) Flush(id string) (err error) {
 	p := filepath.Join(o.writePath, id)
 	err = os.Remove(p)
 	return
 }
 
-func (o *ObjectCache) AsFile(id string) (file *os.File, err error) {
+func (o *ObjectCacheRepository) AsFile(id string) (file *os.File, err error) {
 	p := filepath.Join(o.readPath, id)
 	file, err = os.OpenFile(p, os.O_RDONLY, 0666)
 	return file, err
 }
 
-func (o *ObjectCache) createWriteLink(id string) (err error) {
+func (o *ObjectCacheRepository) createWriteLink(id string) (err error) {
 	objWritePath := filepath.Join(o.writePath, id)
 	objFilePath := filepath.Join(o.readPath, id)
 	err = os.Link(objWritePath, objFilePath)
 	return err
 }
 
-func (o *ObjectCache) resolverFile(id string) (err error) {
+func (o *ObjectCacheRepository) resolverFile(id string) (err error) {
 	file, _ := os.Create(filepath.Join(o.readPath, id))
 	defer file.Close()
 	err = o.resolver(id, file)

@@ -1,4 +1,4 @@
-package link_repository
+package repositories
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ type LinkRepository struct {
 const FsSizeOffset = 0
 const FsIdOffset = 8
 
-func New(rootPath string) *LinkRepository {
+func NewLinkRepository(rootPath string) *LinkRepository {
 	return &LinkRepository{
 		file:     nil,
 		rootPath: rootPath,
