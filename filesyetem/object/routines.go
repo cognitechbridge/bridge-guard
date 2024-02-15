@@ -1,4 +1,4 @@
-package filesyetem
+package object
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func (f *FileSystem) StartEncryptRoutine() {
+func (f *Service) StartEncryptRoutine() {
 	for {
 		item := <-f.encryptChan
 		err := f.encrypt(item.id)
@@ -17,24 +17,23 @@ func (f *FileSystem) StartEncryptRoutine() {
 	}
 }
 
-func (f *FileSystem) encrypt(fileId string) (err error) {
+func (f *Service) encrypt(fileId string) (err error) {
 	//Open object file
-	inputFile, err := f.objectCacheSystem.AsFile(fileId)
+	inputFile, err := f.cache.AsFile(fileId)
 	defer closeFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
 
 	//Create output file
-	outPath := filepath.Join(f.ObjectPath, fileId)
-	outFile, err := os.Create(outPath)
+	file, err := f.objectRepo.CreateFile(fileId)
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
-	defer outFile.Close()
+	defer file.Close()
 
 	//Create encrypted reader
-	encryptedWriter, err := f.objectService.Encrypt(outFile, fileId)
+	encryptedWriter, err := f.Encrypt(file, fileId)
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)
@@ -46,18 +45,20 @@ func (f *FileSystem) encrypt(fileId string) (err error) {
 		return
 	}
 
-	err = f.objectCacheSystem.Flush(fileId)
+	err = f.cache.Flush(fileId)
 	if err != nil {
 		return
 	}
 	fmt.Printf("File Encrypted: %s \n", fileId)
 
-	f.uploadChan <- uploadChanItem{path: outPath}
+	path, _ := f.objectRepo.GetPath(fileId)
+
+	f.uploadChan <- uploadChanItem{path: path}
 
 	return nil
 }
 
-func (f *FileSystem) StartUploadRoutine() {
+func (f *Service) StartUploadRoutine() {
 	for {
 		item := <-f.uploadChan
 		err := f.upload(item.path)
@@ -67,7 +68,7 @@ func (f *FileSystem) StartUploadRoutine() {
 	}
 }
 
-func (f *FileSystem) upload(path string) (err error) {
+func (f *Service) upload(path string) (err error) {
 	_, fileId := filepath.Split(path)
 
 	file, err := os.Open(path)

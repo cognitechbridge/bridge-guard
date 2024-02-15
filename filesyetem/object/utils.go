@@ -1,4 +1,4 @@
-package filesyetem
+package object
 
 import (
 	"fmt"

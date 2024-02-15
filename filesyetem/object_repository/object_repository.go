@@ -35,3 +35,8 @@ func (o *ObjectRepository) OpenObject(id string) (io.ReadCloser, error) {
 	file, _ := os.Open(path)
 	return file, nil
 }
+
+func (o *ObjectRepository) GetPath(id string) (string, error) {
+	path := filepath.Join(o.rootPath, id)
+	return path, nil
+}
