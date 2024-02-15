@@ -1,4 +1,4 @@
-package object
+package object_service
 
 import (
 	"fmt"
@@ -11,11 +11,11 @@ type EncryptQueue struct {
 	lock  sync.Mutex
 }
 
-func (f *Service) NewEncryptQueue() *EncryptQueue {
+func (o *Service) NewEncryptQueue() *EncryptQueue {
 	q := &EncryptQueue{
 		items: make(map[string]time.Time),
 	}
-	go q.StartQueueRoutine(f.encryptChan)
+	go q.StartQueueRoutine(o.encryptChan)
 	return q
 }
 

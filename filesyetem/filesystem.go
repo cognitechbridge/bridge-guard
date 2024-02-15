@@ -2,7 +2,7 @@ package filesyetem
 
 import (
 	"ctb-cli/filesyetem/link_repository"
-	"ctb-cli/filesyetem/object"
+	"ctb-cli/filesyetem/object_service"
 	"fmt"
 	"github.com/google/uuid"
 	"io/fs"
@@ -12,33 +12,28 @@ import (
 
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
-	//interfaces
-	objectService object.Service
-
-	linkRepo *link_repository.LinkRepository
-
-	//path
-	rootPath       string
-	fileSystemPath string
-	ObjectPath     string
+	objectService object_service.Service
+	linkRepo      *link_repository.LinkRepository
+	rootPath      string
+	linkRepoPath  string
 }
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(objectSerivce object.Service) *FileSystem {
+func NewFileSystem(objectSerivce object_service.Service) *FileSystem {
 	fileSys := FileSystem{
 		objectService: objectSerivce,
 	}
 
 	fileSys.rootPath, _ = GetRepoCtbRoot()
-	fileSys.fileSystemPath = filepath.Join(fileSys.rootPath, "filesystem")
+	fileSys.linkRepoPath = filepath.Join(fileSys.rootPath, "filesystem")
 
-	fileSys.linkRepo = link_repository.New(fileSys.fileSystemPath)
+	fileSys.linkRepo = link_repository.New(fileSys.linkRepoPath)
 
 	return &fileSys
 }
 
 func (f *FileSystem) CreateDir(path string) (err error) {
-	absPath := filepath.Join(f.fileSystemPath, path)
+	absPath := filepath.Join(f.linkRepoPath, path)
 	err = os.MkdirAll(absPath, os.ModePerm)
 	if err != nil {
 		return err
@@ -47,7 +42,7 @@ func (f *FileSystem) CreateDir(path string) (err error) {
 }
 
 func (f *FileSystem) RemovePath(path string) (err error) {
-	absPath := filepath.Join(f.fileSystemPath, path)
+	absPath := filepath.Join(f.linkRepoPath, path)
 	err = os.Remove(absPath)
 	if err != nil {
 		return err
@@ -56,7 +51,7 @@ func (f *FileSystem) RemovePath(path string) (err error) {
 }
 
 func (f *FileSystem) PathExist(path string) (bool, error) {
-	absPath := filepath.Join(f.fileSystemPath, path)
+	absPath := filepath.Join(f.linkRepoPath, path)
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		return false, nil
 	} else {
@@ -65,13 +60,13 @@ func (f *FileSystem) PathExist(path string) (bool, error) {
 }
 
 func (f *FileSystem) IsDir(path string) bool {
-	p := filepath.Join(f.fileSystemPath, path)
+	p := filepath.Join(f.linkRepoPath, path)
 	fileInfo, _ := os.Stat(p)
 	return fileInfo.IsDir()
 }
 
 func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
-	p := filepath.Join(f.fileSystemPath, path)
+	p := filepath.Join(f.linkRepoPath, path)
 	file, err := os.Open(p)
 	defer file.Close()
 	if err != nil {
@@ -106,7 +101,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 }
 
 func (f *FileSystem) RemoveDir(path string) (err error) {
-	p := filepath.Join(f.fileSystemPath, path)
+	p := filepath.Join(f.linkRepoPath, path)
 	err = os.Remove(p)
 	return err
 }
@@ -185,8 +180,8 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 }
 
 func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
-	o := filepath.Join(f.fileSystemPath, oldPath)
-	n := filepath.Join(f.fileSystemPath, newPath)
+	o := filepath.Join(f.linkRepoPath, oldPath)
+	n := filepath.Join(f.linkRepoPath, newPath)
 	err = os.Rename(o, n)
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package object
+package object_service
 
 import (
 	"fmt"
@@ -7,33 +7,33 @@ import (
 	"path/filepath"
 )
 
-func (f *Service) StartEncryptRoutine() {
+func (o *Service) StartEncryptRoutine() {
 	for {
-		item := <-f.encryptChan
-		err := f.encrypt(item.id)
+		item := <-o.encryptChan
+		err := o.encrypt(item.id)
 		if err != nil {
 			continue
 		}
 	}
 }
 
-func (f *Service) encrypt(fileId string) (err error) {
+func (o *Service) encrypt(fileId string) (err error) {
 	//Open object file
-	inputFile, err := f.cache.AsFile(fileId)
+	inputFile, err := o.cache.AsFile(fileId)
 	defer closeFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
 
 	//Create output file
-	file, err := f.objectRepo.CreateFile(fileId)
+	file, err := o.objectRepo.CreateFile(fileId)
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
 	defer file.Close()
 
-	//Create encrypted reader
-	encryptedWriter, err := f.Encrypt(file, fileId)
+	//Create encrypted writer
+	encryptedWriter, err := o.encryptWriter(file, fileId)
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)
@@ -45,30 +45,30 @@ func (f *Service) encrypt(fileId string) (err error) {
 		return
 	}
 
-	err = f.cache.Flush(fileId)
+	err = o.cache.Flush(fileId)
 	if err != nil {
 		return
 	}
 	fmt.Printf("File Encrypted: %s \n", fileId)
 
-	path, _ := f.objectRepo.GetPath(fileId)
+	path, _ := o.objectRepo.GetPath(fileId)
 
-	f.uploadChan <- uploadChanItem{path: path}
+	o.uploadChan <- uploadChanItem{path: path}
 
 	return nil
 }
 
-func (f *Service) StartUploadRoutine() {
+func (o *Service) StartUploadRoutine() {
 	for {
-		item := <-f.uploadChan
-		err := f.upload(item.path)
+		item := <-o.uploadChan
+		err := o.upload(item.path)
 		if err != nil {
 			continue
 		}
 	}
 }
 
-func (f *Service) upload(path string) (err error) {
+func (o *Service) upload(path string) (err error) {
 	_, fileId := filepath.Split(path)
 
 	file, err := os.Open(path)
@@ -77,7 +77,7 @@ func (f *Service) upload(path string) (err error) {
 	}
 
 	//upload
-	err = f.downloader.Upload(file, fileId)
+	err = o.downloader.Upload(file, fileId)
 	if err != nil {
 		return
 	}

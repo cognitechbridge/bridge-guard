@@ -1,4 +1,4 @@
-package object
+package object_service
 
 import (
 	"ctb-cli/crypto/file_crypto"
@@ -52,64 +52,72 @@ func NewService(keystoreRepo keystoreRepo, clientId string, cache *object_cache.
 	return service
 }
 
-func (f *Service) Read(id string, buff []byte, ofst int64) (n int, err error) {
-	if f.cache.IsInCache(id) {
-		return f.cache.Read(id, buff, ofst)
-	}
-	if f.objectRepo.IsInRepo(id) == false {
-		err := f.downloadToObject(id, err)
-		if err != nil {
-			return 0, err
-		}
-	}
-	err = f.decryptToCache(id, err)
+func (o *Service) Read(id string, buff []byte, ofst int64) (n int, err error) {
+	err = o.availableInCache(id)
 	if err != nil {
 		return 0, err
 	}
 
-	return f.cache.Read(id, buff, ofst)
+	return o.cache.Read(id, buff, ofst)
 }
 
-func (f *Service) Write(id string, buff []byte, ofst int64) (n int, err error) {
-	n, err = f.cache.Write(id, buff, ofst)
-	f.encryptQueue.Enqueue(id)
+func (o *Service) Write(id string, buff []byte, ofst int64) (n int, err error) {
+	n, err = o.cache.Write(id, buff, ofst)
+	o.encryptQueue.Enqueue(id)
 	return n, err
 }
 
-func (f *Service) Create(id string) (err error) {
-	err = f.cache.Create(id)
+func (o *Service) Create(id string) (err error) {
+	err = o.cache.Create(id)
 	if err != nil {
 		return err
 	}
-	f.encryptQueue.Enqueue(id)
+	o.encryptQueue.Enqueue(id)
 	return nil
 }
 
-func (f *Service) Move(oldId string, newId string) (err error) {
-	return f.cache.Move(oldId, newId)
+func (o *Service) Move(oldId string, newId string) (err error) {
+	return o.cache.Move(oldId, newId)
 }
 
-func (f *Service) Truncate(id string, size int64) (err error) {
-	return f.cache.Truncate(id, size)
+func (o *Service) Truncate(id string, size int64) (err error) {
+	return o.cache.Truncate(id, size)
 }
 
-func (f *Service) IsInQueue(id string) bool {
-	return f.encryptQueue.IsInQueue(id)
+func (o *Service) IsInQueue(id string) bool {
+	return o.encryptQueue.IsInQueue(id)
 }
 
-func (f *Service) decryptToCache(id string, err error) error {
-	openObject, _ := f.objectRepo.OpenObject(id)
+func (o *Service) availableInCache(id string) error {
+	if o.cache.IsInCache(id) {
+		return nil
+	}
+	if o.objectRepo.IsInRepo(id) == false {
+		err := o.downloadToObject(id)
+		if err != nil {
+			return err
+		}
+	}
+	err := o.decryptToCache(id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Service) decryptToCache(id string) error {
+	openObject, _ := o.objectRepo.OpenObject(id)
 	defer openObject.Close()
-	decryptedReader, _ := f.Decrypt(openObject, id)
-	writer, err := f.cache.CacheObjectWriter(id)
+	decryptedReader, _ := o.decryptReader(openObject, id)
+	writer, err := o.cache.CacheObjectWriter(id)
 	defer writer.Close()
 	_, err = io.Copy(writer, decryptedReader)
 	return err
 }
 
-func (f *Service) downloadToObject(id string, err error) error {
-	file, _ := f.objectRepo.CreateFile(id)
-	err = f.downloader.Download(id, file)
+func (o *Service) downloadToObject(id string) error {
+	file, _ := o.objectRepo.CreateFile(id)
+	err := o.downloader.Download(id, file)
 	defer file.Close()
 	if err != nil {
 		return err
@@ -117,8 +125,8 @@ func (f *Service) downloadToObject(id string, err error) error {
 	return nil
 }
 
-func (f *Service) Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
-	recoveryItems, err := f.keystoreRepo.GetRecoveryItems()
+func (o *Service) encryptWriter(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
+	recoveryItems, err := o.keystoreRepo.GetRecoveryItems()
 	if err != nil {
 		return nil, err
 	}
@@ -126,15 +134,15 @@ func (f *Service) Encrypt(writer io.Writer, fileId string) (write io.WriteCloser
 	if err != nil {
 		return nil, err
 	}
-	err = f.keystoreRepo.Insert(fileId, pair.Key)
+	err = o.keystoreRepo.Insert(fileId, pair.Key)
 	if err != nil {
 		return nil, err
 	}
-	return file_crypto.NewWriter(writer, pair.Key, f.clientId, fileId, pair.RecoveryBlobs)
+	return file_crypto.NewWriter(writer, pair.Key, o.clientId, fileId, pair.RecoveryBlobs)
 }
 
-func (f *Service) Decrypt(reader io.Reader, fileId string) (read io.Reader, err error) {
-	key, err := f.keystoreRepo.Get(fileId)
+func (o *Service) decryptReader(reader io.Reader, fileId string) (read io.Reader, err error) {
+	key, err := o.keystoreRepo.Get(fileId)
 	if err != nil {
 		return nil, err
 	}
