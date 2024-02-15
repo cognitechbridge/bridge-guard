@@ -1,4 +1,4 @@
-package object
+package object_service
 
 type encryptChanItem struct {
 	id string

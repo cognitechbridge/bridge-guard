@@ -9,9 +9,9 @@ import (
 	"ctb-cli/config"
 	"ctb-cli/filesyetem"
 	"ctb-cli/filesyetem/key_repository"
-	"ctb-cli/filesyetem/object"
 	"ctb-cli/filesyetem/object_cache"
 	"ctb-cli/filesyetem/object_repository"
+	"ctb-cli/filesyetem/object_service"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/types"
@@ -110,7 +110,7 @@ func initManagerClient() {
 		return
 	}
 
-	objectService := object.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
+	objectService := object_service.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
 
 	fileSystem = filesyetem.NewFileSystem(objectService)
 }
