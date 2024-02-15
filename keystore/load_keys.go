@@ -7,12 +7,12 @@ import (
 	"io"
 )
 
-func (ks *KeyStore) LoadKeys() error {
+func (ks *KeyStoreDefault) LoadKeys() error {
 
 	if ks.privateKey != nil {
 		return nil
 	}
-	serializedPrivateKey, err := ks.persist.GetPrivateKey()
+	serializedPrivateKey, err := ks.keyRepository.GetPrivateKey()
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (ks *KeyStore) LoadKeys() error {
 	return nil
 }
 
-func (ks *KeyStore) GenerateClientKeys() (err error) {
+func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 	//Generate private key
 	privateKey := types.Key{}
 	io.ReadFull(rand.Reader, privateKey[:])
@@ -32,7 +32,7 @@ func (ks *KeyStore) GenerateClientKeys() (err error) {
 	if err != nil {
 		return err
 	}
-	err = ks.persist.SavePrivateKey(sealPrivateKey)
+	err = ks.keyRepository.SavePrivateKey(sealPrivateKey)
 	if err != nil {
 		return err
 	}
@@ -45,6 +45,6 @@ func (ks *KeyStore) GenerateClientKeys() (err error) {
 	if err != nil {
 		return err
 	}
-	err = ks.persist.SavePublicKey(ks.clintId, serializedPublic)
+	err = ks.keyRepository.SavePublicKey(ks.clintId, serializedPublic)
 	return
 }

@@ -1,48 +1,46 @@
 package keystore
 
 import (
-	"crypto/rsa"
 	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/crypto/recovery"
+	"ctb-cli/filesyetem/key_repository"
 	"ctb-cli/types"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
 	"os"
 )
 
+type KeyStorer interface {
+	Get(keyID string) (*types.Key, error)
+	Insert(keyID string, key types.Key) error
+	GetRecoveryItems() ([]types.RecoveryItem, error)
+}
+
 type Key = types.Key
 
-// KeyStore represents a key store
-type KeyStore struct {
+// KeyStoreDefault represents a key store
+type KeyStoreDefault struct {
 	clintId       string
 	rootKey       Key
 	privateKey    []byte
 	recoveryItems []types.RecoveryItem
-	persist       KeyRepository
+	keyRepository key_repository.KeyRepository
 }
 
-// KeyRepository KeyStorePersist is an interface for persisting keys
-type KeyRepository interface {
-	SaveDataKey(keyId, key, recipient string) error
-	GetDataKey(keyID string) (string, error)
-	GetPrivateKey() (string, error)
-	SavePrivateKey(key string) (err error)
-	GetPublicKey(id string) (*rsa.PublicKey, error)
-	SavePublicKey(id string, key string) (err error)
-}
+var _ KeyStorer = &KeyStoreDefault{}
 
-// NewKeyStore creates a new instance of KeyStore
-func NewKeyStore(clientId string, rootKey Key, persist KeyRepository) *KeyStore {
-	return &KeyStore{
+// NewKeyStore creates a new instance of KeyStoreDefault
+func NewKeyStore(clientId string, rootKey Key, keyRepository key_repository.KeyRepository) *KeyStoreDefault {
+	return &KeyStoreDefault{
 		clintId:       clientId,
 		rootKey:       rootKey,
-		persist:       persist,
+		keyRepository: keyRepository,
 		recoveryItems: make([]types.RecoveryItem, 0),
 	}
 }
 
 // Insert inserts a key into the key store
-func (ks *KeyStore) Insert(keyID string, key Key) error {
+func (ks *KeyStoreDefault) Insert(keyID string, key Key) error {
 	if err := ks.LoadKeys(); err != nil {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
@@ -56,15 +54,15 @@ func (ks *KeyStore) Insert(keyID string, key Key) error {
 		return err
 	}
 
-	return ks.persist.SaveDataKey(keyID, keyHashed, ks.clintId)
+	return ks.keyRepository.SaveDataKey(keyID, keyHashed, ks.clintId)
 }
 
 // Get retrieves a key from the key store
-func (ks *KeyStore) Get(keyID string) (*Key, error) {
+func (ks *KeyStoreDefault) Get(keyID string) (*Key, error) {
 	if err := ks.LoadKeys(); err != nil {
 		return nil, fmt.Errorf("cannot load keys: %v", err)
 	}
-	sk, err := ks.persist.GetDataKey(keyID)
+	sk, err := ks.keyRepository.GetDataKey(keyID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +74,7 @@ func (ks *KeyStore) Get(keyID string) (*Key, error) {
 	return key, nil
 }
 
-func (ks *KeyStore) Share(keyId string, recipient []byte, recipientClientId string) error {
+func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientClientId string) error {
 	if err := ks.LoadKeys(); err != nil {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
@@ -91,14 +89,14 @@ func (ks *KeyStore) Share(keyId string, recipient []byte, recipientClientId stri
 		return err
 	}
 
-	return ks.persist.SaveDataKey(keyId, keyHashed, recipientClientId)
+	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientClientId)
 }
 
-func (ks *KeyStore) GetRecoveryItems() ([]types.RecoveryItem, error) {
+func (ks *KeyStoreDefault) GetRecoveryItems() ([]types.RecoveryItem, error) {
 	return ks.recoveryItems, nil
 }
 
-func (ks *KeyStore) AddRecoveryKey(inPath string) error {
+func (ks *KeyStoreDefault) AddRecoveryKey(inPath string) error {
 	path := os.ExpandEnv(inPath)
 	pemBytes, err := os.ReadFile(path)
 	if err != nil {
@@ -115,6 +113,6 @@ func (ks *KeyStore) AddRecoveryKey(inPath string) error {
 	return nil
 }
 
-func (ks *KeyStore) getPublicKey() ([]byte, error) {
+func (ks *KeyStoreDefault) getPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
 }

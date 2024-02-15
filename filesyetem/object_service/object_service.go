@@ -5,16 +5,17 @@ import (
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/filesyetem/object_cache"
 	"ctb-cli/filesyetem/object_repository"
+	"ctb-cli/keystore"
 	"ctb-cli/types"
 	"io"
 )
 
 type Service struct {
-	cache        *object_cache.ObjectCache
-	objectRepo   *object_repository.ObjectRepository
-	downloader   Downloader
-	keystoreRepo keystoreRepo
-	clientId     string
+	cache      *object_cache.ObjectCache
+	objectRepo *object_repository.ObjectRepository
+	downloader types.CloudStorage
+	keystore   keystore.KeyStorer
+	clientId   string
 
 	//internal queues and channels
 	encryptChan  chan encryptChanItem
@@ -22,26 +23,15 @@ type Service struct {
 	encryptQueue *EncryptQueue
 }
 
-type keystoreRepo interface {
-	Get(keyID string) (*types.Key, error)
-	Insert(keyID string, key types.Key) error
-	GetRecoveryItems() ([]types.RecoveryItem, error)
-}
-
-type Downloader interface {
-	Download(id string, writeAt io.WriterAt) error
-	Upload(reader io.Reader, fileId string) error
-}
-
-func NewService(keystoreRepo keystoreRepo, clientId string, cache *object_cache.ObjectCache, objectRepo *object_repository.ObjectRepository, dn Downloader) Service {
+func NewService(keystoreRepo keystore.KeyStorer, clientId string, cache *object_cache.ObjectCache, objectRepo *object_repository.ObjectRepository, dn types.CloudStorage) Service {
 	service := Service{
-		downloader:   dn,
-		cache:        cache,
-		objectRepo:   objectRepo,
-		keystoreRepo: keystoreRepo,
-		clientId:     clientId,
-		encryptChan:  make(chan encryptChanItem, 10),
-		uploadChan:   make(chan uploadChanItem, 10),
+		downloader:  dn,
+		cache:       cache,
+		objectRepo:  objectRepo,
+		keystore:    keystoreRepo,
+		clientId:    clientId,
+		encryptChan: make(chan encryptChanItem, 10),
+		uploadChan:  make(chan uploadChanItem, 10),
 	}
 
 	service.encryptQueue = service.NewEncryptQueue()
@@ -126,7 +116,7 @@ func (o *Service) downloadToObject(id string) error {
 }
 
 func (o *Service) encryptWriter(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
-	recoveryItems, err := o.keystoreRepo.GetRecoveryItems()
+	recoveryItems, err := o.keystore.GetRecoveryItems()
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +124,7 @@ func (o *Service) encryptWriter(writer io.Writer, fileId string) (write io.Write
 	if err != nil {
 		return nil, err
 	}
-	err = o.keystoreRepo.Insert(fileId, pair.Key)
+	err = o.keystore.Insert(fileId, pair.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +132,7 @@ func (o *Service) encryptWriter(writer io.Writer, fileId string) (write io.Write
 }
 
 func (o *Service) decryptReader(reader io.Reader, fileId string) (read io.Reader, err error) {
-	key, err := o.keystoreRepo.Get(fileId)
+	key, err := o.keystore.Get(fileId)
 	if err != nil {
 		return nil, err
 	}
