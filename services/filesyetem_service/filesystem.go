@@ -1,8 +1,8 @@
-package filesyetem
+package filesyetem_service
 
 import (
-	"ctb-cli/filesyetem/link_repository"
-	"ctb-cli/filesyetem/object_service"
+	"ctb-cli/repositories"
+	"ctb-cli/services/object_service"
 	"fmt"
 	"github.com/google/uuid"
 	"io/fs"
@@ -10,13 +10,27 @@ import (
 	"path/filepath"
 )
 
+type FileSystemHandler interface {
+	GetSubFiles(path string) (res []fs.FileInfo, err error)
+	CreateFile(path string) (err error)
+	CreateDir(path string) (err error)
+	RemoveDir(path string) (err error)
+	Write(path string, buff []byte, ofst int64) (n int, err error)
+	Read(path string, buff []byte, ofst int64) (n int, err error)
+	Rename(oldPath string, newPath string) (err error)
+	RemovePath(path string) (err error)
+	Resize(path string, size int64) (err error)
+}
+
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
 	objectService object_service.Service
-	linkRepo      *link_repository.LinkRepository
+	linkRepo      *repositories.LinkRepository
 	rootPath      string
 	linkRepoPath  string
 }
+
+var _ FileSystemHandler = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
 func NewFileSystem(objectSerivce object_service.Service) *FileSystem {
@@ -27,7 +41,7 @@ func NewFileSystem(objectSerivce object_service.Service) *FileSystem {
 	fileSys.rootPath, _ = GetRepoCtbRoot()
 	fileSys.linkRepoPath = filepath.Join(fileSys.rootPath, "filesystem")
 
-	fileSys.linkRepo = link_repository.New(fileSys.linkRepoPath)
+	fileSys.linkRepo = repositories.NewLinkRepository(fileSys.linkRepoPath)
 
 	return &fileSys
 }

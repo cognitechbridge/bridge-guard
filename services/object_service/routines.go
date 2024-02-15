@@ -19,7 +19,7 @@ func (o *Service) StartEncryptRoutine() {
 
 func (o *Service) encrypt(fileId string) (err error) {
 	//Open object file
-	inputFile, err := o.cache.AsFile(fileId)
+	inputFile, err := o.objectCacheRepo.AsFile(fileId)
 	defer closeFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
@@ -45,7 +45,7 @@ func (o *Service) encrypt(fileId string) (err error) {
 		return
 	}
 
-	err = o.cache.Flush(fileId)
+	err = o.objectCacheRepo.Flush(fileId)
 	if err != nil {
 		return
 	}

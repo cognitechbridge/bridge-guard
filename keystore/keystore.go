@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/crypto/recovery"
-	"ctb-cli/filesyetem/key_repository"
+	"ctb-cli/repositories"
 	"ctb-cli/types"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
@@ -28,13 +28,13 @@ type KeyStoreDefault struct {
 	rootKey       Key
 	privateKey    []byte
 	recoveryItems []types.RecoveryItem
-	keyRepository key_repository.KeyRepository
+	keyRepository repositories.KeyRepository
 }
 
 var _ KeyStorer = &KeyStoreDefault{}
 
 // NewKeyStore creates a new instance of KeyStoreDefault
-func NewKeyStore(clientId string, rootKey Key, keyRepository key_repository.KeyRepository) *KeyStoreDefault {
+func NewKeyStore(clientId string, rootKey Key, keyRepository repositories.KeyRepository) *KeyStoreDefault {
 	return &KeyStoreDefault{
 		clintId:       clientId,
 		rootKey:       rootKey,

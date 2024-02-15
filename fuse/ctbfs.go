@@ -1,9 +1,9 @@
 package fuse
 
 import (
+	"ctb-cli/services/filesyetem_service"
 	"fmt"
 	"github.com/winfsp/cgofuse/fuse"
-	"io/fs"
 	"sync"
 )
 
@@ -12,7 +12,7 @@ type CtbFs struct {
 
 	sync.Mutex
 
-	fs FileSystemRepo
+	fs filesyetem_service.FileSystemHandler
 
 	root    *Node
 	openMap map[uint64]*Node
@@ -36,19 +36,7 @@ type Ino struct {
 	counter uint64
 }
 
-type FileSystemRepo interface {
-	GetSubFiles(path string) (res []fs.FileInfo, err error)
-	CreateFile(path string) (err error)
-	CreateDir(path string) (err error)
-	RemoveDir(path string) (err error)
-	Write(path string, buff []byte, ofst int64) (n int, err error)
-	Read(path string, buff []byte, ofst int64) (n int, err error)
-	Rename(oldPath string, newPath string) (err error)
-	RemovePath(path string) (err error)
-	Resize(path string, size int64) (err error)
-}
-
-func New(fs FileSystemRepo) *CtbFs {
+func New(fs filesyetem_service.FileSystemHandler) *CtbFs {
 	c := CtbFs{
 		openMap: make(map[uint64]*Node),
 		fs:      fs,

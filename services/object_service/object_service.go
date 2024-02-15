@@ -3,19 +3,18 @@ package object_service
 import (
 	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/crypto/recovery"
-	"ctb-cli/filesyetem/object_cache"
-	"ctb-cli/filesyetem/object_repository"
 	"ctb-cli/keystore"
+	"ctb-cli/repositories"
 	"ctb-cli/types"
 	"io"
 )
 
 type Service struct {
-	cache      *object_cache.ObjectCache
-	objectRepo *object_repository.ObjectRepository
-	downloader types.CloudStorage
-	keystore   keystore.KeyStorer
-	clientId   string
+	objectCacheRepo *repositories.ObjectCacheRepository
+	objectRepo      *repositories.ObjectRepository
+	downloader      types.CloudStorage
+	keystore        keystore.KeyStorer
+	clientId        string
 
 	//internal queues and channels
 	encryptChan  chan encryptChanItem
@@ -23,15 +22,15 @@ type Service struct {
 	encryptQueue *EncryptQueue
 }
 
-func NewService(keystoreRepo keystore.KeyStorer, clientId string, cache *object_cache.ObjectCache, objectRepo *object_repository.ObjectRepository, dn types.CloudStorage) Service {
+func NewService(keystoreRepo keystore.KeyStorer, clientId string, cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn types.CloudStorage) Service {
 	service := Service{
-		downloader:  dn,
-		cache:       cache,
-		objectRepo:  objectRepo,
-		keystore:    keystoreRepo,
-		clientId:    clientId,
-		encryptChan: make(chan encryptChanItem, 10),
-		uploadChan:  make(chan uploadChanItem, 10),
+		downloader:      dn,
+		objectCacheRepo: cache,
+		objectRepo:      objectRepo,
+		keystore:        keystoreRepo,
+		clientId:        clientId,
+		encryptChan:     make(chan encryptChanItem, 10),
+		uploadChan:      make(chan uploadChanItem, 10),
 	}
 
 	service.encryptQueue = service.NewEncryptQueue()
@@ -48,17 +47,17 @@ func (o *Service) Read(id string, buff []byte, ofst int64) (n int, err error) {
 		return 0, err
 	}
 
-	return o.cache.Read(id, buff, ofst)
+	return o.objectCacheRepo.Read(id, buff, ofst)
 }
 
 func (o *Service) Write(id string, buff []byte, ofst int64) (n int, err error) {
-	n, err = o.cache.Write(id, buff, ofst)
+	n, err = o.objectCacheRepo.Write(id, buff, ofst)
 	o.encryptQueue.Enqueue(id)
 	return n, err
 }
 
 func (o *Service) Create(id string) (err error) {
-	err = o.cache.Create(id)
+	err = o.objectCacheRepo.Create(id)
 	if err != nil {
 		return err
 	}
@@ -67,11 +66,11 @@ func (o *Service) Create(id string) (err error) {
 }
 
 func (o *Service) Move(oldId string, newId string) (err error) {
-	return o.cache.Move(oldId, newId)
+	return o.objectCacheRepo.Move(oldId, newId)
 }
 
 func (o *Service) Truncate(id string, size int64) (err error) {
-	return o.cache.Truncate(id, size)
+	return o.objectCacheRepo.Truncate(id, size)
 }
 
 func (o *Service) IsInQueue(id string) bool {
@@ -79,7 +78,7 @@ func (o *Service) IsInQueue(id string) bool {
 }
 
 func (o *Service) availableInCache(id string) error {
-	if o.cache.IsInCache(id) {
+	if o.objectCacheRepo.IsInCache(id) {
 		return nil
 	}
 	if o.objectRepo.IsInRepo(id) == false {
@@ -99,7 +98,7 @@ func (o *Service) decryptToCache(id string) error {
 	openObject, _ := o.objectRepo.OpenObject(id)
 	defer openObject.Close()
 	decryptedReader, _ := o.decryptReader(openObject, id)
-	writer, err := o.cache.CacheObjectWriter(id)
+	writer, err := o.objectCacheRepo.CacheObjectWriter(id)
 	defer writer.Close()
 	_, err = io.Copy(writer, decryptedReader)
 	return err

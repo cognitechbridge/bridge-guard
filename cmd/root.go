@@ -7,13 +7,11 @@ package cmd
 
 import (
 	"ctb-cli/config"
-	"ctb-cli/filesyetem"
-	"ctb-cli/filesyetem/key_repository"
-	"ctb-cli/filesyetem/object_cache"
-	"ctb-cli/filesyetem/object_repository"
-	"ctb-cli/filesyetem/object_service"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
+	"ctb-cli/repositories"
+	"ctb-cli/services/filesyetem_service"
+	"ctb-cli/services/object_service"
 	"ctb-cli/types"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -82,7 +80,7 @@ func initConfig() {
 	initManagerClient()
 }
 
-var fileSystem *filesyetem.FileSystem
+var fileSystem *filesyetem_service.FileSystem
 var keyStore keystore.KeyStorer
 
 func initManagerClient() {
@@ -93,11 +91,11 @@ func initManagerClient() {
 
 	clientId, err := config.Workspace.GetClientId()
 
-	root, _ := filesyetem.GetRepoCtbRoot()
+	root, _ := filesyetem_service.GetRepoCtbRoot()
 
-	keyRepository := key_repository.New(clientId, root)
-	objectCacheRepositry := object_cache.New(filepath.Join(root, "cache"))
-	objectRepositry := object_repository.NewObjectRepository(filepath.Join(root, "object"))
+	keyRepository := repositories.NewKeyRepositoryFile(clientId, root)
+	objectCacheRepositry := repositories.NewObjectCacheRepository(filepath.Join(root, "cache"))
+	objectRepositry := repositories.NewObjectRepository(filepath.Join(root, "object"))
 
 	keyStore = keystore.NewKeyStore(clientId, key, keyRepository)
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
@@ -112,5 +110,5 @@ func initManagerClient() {
 
 	objectService := object_service.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
 
-	fileSystem = filesyetem.NewFileSystem(objectService)
+	fileSystem = filesyetem_service.NewFileSystem(objectService)
 }

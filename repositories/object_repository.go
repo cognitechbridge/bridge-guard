@@ -1,4 +1,4 @@
-package object_repository
+package repositories
 
 import (
 	"io"
