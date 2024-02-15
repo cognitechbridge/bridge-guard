@@ -5,7 +5,6 @@ import (
 	"ctb-cli/filesyetem/object"
 	"fmt"
 	"github.com/google/uuid"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,7 +14,6 @@ import (
 type FileSystem struct {
 	//interfaces
 	objectService object.Service
-	downloader    Downloader
 
 	linkRepo *link_repository.LinkRepository
 
@@ -25,15 +23,9 @@ type FileSystem struct {
 	ObjectPath     string
 }
 
-type Downloader interface {
-	Download(id string, writeAt io.WriterAt) error
-	Upload(reader io.Reader, fileId string) error
-}
-
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(dn Downloader, objectSerivce object.Service) *FileSystem {
+func NewFileSystem(objectSerivce object.Service) *FileSystem {
 	fileSys := FileSystem{
-		downloader:    dn,
 		objectService: objectSerivce,
 	}
 

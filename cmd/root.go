@@ -112,5 +112,5 @@ func initManagerClient() {
 
 	objectService := object.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
 
-	fileSystem = filesyetem.NewFileSystem(cloudClient, objectService)
+	fileSystem = filesyetem.NewFileSystem(objectService)
 }
