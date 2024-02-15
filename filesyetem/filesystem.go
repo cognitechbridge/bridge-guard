@@ -3,7 +3,6 @@ package filesyetem
 import (
 	"ctb-cli/filesyetem/link_repository"
 	"ctb-cli/filesyetem/object"
-	"ctb-cli/filesyetem/object_cache"
 	"fmt"
 	"github.com/google/uuid"
 	"io"
@@ -18,13 +17,7 @@ type FileSystem struct {
 	objectService object.Service
 	downloader    Downloader
 
-	//internal queues and channels
-	encryptChan  chan encryptChanItem
-	uploadChan   chan uploadChanItem
-	encryptQueue *EncryptQueue
-
-	objectCacheSystem object_cache.ObjectCache
-	linkRepo          *link_repository.LinkRepository
+	linkRepo *link_repository.LinkRepository
 
 	//path
 	rootPath       string
@@ -42,23 +35,12 @@ func NewFileSystem(dn Downloader, objectSerivce object.Service) *FileSystem {
 	fileSys := FileSystem{
 		downloader:    dn,
 		objectService: objectSerivce,
-
-		encryptChan: make(chan encryptChanItem, 10),
-		uploadChan:  make(chan uploadChanItem, 10),
 	}
 
 	fileSys.rootPath, _ = GetRepoCtbRoot()
 	fileSys.fileSystemPath = filepath.Join(fileSys.rootPath, "filesystem")
 
-	fileSys.encryptQueue = fileSys.NewEncryptQueue()
-	fileSys.objectCacheSystem = object_cache.New(
-		filepath.Join(fileSys.rootPath, "cache"),
-	)
-
 	fileSys.linkRepo = link_repository.New(fileSys.fileSystemPath)
-
-	go fileSys.StartEncryptRoutine()
-	go fileSys.StartUploadRoutine()
 
 	return &fileSys
 }
@@ -140,20 +122,19 @@ func (f *FileSystem) RemoveDir(path string) (err error) {
 func (f *FileSystem) CreateFile(path string) (err error) {
 	key, err := uuid.NewV7()
 	if err != nil {
-		return
+		return err
 	}
 	_ = f.linkRepo.Create(path, key.String(), 0)
 	err = f.objectService.Create(key.String())
 	if err != nil {
-		return
+		return err
 	}
-	f.encryptQueue.Enqueue(path)
 	return
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
 	id, err := f.linkRepo.ReadId(path)
-	if !f.encryptQueue.IsInQueue(path) {
+	if !f.objectService.IsInQueue(id) {
 		id, err = f.changeFileId(path)
 		if err != nil {
 			return 0, err
@@ -166,7 +147,6 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 			return 0, err
 		}
 	}
-	f.encryptQueue.Enqueue(path)
 	return
 }
 
@@ -219,7 +199,6 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	f.encryptQueue.Rename(oldPath, newPath)
 	return nil
 }
 

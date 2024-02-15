@@ -36,11 +36,3 @@ func (f FileInfo) IsDir() bool {
 func (f FileInfo) Sys() any {
 	return nil
 }
-
-type encryptChanItem struct {
-	id string
-}
-
-type uploadChanItem struct {
-	path string
-}

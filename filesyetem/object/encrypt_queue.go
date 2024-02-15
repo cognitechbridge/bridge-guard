@@ -1,4 +1,4 @@
-package filesyetem
+package object
 
 import (
 	"fmt"
@@ -9,34 +9,21 @@ import (
 type EncryptQueue struct {
 	items map[string]time.Time
 	lock  sync.Mutex
-
-	fs *FileSystem
 }
 
-func (f *FileSystem) NewEncryptQueue() *EncryptQueue {
+func (f *Service) NewEncryptQueue() *EncryptQueue {
 	q := &EncryptQueue{
 		items: make(map[string]time.Time),
-		fs:    f,
 	}
 	go q.StartQueueRoutine(f.encryptChan)
 	return q
 }
 
-func (q *EncryptQueue) Enqueue(path string) {
+func (q *EncryptQueue) Enqueue(id string) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	q.items[path] = time.Now()
-}
-
-func (q *EncryptQueue) Rename(oldPath string, newPath string) {
-	q.lock.Lock()
-	defer q.lock.Unlock()
-
-	if _, ex := q.items[oldPath]; ex {
-		delete(q.items, oldPath)
-		q.items[newPath] = time.Now()
-	}
+	q.items[id] = time.Now()
 }
 
 func (q *EncryptQueue) processToChannel(output chan<- encryptChanItem) {
@@ -44,18 +31,13 @@ func (q *EncryptQueue) processToChannel(output chan<- encryptChanItem) {
 	defer q.lock.Unlock()
 
 	currentTime := time.Now()
-	for path, t := range q.items {
+	for id, t := range q.items {
 		if currentTime.Sub(t) > 5*time.Second {
-			delete(q.items, path)
-			id, err := q.fs.linkRepo.ReadId(path)
-			if err != nil {
-				continue
-
-			}
+			delete(q.items, id)
 			q.lock.Unlock()
 			output <- encryptChanItem{id: id}
 			q.lock.Lock()
-			fmt.Printf("Upload Queued: %s \n", path)
+			fmt.Printf("Upload Queued: %s \n", id)
 		}
 	}
 }
@@ -67,9 +49,9 @@ func (q *EncryptQueue) StartQueueRoutine(output chan<- encryptChanItem) {
 	}
 }
 
-func (q *EncryptQueue) IsInQueue(path string) bool {
+func (q *EncryptQueue) IsInQueue(id string) bool {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	_, is := q.items[path]
+	_, is := q.items[id]
 	return is
 }

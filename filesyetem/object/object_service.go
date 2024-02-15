@@ -15,6 +15,11 @@ type Service struct {
 	downloader   Downloader
 	keystoreRepo keystoreRepo
 	clientId     string
+
+	//internal queues and channels
+	encryptChan  chan encryptChanItem
+	uploadChan   chan uploadChanItem
+	encryptQueue *EncryptQueue
 }
 
 type keystoreRepo interface {
@@ -29,13 +34,22 @@ type Downloader interface {
 }
 
 func NewService(keystoreRepo keystoreRepo, clientId string, cache *object_cache.ObjectCache, objectRepo *object_repository.ObjectRepository, dn Downloader) Service {
-	return Service{
+	service := Service{
 		downloader:   dn,
 		cache:        cache,
 		objectRepo:   objectRepo,
 		keystoreRepo: keystoreRepo,
 		clientId:     clientId,
+		encryptChan:  make(chan encryptChanItem, 10),
+		uploadChan:   make(chan uploadChanItem, 10),
 	}
+
+	service.encryptQueue = service.NewEncryptQueue()
+
+	go service.StartEncryptRoutine()
+	go service.StartUploadRoutine()
+
+	return service
 }
 
 func (f *Service) Read(id string, buff []byte, ofst int64) (n int, err error) {
@@ -57,11 +71,18 @@ func (f *Service) Read(id string, buff []byte, ofst int64) (n int, err error) {
 }
 
 func (f *Service) Write(id string, buff []byte, ofst int64) (n int, err error) {
-	return f.cache.Write(id, buff, ofst)
+	n, err = f.cache.Write(id, buff, ofst)
+	f.encryptQueue.Enqueue(id)
+	return n, err
 }
 
 func (f *Service) Create(id string) (err error) {
-	return f.cache.Create(id)
+	err = f.cache.Create(id)
+	if err != nil {
+		return err
+	}
+	f.encryptQueue.Enqueue(id)
+	return nil
 }
 
 func (f *Service) Move(oldId string, newId string) (err error) {
@@ -70,6 +91,10 @@ func (f *Service) Move(oldId string, newId string) (err error) {
 
 func (f *Service) Truncate(id string, size int64) (err error) {
 	return f.cache.Truncate(id, size)
+}
+
+func (f *Service) IsInQueue(id string) bool {
+	return f.encryptQueue.IsInQueue(id)
 }
 
 func (f *Service) decryptToCache(id string, err error) error {
