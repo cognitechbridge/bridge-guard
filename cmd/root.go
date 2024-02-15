@@ -10,6 +10,8 @@ import (
 	"ctb-cli/filesyetem"
 	"ctb-cli/filesyetem/key_repository"
 	"ctb-cli/filesyetem/object"
+	"ctb-cli/filesyetem/object_cache"
+	"ctb-cli/filesyetem/object_repository"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/types"
@@ -17,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"path/filepath"
 )
 
 var cfgFile string
@@ -93,6 +96,8 @@ func initManagerClient() {
 	root, _ := filesyetem.GetRepoCtbRoot()
 
 	keyRepository := key_repository.New(clientId, root)
+	objectCacheRepositry := object_cache.New(filepath.Join(root, "cache"))
+	objectRepositry := object_repository.NewObjectRepository(filepath.Join(root, "object"))
 
 	keyStore = keystore.NewKeyStore(clientId, key, keyRepository)
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
@@ -105,7 +110,7 @@ func initManagerClient() {
 		return
 	}
 
-	objectService := object.NewService(keyStore, clientId)
+	objectService := object.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
 
-	fileSystem = filesyetem.NewFileSystem(cloudClient, &objectService)
+	fileSystem = filesyetem.NewFileSystem(cloudClient, objectService)
 }

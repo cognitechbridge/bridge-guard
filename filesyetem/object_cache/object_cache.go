@@ -13,10 +13,9 @@ type ObjectCache struct {
 	writePath string
 }
 
-func New(path string, resolver func(id string, writer io.Writer) (err error)) ObjectCache {
+func New(path string) ObjectCache {
 	return ObjectCache{
 		readPath:  path,
-		resolver:  resolver,
 		writePath: filepath.Join(path, "Write"),
 	}
 }
@@ -35,6 +34,12 @@ func (o *ObjectCache) Move(oldId string, newId string) (err error) {
 		return
 	}
 	return nil
+}
+
+func (o *ObjectCache) CacheObjectWriter(id string) (io.WriteCloser, error) {
+	p := filepath.Join(o.readPath, id)
+	file, err := os.Create(p)
+	return file, err
 }
 
 func (o *ObjectCache) Write(id string, buff []byte, ofst int64) (n int, err error) {
@@ -93,6 +98,14 @@ func (o *ObjectCache) Read(id string, buff []byte, ofst int64) (n int, err error
 	}
 	n, err = file.ReadAt(buff, ofst)
 	return
+}
+
+func (o *ObjectCache) IsInCache(id string) (is bool) {
+	p := filepath.Join(o.readPath, id)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func (o *ObjectCache) Flush(id string) (err error) {

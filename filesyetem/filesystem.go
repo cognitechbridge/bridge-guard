@@ -2,6 +2,7 @@ package filesyetem
 
 import (
 	"ctb-cli/filesyetem/link_repository"
+	"ctb-cli/filesyetem/object"
 	"ctb-cli/filesyetem/object_cache"
 	"fmt"
 	"github.com/google/uuid"
@@ -14,8 +15,8 @@ import (
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
 	//interfaces
-	fileCrypto FileCrypto
-	downloader Downloader
+	objectService object.Service
+	downloader    Downloader
 
 	//internal queues and channels
 	encryptChan  chan encryptChanItem
@@ -23,8 +24,7 @@ type FileSystem struct {
 	encryptQueue *EncryptQueue
 
 	objectCacheSystem object_cache.ObjectCache
-
-	linkRepo *link_repository.LinkRepository
+	linkRepo          *link_repository.LinkRepository
 
 	//path
 	rootPath       string
@@ -37,16 +37,11 @@ type Downloader interface {
 	Upload(reader io.Reader, fileId string) error
 }
 
-type FileCrypto interface {
-	Encrypt(writer io.Writer, fileId string) (write io.WriteCloser, err error)
-	Decrypt(reader io.Reader, fileId string) (read io.Reader, err error)
-}
-
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(dn Downloader, fileCrypto FileCrypto) *FileSystem {
+func NewFileSystem(dn Downloader, objectSerivce object.Service) *FileSystem {
 	fileSys := FileSystem{
-		downloader: dn,
-		fileCrypto: fileCrypto,
+		downloader:    dn,
+		objectService: objectSerivce,
 
 		encryptChan: make(chan encryptChanItem, 10),
 		uploadChan:  make(chan uploadChanItem, 10),
@@ -54,15 +49,13 @@ func NewFileSystem(dn Downloader, fileCrypto FileCrypto) *FileSystem {
 
 	fileSys.rootPath, _ = GetRepoCtbRoot()
 	fileSys.fileSystemPath = filepath.Join(fileSys.rootPath, "filesystem")
-	fileSys.ObjectPath = filepath.Join(fileSys.rootPath, "object_cache")
 
 	fileSys.encryptQueue = fileSys.NewEncryptQueue()
 	fileSys.objectCacheSystem = object_cache.New(
 		filepath.Join(fileSys.rootPath, "cache"),
-		fileSys.ObjectResolver,
 	)
 
-	fileSys.linkRepo = link_repository.New(fileSys.rootPath)
+	fileSys.linkRepo = link_repository.New(fileSys.fileSystemPath)
 
 	go fileSys.StartEncryptRoutine()
 	go fileSys.StartUploadRoutine()
@@ -200,7 +193,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	if err != nil {
 		return 0, err
 	}
-	return f.objectCacheSystem.Read(id, buff, ofst)
+	return f.objectService.Read(id, buff, ofst)
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
@@ -237,19 +230,4 @@ func GetRepoCtbRoot() (string, error) {
 	}
 	path := filepath.Join(root, ".ctb")
 	return path, nil
-}
-
-func (f *FileSystem) ObjectResolver(id string, writer io.Writer) (err error) {
-	path := filepath.Join(f.ObjectPath, id)
-	if _, err := os.Stat(path); os.IsNotExist(err) { //If object not exist, download it
-		file, _ := os.Create(path)
-		err = f.downloader.Download(id, file)
-		if err != nil {
-			return err
-		}
-	}
-	file, _ := os.Open(path)
-	decryptedReader, _ := f.fileCrypto.Decrypt(file, id)
-	_, err = io.Copy(writer, decryptedReader)
-	return
 }
