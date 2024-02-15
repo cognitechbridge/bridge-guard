@@ -143,7 +143,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 		return
 	}
 	_ = f.linkRepo.Create(path, key.String(), 0)
-	err = f.objectCacheSystem.Create(key.String())
+	err = f.objectService.Create(key.String())
 	if err != nil {
 		return
 	}
@@ -159,7 +159,7 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 			return 0, err
 		}
 	}
-	n, err = f.objectCacheSystem.Write(id, buff, ofst)
+	n, err = f.objectService.Write(id, buff, ofst)
 	if size, _ := f.linkRepo.ReadSize(path); size < ofst+int64(len(buff)) {
 		err = f.linkRepo.WriteSize(path, ofst+int64(len(buff)))
 		if err != nil {
@@ -181,7 +181,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 	if err != nil {
 		return "", err
 	}
-	err = f.objectCacheSystem.Move(oldId, newId)
+	err = f.objectService.Move(oldId, newId)
 	if err != nil {
 		return "", err
 	}
@@ -205,7 +205,7 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 	if err != nil {
 		return err
 	}
-	err = f.objectCacheSystem.Truncate(id, size)
+	err = f.objectService.Truncate(id, size)
 	if err != nil {
 		return err
 	}

@@ -56,6 +56,22 @@ func (f *Service) Read(id string, buff []byte, ofst int64) (n int, err error) {
 	return f.cache.Read(id, buff, ofst)
 }
 
+func (f *Service) Write(id string, buff []byte, ofst int64) (n int, err error) {
+	return f.cache.Write(id, buff, ofst)
+}
+
+func (f *Service) Create(id string) (err error) {
+	return f.cache.Create(id)
+}
+
+func (f *Service) Move(oldId string, newId string) (err error) {
+	return f.cache.Move(oldId, newId)
+}
+
+func (f *Service) Truncate(id string, size int64) (err error) {
+	return f.cache.Truncate(id, size)
+}
+
 func (f *Service) decryptToCache(id string, err error) error {
 	openObject, _ := f.objectRepo.OpenObject(id)
 	defer openObject.Close()
