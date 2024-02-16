@@ -97,7 +97,7 @@ func (o *Service) availableInCache(id string) error {
 func (o *Service) decryptToCache(id string) error {
 	openObject, _ := o.objectRepo.OpenObject(id)
 	defer openObject.Close()
-	decryptedReader, _ := o.decryptReader(openObject, id)
+	decryptedReader, _ := o.decryptReader(openObject)
 	writer, err := o.objectCacheRepo.CacheObjectWriter(id)
 	defer writer.Close()
 	_, err = io.Copy(writer, decryptedReader)
@@ -119,23 +119,23 @@ func (o *Service) encryptWriter(writer io.Writer, fileId string) (write io.Write
 	if err != nil {
 		return nil, err
 	}
-	pair, err := recovery.GenerateKeyPair(recoveryItems)
+	keyInfo, err := recovery.GenerateKey(recoveryItems)
 	if err != nil {
 		return nil, err
 	}
-	err = o.keystore.Insert(fileId, pair.Key)
+	err = o.keystore.Insert(keyInfo)
 	if err != nil {
 		return nil, err
 	}
-	return file_crypto.NewWriter(writer, pair.Key, o.clientId, fileId, pair.RecoveryBlobs)
+	return file_crypto.NewWriter(writer, keyInfo, o.clientId, fileId)
 }
 
-func (o *Service) decryptReader(reader io.Reader, fileId string) (read io.Reader, err error) {
-	key, err := o.keystore.Get(fileId)
+func (o *Service) decryptReader(reader io.Reader) (read io.Reader, err error) {
+	header, enc, err := file_crypto.Parse(reader)
 	if err != nil {
 		return nil, err
 	}
-	_, enc, err := file_crypto.Parse(reader)
+	key, err := o.keystore.Get(header.KeyId)
 	if err != nil {
 		return nil, err
 	}

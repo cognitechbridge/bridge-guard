@@ -5,17 +5,13 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"ctb-cli/types"
+	"github.com/google/uuid"
 
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 )
-
-type GeneratedKey struct {
-	Key           types.Key
-	RecoveryBlobs []string
-}
 
 type Recovery struct {
 	Version string `json:"version"`
@@ -51,19 +47,25 @@ func generateRecoveryBlob(key types.Key, recoveryItems []types.RecoveryItem) ([]
 	return blobs, nil
 }
 
-func GenerateKeyPair(recoveryItems []types.RecoveryItem) (GeneratedKey, error) {
+func GenerateKey(recoveryItems []types.RecoveryItem) (*types.KeyInfo, error) {
 	key := types.Key{}
 	if _, err := io.ReadFull(rand.Reader, key[:]); err != nil {
-		return GeneratedKey{}, err
+		return nil, err
+	}
+
+	keyId, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
 	}
 
 	blobs, err := generateRecoveryBlob(key, recoveryItems)
 	if err != nil {
-		return GeneratedKey{}, err
+		return nil, err
 	}
 
-	return GeneratedKey{
-		Key:           key,
+	return &types.KeyInfo{
+		Key:           key[:],
+		Id:            keyId.String(),
 		RecoveryBlobs: blobs,
 	}, nil
 }

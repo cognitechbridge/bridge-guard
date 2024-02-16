@@ -14,7 +14,7 @@ import (
 
 type KeyStorer interface {
 	Get(keyID string) (*types.Key, error)
-	Insert(keyID string, key types.Key) error
+	Insert(key *types.KeyInfo) error
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 	AddRecoveryKey(inPath string) error
 	GenerateClientKeys() (err error)
@@ -44,7 +44,7 @@ func NewKeyStore(clientId string, rootKey Key, keyRepository repositories.KeyRep
 }
 
 // Insert inserts a key into the key store
-func (ks *KeyStoreDefault) Insert(keyID string, key Key) error {
+func (ks *KeyStoreDefault) Insert(key *types.KeyInfo) error {
 	if err := ks.LoadKeys(); err != nil {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
@@ -53,12 +53,12 @@ func (ks *KeyStoreDefault) Insert(keyID string, key Key) error {
 	if err != nil {
 		return err
 	}
-	keyHashed, err := key_crypto.SealDataKey(key[:], pk)
+	keyHashed, err := key_crypto.SealDataKey(key.Key[:], pk)
 	if err != nil {
 		return err
 	}
 
-	return ks.keyRepository.SaveDataKey(keyID, keyHashed, ks.clintId)
+	return ks.keyRepository.SaveDataKey(key.Id, keyHashed, ks.clintId)
 }
 
 // Get retrieves a key from the key store
