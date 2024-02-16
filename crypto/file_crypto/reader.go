@@ -7,21 +7,20 @@ import (
 	"io"
 )
 
-type Reader struct {
-	streamReader *stream.Reader
+type EncryptedStream struct {
+	source io.Reader
 }
 
-func Parse(key *types.Key, source io.Reader) (*Header, *Reader, error) {
-	streamReader, err := stream.NewReader(key[:], source)
+func Parse(source io.Reader) (*Header, *EncryptedStream, error) {
+	header, err := readFileVersionAndHeader(source)
 	if err != nil {
 		return nil, nil, err
 	}
-	header, err := readFileVersionAndHeader(source)
-	return header, &Reader{streamReader: streamReader}, nil
+	return header, &EncryptedStream{source: source}, nil
 }
 
-func (d *Reader) Read(p []byte) (int, error) {
-	return d.streamReader.Read(p)
+func (e EncryptedStream) Decrypt(key *types.Key) (io.Reader, error) {
+	return stream.NewReader(key[:], e.source)
 }
 
 func readFileVersionAndHeader(source io.Reader) (*Header, error) {
