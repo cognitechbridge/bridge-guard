@@ -135,6 +135,6 @@ func (o *Service) decryptReader(reader io.Reader, fileId string) (read io.Reader
 	if err != nil {
 		return nil, err
 	}
-	read, err = file_crypto.NewReader(key, reader)
+	_, read, err = file_crypto.Parse(key, reader)
 	return read, err
 }
