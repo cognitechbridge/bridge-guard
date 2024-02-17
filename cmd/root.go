@@ -9,6 +9,7 @@ import (
 	"ctb-cli/config"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
+	"ctb-cli/prompts"
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
 	"ctb-cli/services/object_service"
@@ -21,6 +22,7 @@ import (
 )
 
 var cfgFile string
+var secret string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -49,7 +51,7 @@ func init() {
 	addSubCommands()
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $USERPROFILE/.ctb/config.yaml)")
-
+	rootCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Your secret")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
@@ -98,6 +100,12 @@ func initManagerClient() {
 	objectRepositry := repositories.NewObjectRepository(filepath.Join(root, "object"))
 
 	keyStore = keystore.NewKeyStore(clientId, key, keyRepository)
+
+	if secret == "" {
+		secret, _ = prompts.GetSecret()
+	}
+	keyStore.LoadKeyFromSecret(secret)
+
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {
 		return
