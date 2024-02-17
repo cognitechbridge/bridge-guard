@@ -3,6 +3,7 @@ package types
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"golang.org/x/crypto/chacha20poly1305"
 	"io"
 )
@@ -14,6 +15,20 @@ func NewKeyFromRand() *Key {
 	key := Key{}
 	io.ReadFull(rand.Reader, key[:])
 	return &key
+}
+
+func KeyFromBytes(bytes []byte) (Key, error) {
+	var key = Key{}
+
+	// Check if the slice length is exactly 3
+	if len(bytes) != chacha20poly1305.KeySize {
+		return Key{}, errors.New("bytes does not contain exactly required bytes")
+	}
+
+	// Copy elements from the slice to the array
+	copy(key[:], bytes)
+
+	return key, nil
 }
 
 type KeyInfo struct {

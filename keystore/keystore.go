@@ -7,6 +7,7 @@ import (
 	"ctb-cli/types"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
+	"golang.org/x/crypto/scrypt"
 	"os"
 )
 
@@ -16,6 +17,8 @@ type KeyStorer interface {
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 	AddRecoveryKey(inPath string) error
 	GenerateClientKeys() (err error)
+	LoadKeyFromSecret(secret string) error
+	ChangeRootKey(newKey *types.Key) error
 }
 
 type Key = types.Key
@@ -162,4 +165,35 @@ func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 
 func (ks *KeyStoreDefault) getPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
+}
+
+func (ks *KeyStoreDefault) LoadKeyFromSecret(secret string) error {
+	key, err := GetKeyFromSecret(secret)
+	if err != nil {
+		return err
+	}
+	ks.rootKey = *key
+	return nil
+}
+
+func GetKeyFromSecret(secret string) (*types.Key, error) {
+	keyB, err := scrypt.Key([]byte(secret), []byte("salt"), 32768, 8, 1, 32)
+	if err != nil {
+		return nil, err
+	}
+	key, err := types.KeyFromBytes(keyB)
+	return &key, err
+}
+
+func (ks *KeyStoreDefault) ChangeRootKey(newKey *types.Key) error {
+	if err := ks.LoadKeys(); err != nil {
+		return fmt.Errorf("cannot load keys: %v", err)
+	}
+	sealPrivateKey, err := key_crypto.SealPrivateKey(ks.privateKey, newKey)
+	ks.rootKey = *newKey
+	err = ks.keyRepository.SavePrivateKey(sealPrivateKey)
+	if err != nil {
+		return err
+	}
+	return nil
 }
