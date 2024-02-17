@@ -13,7 +13,6 @@ import (
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
 	"ctb-cli/services/object_service"
-	"ctb-cli/types"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -86,8 +85,6 @@ var fileSystem *filesyetem_service.FileSystem
 var keyStore keystore.KeyStorer
 
 func initManagerClient() {
-	var key types.Key
-
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
@@ -99,12 +96,7 @@ func initManagerClient() {
 	objectCacheRepositry := repositories.NewObjectCacheRepository(filepath.Join(root, "cache"))
 	objectRepositry := repositories.NewObjectRepository(filepath.Join(root, "object"))
 
-	keyStore = keystore.NewKeyStore(clientId, key, keyRepository)
-
-	if secret == "" {
-		secret, _ = prompts.GetSecret()
-	}
-	keyStore.LoadKeyFromSecret(secret)
+	keyStore = keystore.NewKeyStore(clientId, keyRepository)
 
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {
@@ -119,4 +111,11 @@ func initManagerClient() {
 	objectService := object_service.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
 
 	fileSystem = filesyetem_service.NewFileSystem(objectService)
+}
+
+func InitSecret() error {
+	if secret == "" {
+		secret, _ = prompts.GetSecret()
+	}
+	return keyStore.SetSecret(secret)
 }

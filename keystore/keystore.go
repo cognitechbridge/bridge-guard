@@ -7,7 +7,6 @@ import (
 	"ctb-cli/types"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
-	"golang.org/x/crypto/scrypt"
 	"os"
 )
 
@@ -17,8 +16,8 @@ type KeyStorer interface {
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 	AddRecoveryKey(inPath string) error
 	GenerateClientKeys() (err error)
-	LoadKeyFromSecret(secret string) error
-	ChangeRootKey(newKey *types.Key) error
+	SetSecret(secret string) error
+	ChangeSecret(secret string) error
 }
 
 type Key = types.Key
@@ -26,7 +25,7 @@ type Key = types.Key
 // KeyStoreDefault represents a key store
 type KeyStoreDefault struct {
 	clintId       string
-	rootKey       Key
+	secret        string
 	privateKey    []byte
 	recoveryItems []types.RecoveryItem
 	keyRepository repositories.KeyRepository
@@ -35,10 +34,9 @@ type KeyStoreDefault struct {
 var _ KeyStorer = &KeyStoreDefault{}
 
 // NewKeyStore creates a new instance of KeyStoreDefault
-func NewKeyStore(clientId string, rootKey Key, keyRepository repositories.KeyRepository) *KeyStoreDefault {
+func NewKeyStore(clientId string, keyRepository repositories.KeyRepository) *KeyStoreDefault {
 	return &KeyStoreDefault{
 		clintId:       clientId,
-		rootKey:       rootKey,
 		keyRepository: keyRepository,
 		recoveryItems: make([]types.RecoveryItem, 0),
 	}
@@ -127,7 +125,7 @@ func (ks *KeyStoreDefault) LoadKeys() error {
 	if err != nil {
 		return err
 	}
-	ks.privateKey, err = key_crypto.OpenPrivateKey(serializedPrivateKey, &ks.rootKey)
+	ks.privateKey, err = key_crypto.OpenPrivateKey(serializedPrivateKey, ks.secret)
 	if err != nil {
 		return err
 	}
@@ -137,8 +135,9 @@ func (ks *KeyStoreDefault) LoadKeys() error {
 func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 	//Generate private key
 	privateKey := types.NewKeyFromRand()
+	ks.privateKey = privateKey[:]
 	//Save private key
-	sealPrivateKey, err := key_crypto.SealPrivateKey(privateKey[:], &ks.rootKey)
+	sealPrivateKey, err := key_crypto.SealPrivateKey(privateKey[:], ks.secret)
 	if err != nil {
 		return err
 	}
@@ -151,6 +150,7 @@ func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 	if err != nil {
 		return err
 	}
+
 	serializedPublic, err := key_crypto.SerializePublicKey(publicKey)
 	if err != nil {
 		return err
@@ -167,30 +167,17 @@ func (ks *KeyStoreDefault) getPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
 }
 
-func (ks *KeyStoreDefault) LoadKeyFromSecret(secret string) error {
-	key, err := GetKeyFromSecret(secret)
-	if err != nil {
-		return err
-	}
-	ks.rootKey = *key
+func (ks *KeyStoreDefault) SetSecret(secret string) error {
+	ks.secret = secret
 	return nil
 }
 
-func GetKeyFromSecret(secret string) (*types.Key, error) {
-	keyB, err := scrypt.Key([]byte(secret), []byte("salt"), 32768, 8, 1, 32)
-	if err != nil {
-		return nil, err
-	}
-	key, err := types.KeyFromBytes(keyB)
-	return &key, err
-}
-
-func (ks *KeyStoreDefault) ChangeRootKey(newKey *types.Key) error {
+func (ks *KeyStoreDefault) ChangeSecret(secret string) error {
 	if err := ks.LoadKeys(); err != nil {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
-	sealPrivateKey, err := key_crypto.SealPrivateKey(ks.privateKey, newKey)
-	ks.rootKey = *newKey
+	sealPrivateKey, err := key_crypto.SealPrivateKey(ks.privateKey, secret)
+	ks.secret = secret
 	err = ks.keyRepository.SavePrivateKey(sealPrivateKey)
 	if err != nil {
 		return err
