@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"ctb-cli/prompts"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +15,15 @@ var genkeyCmd = &cobra.Command{
 	Short: "Generate client key pairs",
 	Long:  `Generate client key pairs`,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := keyStore.GenerateClientKeys()
+		secret, err := prompts.SetSecret()
+		if err != nil {
+			panic(err)
+		}
+		err = keyStore.SetSecret(secret)
+		if err != nil {
+			panic(err)
+		}
+		err = keyStore.GenerateClientKeys()
 		if err != nil {
 			panic(err)
 		}

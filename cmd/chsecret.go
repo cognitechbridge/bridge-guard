@@ -4,7 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"ctb-cli/keystore"
 	"ctb-cli/prompts"
 	"github.com/spf13/cobra"
 )
@@ -15,15 +14,15 @@ var chsecretCmd = &cobra.Command{
 	Short: "Change secret",
 	Long:  `Change secret`,
 	Run: func(cmd *cobra.Command, args []string) {
+		err := InitSecret()
+		if err != nil {
+			panic(err)
+		}
 		secret, err := prompts.SetSecret()
 		if err != nil {
 			panic(err)
 		}
-		key, err := keystore.GetKeyFromSecret(secret)
-		if err != nil {
-			panic(err)
-		}
-		err = keyStore.ChangeRootKey(key)
+		err = keyStore.ChangeSecret(secret)
 		if err != nil {
 			panic(err)
 		}

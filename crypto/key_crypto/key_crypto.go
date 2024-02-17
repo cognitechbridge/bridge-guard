@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
@@ -19,7 +20,7 @@ const (
 )
 
 // OpenPrivateKey encrypts and serializes the private key
-func OpenPrivateKey(serialized string, rootKey *types.Key) ([]byte, error) {
+func OpenPrivateKey(serialized string, secret string) ([]byte, error) {
 	parts := strings.Split(serialized, "\n")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid serialized key)")
@@ -30,7 +31,10 @@ func OpenPrivateKey(serialized string, rootKey *types.Key) ([]byte, error) {
 		return nil, fmt.Errorf("invalid serialized key")
 	}
 
-	derivedKey, err := deriveKey(rootKey[:], salt)
+	derivedKey, err := deriveKeyFromSecret(secret, salt)
+	if err != nil {
+		return nil, fmt.Errorf("error generating derivedKey key: %v", err)
+	}
 
 	aead, err := chacha20poly1305.New(derivedKey[:])
 	if err != nil {
@@ -41,21 +45,24 @@ func OpenPrivateKey(serialized string, rootKey *types.Key) ([]byte, error) {
 
 	deciphered, err := aead.Open(nil, nonce, ciphered, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+		return nil, fmt.Errorf("failed to decrypt private key: %w", err)
 	}
 
 	return deciphered, nil
 }
 
 // SealPrivateKey encrypts and serializes the private key
-func SealPrivateKey(privateKey []byte, rootKey *types.Key) (string, error) {
-	salt := make([]byte, 16)
+func SealPrivateKey(privateKey []byte, secret string) (string, error) {
+	salt := make([]byte, 32)
 	_, err := rand.Read(salt)
 	if err != nil {
 		return "", fmt.Errorf("error generating random salt: %v", err)
 	}
 
-	derivedKey, err := deriveKey(rootKey[:], salt)
+	derivedKey, err := deriveKeyFromSecret(secret, salt)
+	if err != nil {
+		return "", fmt.Errorf("error generating derivedKey key: %v", err)
+	}
 
 	aead, err := chacha20poly1305.New(derivedKey[:])
 	if err != nil {
@@ -166,4 +173,10 @@ func OpenDataKey(serialized string, privateKey []byte) (*types.Key, error) {
 func SerializePublicKey(publicKey []byte) (string, error) {
 	res := base64.RawStdEncoding.EncodeToString(publicKey)
 	return res, nil
+}
+
+func deriveKeyFromSecret(secret string, salt []byte) (*types.Key, error) {
+	keyB := argon2.IDKey([]byte(secret), salt, 4, 64*1024, 2, 32)
+	key, err := types.KeyFromBytes(keyB)
+	return &key, err
 }

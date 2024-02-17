@@ -14,6 +14,10 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `mount`,
 	Run: func(cmd *cobra.Command, args []string) {
+		err := InitSecret()
+		if err != nil {
+			panic(err)
+		}
 		ctbFuse := fuse.New(fileSystem)
 		ctbFuse.Mount()
 	},
