@@ -10,7 +10,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 )
 
 type Recovery struct {
@@ -20,7 +19,7 @@ type Recovery struct {
 	Sha1    string `json:"sha1"`
 }
 
-func generateRecoveryBlob(key types.Key, recoveryItems []types.RecoveryItem) ([]string, error) {
+func generateRecoveryBlob(key *types.Key, recoveryItems []types.RecoveryItem) ([]string, error) {
 	recoveryList := recoveryItems
 	if recoveryList == nil || len(recoveryList) == 0 {
 		return nil, fmt.Errorf("recoveryItems key not found. Cannot generate data key")
@@ -48,10 +47,7 @@ func generateRecoveryBlob(key types.Key, recoveryItems []types.RecoveryItem) ([]
 }
 
 func GenerateKey(recoveryItems []types.RecoveryItem) (*types.KeyInfo, error) {
-	key := types.Key{}
-	if _, err := io.ReadFull(rand.Reader, key[:]); err != nil {
-		return nil, err
-	}
+	key := types.NewKeyFromRand()
 
 	keyId, err := uuid.NewV7()
 	if err != nil {

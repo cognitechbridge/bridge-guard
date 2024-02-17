@@ -1,14 +1,12 @@
 package keystore
 
 import (
-	"crypto/rand"
 	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
 	"ctb-cli/types"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
-	"io"
 	"os"
 )
 
@@ -135,8 +133,7 @@ func (ks *KeyStoreDefault) LoadKeys() error {
 
 func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 	//Generate private key
-	privateKey := types.Key{}
-	io.ReadFull(rand.Reader, privateKey[:])
+	privateKey := types.NewKeyFromRand()
 	//Save private key
 	sealPrivateKey, err := key_crypto.SealPrivateKey(privateKey[:], &ks.rootKey)
 	if err != nil {
