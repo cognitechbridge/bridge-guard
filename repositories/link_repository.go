@@ -3,6 +3,7 @@ package repositories
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -108,4 +109,61 @@ func (c *LinkRepository) close() (err error) {
 	err = c.file.Close()
 	c.file = nil
 	return
+}
+
+func (c *LinkRepository) ListIdsByRegex(regex string) ([]string, error) {
+	var matchedIds []string
+	list, err := c.listFilesByRegex(regex)
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range list {
+		id, err := c.ReadId(file)
+		if err != nil {
+			return nil, err
+		}
+		matchedIds = append(matchedIds, id)
+	}
+	return matchedIds, nil
+}
+
+// listFilesByRegex lists all files in the specified directory that match the given regex pattern.
+// Returns a slice of strings containing the names of matching files.
+func (c *LinkRepository) listFilesByRegex(pattern string) ([]string, error) {
+	var matchedFiles []string
+
+	dirPath := c.rootPath
+
+	// Walk the directory tree
+	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err // Return the error to stop the walk
+		}
+		if info.IsDir() {
+			return nil // Skip directories
+		}
+
+		// Generate the relative path
+		relativePath, err := filepath.Rel(dirPath, path)
+		if err != nil {
+			return err // Return the error to stop the walk
+		}
+
+		// Check if the file matches the pattern
+		match, err := filepath.Match(pattern, relativePath)
+		if err != nil {
+			return err // Return the error to stop the walk
+		}
+		if match {
+			matchedFiles = append(matchedFiles, relativePath) // Add matching file to the slice
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error walking the path %q: %w", dirPath, err)
+	}
+
+	return matchedFiles, nil // Return the slice of matched file paths
 }

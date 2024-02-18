@@ -33,15 +33,14 @@ type FileSystem struct {
 var _ FileSystemHandler = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(objectSerivce object_service.Service) *FileSystem {
+func NewFileSystem(objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
 	fileSys := FileSystem{
 		objectService: objectSerivce,
+		linkRepo:      linkRepository,
 	}
 
 	fileSys.rootPath, _ = GetRepoCtbRoot()
 	fileSys.linkRepoPath = filepath.Join(fileSys.rootPath, "filesystem")
-
-	fileSys.linkRepo = repositories.NewLinkRepository(fileSys.linkRepoPath)
 
 	return &fileSys
 }
