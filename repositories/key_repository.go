@@ -1,10 +1,6 @@
 package repositories
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,7 +12,6 @@ type KeyRepository interface {
 	GetDataKey(keyID string) (string, error)
 	GetPrivateKey() (string, error)
 	SavePrivateKey(key string) (err error)
-	GetPublicKey(id string) (*rsa.PublicKey, error)
 	SavePublicKey(id string, key string) (err error)
 }
 
@@ -32,23 +27,6 @@ func NewKeyRepositoryFile(clientId string, rootPath string) *KeyRepositoryFile {
 		rootPath: rootPath,
 		clientId: clientId,
 	}
-}
-
-func (k *KeyRepositoryFile) GetPublicKey(id string) (*rsa.PublicKey, error) {
-	p := filepath.Join(k.getPublicPath(), id)
-	file, err := os.ReadFile(p)
-	if err != nil {
-		return nil, err
-	}
-	block, _ := pem.Decode(file)
-	if block == nil {
-		return nil, fmt.Errorf("failed to parse PEM block containing the key")
-	}
-	publicKey, err := x509.ParsePKCS1PublicKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	return publicKey, nil
 }
 
 func (k *KeyRepositoryFile) SavePublicKey(id string, key string) (err error) {

@@ -13,6 +13,7 @@ import (
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
 	"ctb-cli/services/object_service"
+	"ctb-cli/services/share_service"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -83,6 +84,7 @@ func initConfig() {
 
 var fileSystem *filesyetem_service.FileSystem
 var keyStore keystore.KeyStorer
+var shareService *share_service.Service
 
 func initManagerClient() {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
@@ -95,6 +97,8 @@ func initManagerClient() {
 	keyRepository := repositories.NewKeyRepositoryFile(clientId, root)
 	objectCacheRepositry := repositories.NewObjectCacheRepository(filepath.Join(root, "cache"))
 	objectRepositry := repositories.NewObjectRepository(filepath.Join(root, "object"))
+	reicipientRepositry := repositories.NewRecipientRepositoryFile(filepath.Join(root, "recipients"))
+	linkRepository := repositories.NewLinkRepository(filepath.Join(root, "filesystem"))
 
 	keyStore = keystore.NewKeyStore(clientId, keyRepository)
 
@@ -109,8 +113,9 @@ func initManagerClient() {
 	}
 
 	objectService := object_service.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
+	shareService = share_service.NewService(reicipientRepositry, keyStore, linkRepository, &objectService)
 
-	fileSystem = filesyetem_service.NewFileSystem(objectService)
+	fileSystem = filesyetem_service.NewFileSystem(objectService, linkRepository)
 }
 
 func InitSecret() error {

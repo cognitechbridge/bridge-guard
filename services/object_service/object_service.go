@@ -142,3 +142,13 @@ func (o *Service) decryptReader(reader io.Reader) (read io.Reader, err error) {
 	read, err = enc.Decrypt(key)
 	return read, err
 }
+
+func (o *Service) KetKeyIdByObjectId(id string) (string, error) {
+	reader, err := o.objectRepo.OpenObject(id)
+	defer reader.Close()
+	header, _, err := file_crypto.Parse(reader)
+	if err != nil {
+		return "", err
+	}
+	return header.KeyId, nil
+}

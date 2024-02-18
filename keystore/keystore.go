@@ -18,6 +18,7 @@ type KeyStorer interface {
 	GenerateClientKeys() (err error)
 	SetSecret(secret string) error
 	ChangeSecret(secret string) error
+	Share(keyId string, recipient []byte, recipientClientId string) error
 }
 
 type Key = types.Key
