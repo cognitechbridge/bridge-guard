@@ -5,6 +5,7 @@ import (
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
 	"ctb-cli/types"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
 	"os"
@@ -16,11 +17,17 @@ type KeyStorer interface {
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 	AddRecoveryKey(inPath string) error
 	GenerateUserKeys() (err error)
-	SetSecret(secret string) error
+	SetSecret(secret string)
+	LoadKeys() error
 	ChangeSecret(secret string) error
 	Share(keyId string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
+	SetUserId(userId string)
 }
+
+var (
+	ErrorInvalidSecret = errors.New("invalid secret")
+)
 
 type Key = types.Key
 
@@ -42,6 +49,11 @@ func NewKeyStore(userId string, keyRepository repositories.KeyRepository) *KeySt
 		keyRepository: keyRepository,
 		recoveryItems: make([]types.RecoveryItem, 0),
 	}
+}
+
+func (ks *KeyStoreDefault) SetUserId(userId string) {
+	ks.userId = userId
+	ks.keyRepository.SetUserId(userId)
 }
 
 // Insert inserts a key into the key store
@@ -128,7 +140,9 @@ func (ks *KeyStoreDefault) LoadKeys() error {
 		return err
 	}
 	ks.privateKey, err = key_crypto.OpenPrivateKey(serializedPrivateKey, ks.secret)
-	if err != nil {
+	if errors.Is(err, key_crypto.ErrorInvalidKey) {
+		return ErrorInvalidSecret
+	} else if err != nil {
 		return err
 	}
 	return nil
@@ -156,9 +170,9 @@ func (ks *KeyStoreDefault) GetPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
 }
 
-func (ks *KeyStoreDefault) SetSecret(secret string) error {
+func (ks *KeyStoreDefault) SetSecret(secret string) {
 	ks.secret = secret
-	return nil
+	return
 }
 
 func (ks *KeyStoreDefault) ChangeSecret(secret string) error {
