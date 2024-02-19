@@ -20,11 +20,18 @@ var genkeyCmd = &cobra.Command{
 	Short: "Generate user key pairs",
 	Long:  `Generate user key pairs`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//Prompts
-		email, err := prompts.GetEmail()
-		if err != nil {
-			panic(err)
+		var err error
+
+		//Email
+		email, _ := cmd.Flags().GetString("email")
+		if email == "" {
+			email, err = prompts.GetEmail()
+			if err != nil {
+				panic(err)
+			}
 		}
+
+		//Secret
 		secret, err := prompts.NewSecret()
 		if err != nil {
 			panic(err)
@@ -42,7 +49,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		userId, err := bech32.Encode("ctb-id", bytes)
+		userId, err := bech32.EncodeUid(bytes)
 		if err != nil {
 			panic(err)
 		}
@@ -86,7 +93,7 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// genkeyCmd.PersistentFlags().String("foo", "", "A help for foo")
+	genkeyCmd.PersistentFlags().StringP("email", "e", "", "email")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
