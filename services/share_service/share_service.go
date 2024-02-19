@@ -14,11 +14,25 @@ type Service struct {
 	keyStorer           keystore.KeyStorer
 }
 
+func NewService(
+	recipientRepository repositories.RecipientRepository,
+	keyStorer keystore.KeyStorer,
+	linkRepository *repositories.LinkRepository,
+	objectService *object_service.Service,
+) *Service {
+	return &Service{
+		objectService:       objectService,
+		recipientRepository: recipientRepository,
+		keyStorer:           keyStorer,
+		linkRepository:      linkRepository,
+	}
+}
+
 func (s *Service) ShareByEmail(regex string, email string) error {
 	rec, _ := s.recipientRepository.GetRecipientByEmail(email)
 	files, _ := s.linkRepository.ListIdsByRegex(regex)
 	for _, fileId := range files {
-		keyId, err := s.objectService.KetKeyIdByObjectId(fileId)
+		keyId, err := s.objectService.GetKeyIdByObjectId(fileId)
 		if err != nil {
 			return err
 		}
@@ -34,18 +48,4 @@ func (s *Service) ShareByEmail(regex string, email string) error {
 func (s *Service) SaveRecipient(recipient types.Recipient) error {
 	err := s.recipientRepository.InsertRecipient(recipient)
 	return err
-}
-
-func NewService(
-	recipientRepository repositories.RecipientRepository,
-	keyStorer keystore.KeyStorer,
-	linkRepository *repositories.LinkRepository,
-	objectService *object_service.Service,
-) *Service {
-	return &Service{
-		objectService:       objectService,
-		recipientRepository: recipientRepository,
-		keyStorer:           keyStorer,
-		linkRepository:      linkRepository,
-	}
 }

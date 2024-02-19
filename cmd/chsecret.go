@@ -18,7 +18,7 @@ var chsecretCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		secret, err := prompts.SetSecret()
+		secret, err := prompts.NewSecret()
 		if err != nil {
 			panic(err)
 		}
