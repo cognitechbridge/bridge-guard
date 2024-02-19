@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	info = "cognitechbridge.com/v1/X25519"
+	X25519V1Info = "cognitechbridge.com/v1/X25519"
 )
 
 // OpenPrivateKey encrypts and serializes the private key
@@ -80,7 +80,7 @@ func SealPrivateKey(privateKey []byte, secret string) (string, error) {
 	return res, nil
 }
 
-func deriveKey(rootKey []byte, salt []byte) (derivedKey types.Key, err error) {
+func deriveKey(rootKey []byte, salt []byte, info string) (derivedKey types.Key, err error) {
 	hk := hkdf.New(sha256.New, rootKey[:], salt, []byte(info))
 	derivedKey = types.Key{}
 	_, err = io.ReadFull(hk, derivedKey[:])
@@ -109,7 +109,7 @@ func SealDataKey(key []byte, publicKey []byte) (string, error) {
 		return "", fmt.Errorf("error encrypting data key: %v", err)
 	}
 
-	wrapKey, err := deriveKey(sharedSecret, []byte(salt))
+	wrapKey, err := deriveKey(sharedSecret, []byte(salt), X25519V1Info)
 
 	aead, err := chacha20poly1305.New(wrapKey[:])
 	if err != nil {
@@ -150,7 +150,7 @@ func OpenDataKey(serialized string, privateKey []byte) (*types.Key, error) {
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}
 
-	wrapKey, err := deriveKey(sharedSecret, []byte(salt))
+	wrapKey, err := deriveKey(sharedSecret, []byte(salt), X25519V1Info)
 
 	aead, err := chacha20poly1305.New(wrapKey[:])
 	if err != nil {
