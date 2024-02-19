@@ -148,19 +148,6 @@ func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 		return err
 	}
 
-	publicKey, err := ks.GetPublicKey()
-	if err != nil {
-		return err
-	}
-
-	serializedPublic, err := key_crypto.SerializePublicKey(publicKey)
-	if err != nil {
-		return err
-	}
-	err = ks.keyRepository.SavePublicKey(ks.clintId, serializedPublic)
-	if err != nil {
-		return err
-	}
 	err = ks.LoadKeys()
 	return
 }

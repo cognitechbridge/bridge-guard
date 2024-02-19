@@ -170,11 +170,6 @@ func OpenDataKey(serialized string, privateKey []byte) (*types.Key, error) {
 	return &key, nil
 }
 
-func SerializePublicKey(publicKey []byte) (string, error) {
-	res := base64.RawStdEncoding.EncodeToString(publicKey)
-	return res, nil
-}
-
 func deriveKeyFromSecret(secret string, salt []byte) (*types.Key, error) {
 	keyB := argon2.IDKey([]byte(secret), salt, 4, 64*1024, 2, 32)
 	key, err := types.KeyFromBytes(keyB)
