@@ -33,13 +33,13 @@ type FileSystem struct {
 var _ FileSystemHandler = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
+func NewFileSystem(rootPath string, objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
 	fileSys := FileSystem{
 		objectService: objectSerivce,
 		linkRepo:      linkRepository,
 	}
 
-	fileSys.rootPath, _ = GetRepoCtbRoot()
+	fileSys.rootPath = rootPath
 	fileSys.linkRepoPath = filepath.Join(fileSys.rootPath, "filesystem")
 
 	return &fileSys
@@ -200,13 +200,4 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		return err
 	}
 	return nil
-}
-
-func GetRepoCtbRoot() (string, error) {
-	root, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	path := filepath.Join(root, ".ctb")
-	return path, nil
 }
