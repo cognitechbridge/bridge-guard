@@ -12,6 +12,7 @@ type KeyRepository interface {
 	GetDataKey(keyID string) (string, error)
 	GetPrivateKey() (string, error)
 	SavePrivateKey(key string) (err error)
+	SetUserId(userId string)
 }
 
 type KeyRepositoryFile struct {
@@ -26,6 +27,10 @@ func NewKeyRepositoryFile(userId string, rootPath string) *KeyRepositoryFile {
 		rootPath: rootPath,
 		userId:   userId,
 	}
+}
+
+func (k *KeyRepositoryFile) SetUserId(userId string) {
+	k.userId = userId
 }
 
 func (k *KeyRepositoryFile) GetPrivateKey() (string, error) {

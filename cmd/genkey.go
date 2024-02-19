@@ -54,13 +54,14 @@ var genkeyCmd = &cobra.Command{
 			panic(err)
 		}
 
-		//Save user id to config
+		//Save user id to config and keystore
 		err = config.Workspace.SetUserId(userId)
+		keyStore.SetUserId(userId)
 		if err != nil {
 			panic(err)
 		}
 
-		err = keyStore.SetSecret(secret)
+		keyStore.SetSecret(secret)
 		if err != nil {
 			panic(err)
 		}

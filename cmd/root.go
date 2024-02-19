@@ -9,7 +9,6 @@ import (
 	"ctb-cli/config"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
-	"ctb-cli/prompts"
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
 	"ctb-cli/services/object_service"
@@ -116,11 +115,4 @@ func initManagerClient() {
 	shareService = share_service.NewService(reicipientRepositry, keyStore, linkRepository, &objectService)
 
 	fileSystem = filesyetem_service.NewFileSystem(objectService, linkRepository)
-}
-
-func InitSecret() error {
-	if secret == "" {
-		secret, _ = prompts.GetSecret()
-	}
-	return keyStore.SetSecret(secret)
 }

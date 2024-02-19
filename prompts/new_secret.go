@@ -24,7 +24,6 @@ func NewSecret() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	input = textinput.New("Repeat your new secret:")
 	input.Validate = validateRepeat(pass)
 	input.Hidden = true

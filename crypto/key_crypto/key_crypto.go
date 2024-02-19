@@ -19,6 +19,10 @@ const (
 	X25519V1Info = "cognitechbridge.com/v1/X25519"
 )
 
+var (
+	ErrorInvalidKey = errors.New("invalid key")
+)
+
 // OpenPrivateKey encrypts and serializes the private key
 func OpenPrivateKey(serialized string, secret string) ([]byte, error) {
 	parts := strings.Split(serialized, "\n")
@@ -45,7 +49,7 @@ func OpenPrivateKey(serialized string, secret string) ([]byte, error) {
 
 	deciphered, err := aead.Open(nil, nonce, ciphered, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt private key: %w", err)
+		return nil, ErrorInvalidKey
 	}
 
 	return deciphered, nil
