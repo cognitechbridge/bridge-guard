@@ -15,21 +15,21 @@ type KeyRepository interface {
 }
 
 type KeyRepositoryFile struct {
-	clientId string
+	userId   string
 	rootPath string
 }
 
 var _ KeyRepository = &KeyRepositoryFile{}
 
-func NewKeyRepositoryFile(clientId string, rootPath string) *KeyRepositoryFile {
+func NewKeyRepositoryFile(userId string, rootPath string) *KeyRepositoryFile {
 	return &KeyRepositoryFile{
 		rootPath: rootPath,
-		clientId: clientId,
+		userId:   userId,
 	}
 }
 
 func (k *KeyRepositoryFile) GetPrivateKey() (string, error) {
-	p := filepath.Join(k.getPrivatePath(), k.clientId)
+	p := filepath.Join(k.getPrivatePath(), k.userId)
 	content, err := os.ReadFile(p)
 	if err != nil {
 		return "", err
@@ -38,7 +38,7 @@ func (k *KeyRepositoryFile) GetPrivateKey() (string, error) {
 }
 
 func (k *KeyRepositoryFile) SavePrivateKey(key string) (err error) {
-	p := filepath.Join(k.getPrivatePath(), k.clientId)
+	p := filepath.Join(k.getPrivatePath(), k.userId)
 	file, err := os.Create(p)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (k *KeyRepositoryFile) SaveDataKey(keyId, key, recipient string) error {
 }
 
 func (k *KeyRepositoryFile) GetDataKey(keyID string) (string, error) {
-	p := filepath.Join(k.getDataPath(k.clientId), keyID)
+	p := filepath.Join(k.getDataPath(k.userId), keyID)
 	file, err := os.Open(p)
 	defer file.Close()
 	if err != nil {

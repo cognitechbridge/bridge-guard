@@ -15,10 +15,10 @@ type KeyStorer interface {
 	Insert(key *types.KeyInfo) error
 	GetRecoveryItems() ([]types.RecoveryItem, error)
 	AddRecoveryKey(inPath string) error
-	GenerateClientKeys() (err error)
+	GenerateUserKeys() (err error)
 	SetSecret(secret string) error
 	ChangeSecret(secret string) error
-	Share(keyId string, recipient []byte, recipientClientId string) error
+	Share(keyId string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
 }
 
@@ -26,7 +26,7 @@ type Key = types.Key
 
 // KeyStoreDefault represents a key store
 type KeyStoreDefault struct {
-	clintId       string
+	userId        string
 	secret        string
 	privateKey    []byte
 	recoveryItems []types.RecoveryItem
@@ -36,9 +36,9 @@ type KeyStoreDefault struct {
 var _ KeyStorer = &KeyStoreDefault{}
 
 // NewKeyStore creates a new instance of KeyStoreDefault
-func NewKeyStore(clientId string, keyRepository repositories.KeyRepository) *KeyStoreDefault {
+func NewKeyStore(userId string, keyRepository repositories.KeyRepository) *KeyStoreDefault {
 	return &KeyStoreDefault{
-		clintId:       clientId,
+		userId:        userId,
 		keyRepository: keyRepository,
 		recoveryItems: make([]types.RecoveryItem, 0),
 	}
@@ -59,7 +59,7 @@ func (ks *KeyStoreDefault) Insert(key *types.KeyInfo) error {
 		return err
 	}
 
-	return ks.keyRepository.SaveDataKey(key.Id, keyHashed, ks.clintId)
+	return ks.keyRepository.SaveDataKey(key.Id, keyHashed, ks.userId)
 }
 
 // Get retrieves a key from the key store
@@ -79,7 +79,7 @@ func (ks *KeyStoreDefault) Get(keyID string) (*Key, error) {
 	return key, nil
 }
 
-func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientClientId string) error {
+func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId string) error {
 	if err := ks.LoadKeys(); err != nil {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
@@ -94,7 +94,7 @@ func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientClient
 		return err
 	}
 
-	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientClientId)
+	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientUserId)
 }
 
 func (ks *KeyStoreDefault) GetRecoveryItems() ([]types.RecoveryItem, error) {
@@ -134,7 +134,7 @@ func (ks *KeyStoreDefault) LoadKeys() error {
 	return nil
 }
 
-func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
+func (ks *KeyStoreDefault) GenerateUserKeys() (err error) {
 	//Generate private key
 	privateKey := types.NewKeyFromRand()
 	ks.privateKey = privateKey[:]
