@@ -19,6 +19,7 @@ type KeyStorer interface {
 	SetSecret(secret string) error
 	ChangeSecret(secret string) error
 	Share(keyId string, recipient []byte, recipientClientId string) error
+	GetPublicKey() ([]byte, error)
 }
 
 type Key = types.Key
@@ -49,7 +50,7 @@ func (ks *KeyStoreDefault) Insert(key *types.KeyInfo) error {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
 
-	pk, err := ks.getPublicKey()
+	pk, err := ks.GetPublicKey()
 	if err != nil {
 		return err
 	}
@@ -147,7 +148,7 @@ func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 		return err
 	}
 
-	publicKey, err := ks.getPublicKey()
+	publicKey, err := ks.GetPublicKey()
 	if err != nil {
 		return err
 	}
@@ -164,7 +165,7 @@ func (ks *KeyStoreDefault) GenerateClientKeys() (err error) {
 	return
 }
 
-func (ks *KeyStoreDefault) getPublicKey() ([]byte, error) {
+func (ks *KeyStoreDefault) GetPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
 }
 

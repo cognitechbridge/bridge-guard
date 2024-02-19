@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"ctb-cli/prompts"
+	"ctb-cli/types"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -27,6 +28,20 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+
+		publicKey, err := keyStore.GetPublicKey()
+		if err != nil {
+			panic(err)
+		}
+		recipient, err := types.NewRecipient("sample@cognitechbridge.com", publicKey, "TEST-CLIENT")
+		if err != nil {
+			panic(err)
+		}
+		err = shareService.SaveRecipient(recipient)
+		if err != nil {
+			panic(err)
+		}
+
 		fmt.Println("Code generated successfully")
 	},
 }

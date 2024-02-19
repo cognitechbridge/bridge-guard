@@ -4,7 +4,7 @@ import (
 	"ctb-cli/keystore"
 	"ctb-cli/repositories"
 	"ctb-cli/services/object_service"
-	"encoding/base64"
+	"ctb-cli/types"
 )
 
 type Service struct {
@@ -22,10 +22,18 @@ func (s *Service) ShareByEmail(regex string, email string) error {
 		if err != nil {
 			return err
 		}
-		publicBytes, err := base64.RawStdEncoding.DecodeString(rec.Public)
+		publicBytes, err := rec.GetPublicBytes()
+		if err != nil {
+			return err
+		}
 		s.keyStorer.Share(keyId, publicBytes, rec.ClientId)
 	}
 	return nil
+}
+
+func (s *Service) SaveRecipient(recipient types.Recipient) error {
+	err := s.recipientRepository.InsertRecipient(recipient)
+	return err
 }
 
 func NewService(
