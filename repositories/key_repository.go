@@ -12,7 +12,6 @@ type KeyRepository interface {
 	GetDataKey(keyID string) (string, error)
 	GetPrivateKey() (string, error)
 	SavePrivateKey(key string) (err error)
-	SavePublicKey(id string, key string) (err error)
 }
 
 type KeyRepositoryFile struct {
@@ -27,22 +26,6 @@ func NewKeyRepositoryFile(clientId string, rootPath string) *KeyRepositoryFile {
 		rootPath: rootPath,
 		clientId: clientId,
 	}
-}
-
-func (k *KeyRepositoryFile) SavePublicKey(id string, key string) (err error) {
-	p := filepath.Join(k.getPublicPath(), id)
-
-	file, err := os.Create(p)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(key)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (k *KeyRepositoryFile) GetPrivateKey() (string, error) {
@@ -107,14 +90,6 @@ func (k *KeyRepositoryFile) getDataPath(recipient string) string {
 
 func (k *KeyRepositoryFile) getPrivatePath() string {
 	p := filepath.Join(k.rootPath, "keys", "private")
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		os.MkdirAll(p, os.ModePerm)
-	}
-	return p
-}
-
-func (k *KeyRepositoryFile) getPublicPath() string {
-	p := filepath.Join(k.rootPath, "keys", "public")
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		os.MkdirAll(p, os.ModePerm)
 	}
