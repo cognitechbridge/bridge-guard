@@ -4,11 +4,14 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"crypto/rand"
 	"ctb-cli/config"
+	"ctb-cli/crypto/bech32"
 	"ctb-cli/prompts"
 	"ctb-cli/types"
 	"fmt"
 	"github.com/spf13/cobra"
+	"io"
 )
 
 // genkeyCmd represents the genkey command
@@ -33,6 +36,23 @@ var genkeyCmd = &cobra.Command{
 			panic(err)
 		}
 
+		//Generate random client id
+		bytes := make([]byte, 128/8)
+		_, err = io.ReadFull(rand.Reader, bytes)
+		if err != nil {
+			panic(err)
+		}
+		clientId, err := bech32.Encode("ctb-add", bytes)
+		if err != nil {
+			panic(err)
+		}
+
+		//Save client id to config
+		err = config.Workspace.SetClientId(clientId)
+		if err != nil {
+			panic(err)
+		}
+
 		err = keyStore.SetSecret(secret)
 		if err != nil {
 			panic(err)
@@ -46,7 +66,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		recipient, err := types.NewRecipient(email, publicKey, "TEST-CLIENT")
+		recipient, err := types.NewRecipient(email, publicKey, clientId)
 		if err != nil {
 			panic(err)
 		}
