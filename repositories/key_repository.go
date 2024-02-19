@@ -9,32 +9,25 @@ import (
 // KeyRepository KeyStorePersist is an interface for persisting keys
 type KeyRepository interface {
 	SaveDataKey(keyId, key, recipient string) error
-	GetDataKey(keyID string) (string, error)
-	GetPrivateKey() (string, error)
-	SavePrivateKey(key string) (err error)
-	SetUserId(userId string)
+	GetDataKey(keyID string, userId string) (string, error)
+	GetPrivateKey(userId string) (string, error)
+	SavePrivateKey(key string, userId string) (err error)
 }
 
 type KeyRepositoryFile struct {
-	userId   string
 	rootPath string
 }
 
 var _ KeyRepository = &KeyRepositoryFile{}
 
-func NewKeyRepositoryFile(userId string, rootPath string) *KeyRepositoryFile {
+func NewKeyRepositoryFile(rootPath string) *KeyRepositoryFile {
 	return &KeyRepositoryFile{
 		rootPath: rootPath,
-		userId:   userId,
 	}
 }
 
-func (k *KeyRepositoryFile) SetUserId(userId string) {
-	k.userId = userId
-}
-
-func (k *KeyRepositoryFile) GetPrivateKey() (string, error) {
-	p := filepath.Join(k.getPrivatePath(), k.userId)
+func (k *KeyRepositoryFile) GetPrivateKey(userId string) (string, error) {
+	p := filepath.Join(k.getPrivatePath(), userId)
 	content, err := os.ReadFile(p)
 	if err != nil {
 		return "", err
@@ -42,8 +35,8 @@ func (k *KeyRepositoryFile) GetPrivateKey() (string, error) {
 	return string(content), nil
 }
 
-func (k *KeyRepositoryFile) SavePrivateKey(key string) (err error) {
-	p := filepath.Join(k.getPrivatePath(), k.userId)
+func (k *KeyRepositoryFile) SavePrivateKey(key string, userId string) (err error) {
+	p := filepath.Join(k.getPrivatePath(), userId)
 	file, err := os.Create(p)
 	if err != nil {
 		return err
@@ -71,8 +64,8 @@ func (k *KeyRepositoryFile) SaveDataKey(keyId, key, recipient string) error {
 	return nil
 }
 
-func (k *KeyRepositoryFile) GetDataKey(keyID string) (string, error) {
-	p := filepath.Join(k.getDataPath(k.userId), keyID)
+func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, error) {
+	p := filepath.Join(k.getDataPath(userId), keyID)
 	file, err := os.Open(p)
 	defer file.Close()
 	if err != nil {

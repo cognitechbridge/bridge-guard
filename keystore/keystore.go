@@ -53,7 +53,6 @@ func NewKeyStore(userId string, keyRepository repositories.KeyRepository) *KeySt
 
 func (ks *KeyStoreDefault) SetUserId(userId string) {
 	ks.userId = userId
-	ks.keyRepository.SetUserId(userId)
 }
 
 // Insert inserts a key into the key store
@@ -79,7 +78,7 @@ func (ks *KeyStoreDefault) Get(keyID string) (*Key, error) {
 	if err := ks.LoadKeys(); err != nil {
 		return nil, fmt.Errorf("cannot load keys: %v", err)
 	}
-	sk, err := ks.keyRepository.GetDataKey(keyID)
+	sk, err := ks.keyRepository.GetDataKey(keyID, ks.userId)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +134,7 @@ func (ks *KeyStoreDefault) LoadKeys() error {
 	if ks.privateKey != nil {
 		return nil
 	}
-	serializedPrivateKey, err := ks.keyRepository.GetPrivateKey()
+	serializedPrivateKey, err := ks.keyRepository.GetPrivateKey(ks.userId)
 	if err != nil {
 		return err
 	}
@@ -157,7 +156,7 @@ func (ks *KeyStoreDefault) GenerateUserKeys() (err error) {
 	if err != nil {
 		return err
 	}
-	err = ks.keyRepository.SavePrivateKey(sealPrivateKey)
+	err = ks.keyRepository.SavePrivateKey(sealPrivateKey, ks.userId)
 	if err != nil {
 		return err
 	}
@@ -181,7 +180,7 @@ func (ks *KeyStoreDefault) ChangeSecret(secret string) error {
 	}
 	sealPrivateKey, err := key_crypto.SealPrivateKey(ks.privateKey, secret)
 	ks.secret = secret
-	err = ks.keyRepository.SavePrivateKey(sealPrivateKey)
+	err = ks.keyRepository.SavePrivateKey(sealPrivateKey, ks.userId)
 	if err != nil {
 		return err
 	}
