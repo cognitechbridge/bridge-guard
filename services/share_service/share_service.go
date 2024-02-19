@@ -40,7 +40,7 @@ func (s *Service) ShareByEmail(regex string, email string) error {
 		if err != nil {
 			return err
 		}
-		s.keyStorer.Share(keyId, publicBytes, rec.ClientId)
+		s.keyStorer.Share(keyId, publicBytes, rec.UserId)
 	}
 	return nil
 }

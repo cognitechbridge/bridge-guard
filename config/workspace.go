@@ -9,17 +9,17 @@ type workspace struct{}
 
 var Workspace = workspace{}
 
-func (*workspace) GetClientId() (string, error) {
-	path := "workspace.client-id"
+func (*workspace) GetUserId() (string, error) {
+	path := "workspace.user-id"
 	res := viper.GetString(path)
 	if res == "" {
-		return "", fmt.Errorf("workspace.client-id not found")
+		return "", fmt.Errorf("workspace.user-id not found")
 	}
 	return res, nil
 }
 
-func (*workspace) SetClientId(clientId string) error {
-	viper.Set("workspace.client-id", clientId)
+func (*workspace) SetUserId(userId string) error {
+	viper.Set("workspace.user-id", userId)
 	err := viper.WriteConfig()
 	if err != nil {
 		return err
@@ -36,8 +36,8 @@ func (*workspace) GetEmail() (string, error) {
 	return res, nil
 }
 
-func (*workspace) SetEmail(clientId string) error {
-	viper.Set("workspace.email", clientId)
+func (*workspace) SetEmail(userId string) error {
+	viper.Set("workspace.email", userId)
 	err := viper.WriteConfig()
 	if err != nil {
 		return err

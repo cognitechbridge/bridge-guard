@@ -90,17 +90,17 @@ func initManagerClient() {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
-	clientId, err := config.Workspace.GetClientId()
+	userId, err := config.Workspace.GetUserId()
 
 	root, _ := filesyetem_service.GetRepoCtbRoot()
 
-	keyRepository := repositories.NewKeyRepositoryFile(clientId, root)
+	keyRepository := repositories.NewKeyRepositoryFile(userId, root)
 	objectCacheRepositry := repositories.NewObjectCacheRepository(filepath.Join(root, "cache"))
 	objectRepositry := repositories.NewObjectRepository(filepath.Join(root, "object"))
 	reicipientRepositry := repositories.NewRecipientRepositoryFile(filepath.Join(root, "recipients"))
 	linkRepository := repositories.NewLinkRepository(filepath.Join(root, "filesystem"))
 
-	keyStore = keystore.NewKeyStore(clientId, keyRepository)
+	keyStore = keystore.NewKeyStore(userId, keyRepository)
 
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {
@@ -112,7 +112,7 @@ func initManagerClient() {
 		return
 	}
 
-	objectService := object_service.NewService(keyStore, clientId, &objectCacheRepositry, &objectRepositry, cloudClient)
+	objectService := object_service.NewService(keyStore, userId, &objectCacheRepositry, &objectRepositry, cloudClient)
 	shareService = share_service.NewService(reicipientRepositry, keyStore, linkRepository, &objectService)
 
 	fileSystem = filesyetem_service.NewFileSystem(objectService, linkRepository)

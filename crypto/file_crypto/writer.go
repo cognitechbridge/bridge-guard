@@ -19,14 +19,14 @@ var (
 )
 
 // NewWriter creates a new writer.
-func NewWriter(dst io.Writer, keyInfo *types.KeyInfo, clientId string, fileId string) (*writer, error) {
+func NewWriter(dst io.Writer, keyInfo *types.KeyInfo, userId string, fileId string) (*writer, error) {
 	streamWriter, err := stream.NewWriter(keyInfo.Key[:], dst)
 	if err != nil {
 		return nil, err
 	}
 	return &writer{
 		dst:          dst,
-		header:       newHeader(clientId, fileId, keyInfo.Id, keyInfo.RecoveryBlobs),
+		header:       newHeader(userId, fileId, keyInfo.Id, keyInfo.RecoveryBlobs),
 		notFirst:     false,
 		streamWriter: streamWriter,
 	}, nil
@@ -57,11 +57,11 @@ func (e *writer) Close() error {
 	return e.streamWriter.Close()
 }
 
-func newHeader(clientId string, fileId string, keyId string, recoveryBlobs []string) Header {
+func newHeader(userId string, fileId string, keyId string, recoveryBlobs []string) Header {
 	return Header{
 		Version:    "V1",
 		Alg:        getAlgorithmName(), // Set default algorithm
-		ClientID:   clientId,
+		UserID:     userId,
 		FileID:     fileId,
 		KeyId:      keyId,
 		Recoveries: recoveryBlobs,

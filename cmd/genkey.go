@@ -17,8 +17,8 @@ import (
 // genkeyCmd represents the genkey command
 var genkeyCmd = &cobra.Command{
 	Use:   "genkey",
-	Short: "Generate client key pairs",
-	Long:  `Generate client key pairs`,
+	Short: "Generate user key pairs",
+	Long:  `Generate user key pairs`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//Prompts
 		email, err := prompts.GetEmail()
@@ -36,19 +36,19 @@ var genkeyCmd = &cobra.Command{
 			panic(err)
 		}
 
-		//Generate random client id
+		//Generate random use id
 		bytes := make([]byte, 128/8)
 		_, err = io.ReadFull(rand.Reader, bytes)
 		if err != nil {
 			panic(err)
 		}
-		clientId, err := bech32.Encode("ctb-add", bytes)
+		userId, err := bech32.Encode("ctb-id", bytes)
 		if err != nil {
 			panic(err)
 		}
 
-		//Save client id to config
-		err = config.Workspace.SetClientId(clientId)
+		//Save user id to config
+		err = config.Workspace.SetUserId(userId)
 		if err != nil {
 			panic(err)
 		}
@@ -57,7 +57,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		err = keyStore.GenerateClientKeys()
+		err = keyStore.GenerateUserKeys()
 		if err != nil {
 			panic(err)
 		}
@@ -66,7 +66,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		recipient, err := types.NewRecipient(email, publicKey, clientId)
+		recipient, err := types.NewRecipient(email, publicKey, userId)
 		if err != nil {
 			panic(err)
 		}
