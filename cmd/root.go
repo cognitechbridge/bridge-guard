@@ -91,7 +91,7 @@ func initManagerClient() {
 
 	userId, err := config.Workspace.GetUserId()
 
-	root, _ := filesyetem_service.GetRepoCtbRoot()
+	root, _ := config.GetRepoCtbRoot()
 
 	keyRepository := repositories.NewKeyRepositoryFile(filepath.Join(root, "keys"))
 	objectCacheRepositry := repositories.NewObjectCacheRepository(filepath.Join(root, "cache"))
@@ -114,5 +114,5 @@ func initManagerClient() {
 	objectService := object_service.NewService(keyStore, userId, &objectCacheRepositry, &objectRepositry, cloudClient)
 	shareService = share_service.NewService(reicipientRepositry, keyStore, linkRepository, &objectService)
 
-	fileSystem = filesyetem_service.NewFileSystem(objectService, linkRepository)
+	fileSystem = filesyetem_service.NewFileSystem(root, objectService, linkRepository)
 }

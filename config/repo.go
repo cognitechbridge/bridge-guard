@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 )
 
 func GetRepoRoot() (string, error) {
@@ -10,10 +9,9 @@ func GetRepoRoot() (string, error) {
 }
 
 func GetRepoCtbRoot() (string, error) {
-	root, err := os.Getwd()
+	path, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
-	path := filepath.Join(root, ".ctb")
 	return path, nil
 }
