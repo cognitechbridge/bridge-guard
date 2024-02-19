@@ -79,7 +79,7 @@ func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, err
 }
 
 func (k *KeyRepositoryFile) getDataPath(recipient string) string {
-	p := filepath.Join(k.rootPath, "keys", "data", recipient)
+	p := filepath.Join(k.rootPath, "data", recipient)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		os.MkdirAll(p, os.ModePerm)
 	}
@@ -87,7 +87,7 @@ func (k *KeyRepositoryFile) getDataPath(recipient string) string {
 }
 
 func (k *KeyRepositoryFile) getPrivatePath() string {
-	p := filepath.Join(k.rootPath, "keys", "private")
+	p := filepath.Join(k.rootPath, "private")
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		os.MkdirAll(p, os.ModePerm)
 	}
