@@ -13,7 +13,7 @@ var (
 	{{- end -}}`
 )
 
-func SetSecret() (string, error) {
+func NewSecret() (string, error) {
 
 	input := textinput.New("Choose a new secret (passphrase):")
 	input.Placeholder = "make it strong!"

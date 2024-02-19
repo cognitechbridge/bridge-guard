@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"ctb-cli/config"
 	"ctb-cli/prompts"
 	"ctb-cli/types"
 	"fmt"
@@ -16,10 +17,22 @@ var genkeyCmd = &cobra.Command{
 	Short: "Generate client key pairs",
 	Long:  `Generate client key pairs`,
 	Run: func(cmd *cobra.Command, args []string) {
-		secret, err := prompts.SetSecret()
+		//Prompts
+		email, err := prompts.GetEmail()
 		if err != nil {
 			panic(err)
 		}
+		secret, err := prompts.NewSecret()
+		if err != nil {
+			panic(err)
+		}
+
+		//Save email to config
+		err = config.Workspace.SetEmail(email)
+		if err != nil {
+			panic(err)
+		}
+
 		err = keyStore.SetSecret(secret)
 		if err != nil {
 			panic(err)
@@ -33,7 +46,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		recipient, err := types.NewRecipient("sample@cognitechbridge.com", publicKey, "TEST-CLIENT")
+		recipient, err := types.NewRecipient(email, publicKey, "TEST-CLIENT")
 		if err != nil {
 			panic(err)
 		}
