@@ -4,8 +4,8 @@ import "errors"
 
 var (
 	InvalidPublicKey = errors.New("invalid public key")
-	UidHrp           = "CTB-UID-"
-	PubHrp           = "CTB-PUB"
+	UidHrp           = "ctb-uid-"
+	PubHrp           = "ctb-pub-"
 )
 
 func EncodePublic(byte []byte) (string, error) {
