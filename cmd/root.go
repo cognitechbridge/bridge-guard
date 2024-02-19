@@ -93,7 +93,7 @@ func initManagerClient() {
 
 	root, _ := filesyetem_service.GetRepoCtbRoot()
 
-	keyRepository := repositories.NewKeyRepositoryFile(root)
+	keyRepository := repositories.NewKeyRepositoryFile(filepath.Join(root, "keys"))
 	objectCacheRepositry := repositories.NewObjectCacheRepository(filepath.Join(root, "cache"))
 	objectRepositry := repositories.NewObjectRepository(filepath.Join(root, "object"))
 	reicipientRepositry := repositories.NewRecipientRepositoryFile(filepath.Join(root, "recipients"))
