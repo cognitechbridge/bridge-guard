@@ -92,12 +92,19 @@ func initManagerClient() {
 	userId, err := config.Workspace.GetUserId()
 
 	root, _ := config.GetRepoCtbRoot()
+	tempRoot, _ := config.GetTempRoot()
 
-	keyRepository := repositories.NewKeyRepositoryFile(filepath.Join(root, "keys"))
-	objectCacheRepositry := repositories.NewObjectCacheRepository(filepath.Join(root, "cache"))
-	objectRepositry := repositories.NewObjectRepository(filepath.Join(root, "object"))
-	reicipientRepositry := repositories.NewRecipientRepositoryFile(filepath.Join(root, "recipients"))
-	linkRepository := repositories.NewLinkRepository(filepath.Join(root, "filesystem"))
+	keysPath := CreateAndReturn(filepath.Join(root, "keys"))
+	objectPath := CreateAndReturn(filepath.Join(root, "object"))
+	recipientsPath := CreateAndReturn(filepath.Join(root, "recipients"))
+	filesystemPath := CreateAndReturn(filepath.Join(root, "filesystem"))
+	cachePath := CreateAndReturn(filepath.Join(tempRoot, "cache"))
+
+	keyRepository := repositories.NewKeyRepositoryFile(keysPath)
+	objectCacheRepository := repositories.NewObjectCacheRepository(cachePath)
+	objectRepository := repositories.NewObjectRepository(objectPath)
+	recipientRepository := repositories.NewRecipientRepositoryFile(recipientsPath)
+	linkRepository := repositories.NewLinkRepository(filesystemPath)
 
 	keyStore = keystore.NewKeyStore(userId, keyRepository)
 
@@ -111,8 +118,13 @@ func initManagerClient() {
 		return
 	}
 
-	objectService := object_service.NewService(keyStore, userId, &objectCacheRepositry, &objectRepositry, cloudClient)
-	shareService = share_service.NewService(reicipientRepositry, keyStore, linkRepository, &objectService)
+	objectService := object_service.NewService(keyStore, userId, &objectCacheRepository, &objectRepository, cloudClient)
+	shareService = share_service.NewService(recipientRepository, keyStore, linkRepository, &objectService)
 
-	fileSystem = filesyetem_service.NewFileSystem(root, objectService, linkRepository)
+	fileSystem = filesyetem_service.NewFileSystem(objectService, linkRepository)
+}
+
+func CreateAndReturn(path string) string {
+	os.MkdirAll(path, os.ModePerm)
+	return path
 }
