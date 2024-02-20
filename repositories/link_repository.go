@@ -10,7 +10,6 @@ import (
 
 type LinkRepository struct {
 	rootPath string
-	file     *os.File
 }
 
 const FsSizeOffset = 0
@@ -18,7 +17,6 @@ const FsIdOffset = 8
 
 func NewLinkRepository(rootPath string) *LinkRepository {
 	return &LinkRepository{
-		file:     nil,
 		rootPath: rootPath,
 	}
 }
@@ -30,7 +28,11 @@ func (c *LinkRepository) Create(path string, key string, size int64) error {
 	if err != nil {
 		return err
 	}
-	err = c.open(path)
+	file, err := c.open(path)
+	if err != nil {
+		return err
+	}
+	err = file.Close()
 	if err != nil {
 		return err
 	}
@@ -46,23 +48,25 @@ func (c *LinkRepository) Create(path string, key string, size int64) error {
 }
 
 func (c *LinkRepository) WriteSize(path string, size int64) (err error) {
-	defer c.openClose(path)()
+	file, _ := c.open(path)
+	defer file.Close()
 	if err != nil {
 		return err
 	}
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.BigEndian, size)
-	_, err = c.file.WriteAt(buf.Bytes(), FsSizeOffset)
+	_, err = file.WriteAt(buf.Bytes(), FsSizeOffset)
 	return
 }
 
 func (c *LinkRepository) ReadSize(path string) (size int64, err error) {
-	defer c.openClose(path)()
+	file, _ := c.open(path)
+	defer file.Close()
 	if err != nil {
 		return 0, err
 	}
 	buf := make([]byte, 8)
-	_, err = c.file.ReadAt(buf, FsSizeOffset)
+	_, err = file.ReadAt(buf, FsSizeOffset)
 	err = binary.Read(bytes.NewReader(buf), binary.BigEndian, &size)
 	if err != nil {
 		return
@@ -71,44 +75,30 @@ func (c *LinkRepository) ReadSize(path string) (size int64, err error) {
 }
 
 func (c *LinkRepository) WriteId(path string, key string) (err error) {
-	defer c.openClose(path)()
+	file, _ := c.open(path)
+	defer file.Close()
 	if err != nil {
 		return err
 	}
-	_, err = c.file.WriteAt([]byte(key), FsIdOffset)
+	_, err = file.WriteAt([]byte(key), FsIdOffset)
 	return
 }
 
 func (c *LinkRepository) ReadId(path string) (key string, err error) {
-	defer c.openClose(path)()
+	file, _ := c.open(path)
+	defer file.Close()
 	if err != nil {
 		return "", err
 	}
 	id := make([]byte, 36)
-	_, _ = c.file.ReadAt(id, FsIdOffset)
+	_, _ = file.ReadAt(id, FsIdOffset)
 	return string(id), nil
 }
 
-func (c *LinkRepository) openClose(path string) (fu func()) {
-	_ = c.open(path)
-	return func() {
-		_ = c.close()
-	}
-}
-
-func (c *LinkRepository) open(path string) (err error) {
-	if c.file != nil {
-		return nil
-	}
+func (c *LinkRepository) open(path string) (*os.File, error) {
 	p := filepath.Join(c.rootPath, path)
-	c.file, err = os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
-	return
-}
-
-func (c *LinkRepository) close() (err error) {
-	err = c.file.Close()
-	c.file = nil
-	return
+	file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
+	return file, err
 }
 
 func (c *LinkRepository) ListIdsByRegex(regex string) ([]string, error) {
