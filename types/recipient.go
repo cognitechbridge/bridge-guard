@@ -2,7 +2,6 @@ package types
 
 import (
 	"crypto/rand"
-	"ctb-cli/crypto/bech32"
 	"errors"
 	"io"
 )
@@ -18,7 +17,7 @@ var (
 )
 
 func NewRecipient(email string, public []byte, userId string) (Recipient, error) {
-	publicStr, err := bech32.EncodePublic(public)
+	publicStr, err := EncodePublic(public)
 	if err != nil {
 		return Recipient{}, err
 	}
@@ -28,7 +27,7 @@ func NewRecipient(email string, public []byte, userId string) (Recipient, error)
 func GenerateRandomRecipient() (string, error) {
 	add := make([]byte, 32)
 	io.ReadFull(rand.Reader, add)
-	res, err := bech32.EncodePublic(add)
+	res, err := EncodePublic(add)
 	if err != nil {
 		return "", ErrorGeneratingRecipient
 	}
@@ -36,6 +35,6 @@ func GenerateRandomRecipient() (string, error) {
 }
 
 func (r Recipient) GetPublicBytes() ([]byte, error) {
-	data, err := bech32.DecodePublic(r.Public)
+	data, err := DecodePublic(r.Public)
 	return data, err
 }
