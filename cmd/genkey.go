@@ -6,7 +6,6 @@ package cmd
 import (
 	"crypto/rand"
 	"ctb-cli/config"
-	"ctb-cli/crypto/bech32"
 	"ctb-cli/prompts"
 	"ctb-cli/types"
 	"fmt"
@@ -49,7 +48,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		userId, err := bech32.EncodeUid(bytes)
+		userId, err := types.EncodeUid(bytes)
 		if err != nil {
 			panic(err)
 		}
