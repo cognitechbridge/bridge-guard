@@ -127,6 +127,51 @@ func (c *LinkRepository) ListIdsByRegex(regex string) ([]string, error) {
 	return matchedIds, nil
 }
 
+func (c *LinkRepository) Remove(path string) error {
+	absPath := filepath.Join(c.rootPath, path)
+	err := os.Remove(absPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *LinkRepository) RemoveDir(path string) error {
+	p := filepath.Join(c.rootPath, path)
+	err := os.Remove(p)
+	return err
+}
+
+func (c *LinkRepository) Rename(oldPath string, newPath string) error {
+	o := filepath.Join(c.rootPath, oldPath)
+	n := filepath.Join(c.rootPath, newPath)
+	err := os.Rename(o, n)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *LinkRepository) CreateDir(path string) (err error) {
+	absPath := filepath.Join(c.rootPath, path)
+	err = os.MkdirAll(absPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *LinkRepository) GetSubFiles(path string) ([]os.FileInfo, error) {
+	p := filepath.Join(c.rootPath, path)
+	file, err := os.Open(p)
+	defer file.Close()
+	if err != nil {
+		return nil, fmt.Errorf("error opening dir to Read sub files: %v", err)
+	}
+	subFiles, _ := file.Readdir(0)
+	return subFiles, nil
+}
+
 // listFilesByRegex lists all files in the specified directory that match the given regex pattern.
 // Returns a slice of strings containing the names of matching files.
 func (c *LinkRepository) listFilesByRegex(pattern string) ([]string, error) {

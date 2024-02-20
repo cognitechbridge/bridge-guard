@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"io/fs"
-	"os"
 	"path/filepath"
 )
 
@@ -26,66 +25,33 @@ type FileSystemHandler interface {
 type FileSystem struct {
 	objectService object_service.Service
 	linkRepo      *repositories.LinkRepository
-	rootPath      string
-	linkRepoPath  string
 }
 
 var _ FileSystemHandler = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(rootPath string, objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
+func NewFileSystem(objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
 	fileSys := FileSystem{
 		objectService: objectSerivce,
 		linkRepo:      linkRepository,
 	}
 
-	fileSys.rootPath = rootPath
-	fileSys.linkRepoPath = filepath.Join(fileSys.rootPath, "filesystem")
-
 	return &fileSys
 }
 
 func (f *FileSystem) CreateDir(path string) (err error) {
-	absPath := filepath.Join(f.linkRepoPath, path)
-	err = os.MkdirAll(absPath, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	return nil
+	return f.linkRepo.CreateDir(path)
 }
 
 func (f *FileSystem) RemovePath(path string) (err error) {
-	absPath := filepath.Join(f.linkRepoPath, path)
-	err = os.Remove(absPath)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (f *FileSystem) PathExist(path string) (bool, error) {
-	absPath := filepath.Join(f.linkRepoPath, path)
-	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		return false, nil
-	} else {
-		return true, nil
-	}
-}
-
-func (f *FileSystem) IsDir(path string) bool {
-	p := filepath.Join(f.linkRepoPath, path)
-	fileInfo, _ := os.Stat(p)
-	return fileInfo.IsDir()
+	return f.linkRepo.Remove(path)
 }
 
 func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
-	p := filepath.Join(f.linkRepoPath, path)
-	file, err := os.Open(p)
-	defer file.Close()
+	subFiles, err := f.linkRepo.GetSubFiles(path)
 	if err != nil {
-		return nil, fmt.Errorf("error opening dir to Read sub files: %v", err)
+		return nil, err
 	}
-	subFiles, _ := file.Readdir(0)
 	var infos []fs.FileInfo
 	for _, subFile := range subFiles {
 		if subFile.IsDir() {
@@ -114,9 +80,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 }
 
 func (f *FileSystem) RemoveDir(path string) (err error) {
-	p := filepath.Join(f.linkRepoPath, path)
-	err = os.Remove(p)
-	return err
+	return f.linkRepo.RemoveDir(path)
 }
 
 func (f *FileSystem) CreateFile(path string) (err error) {
@@ -193,11 +157,5 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 }
 
 func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
-	o := filepath.Join(f.linkRepoPath, oldPath)
-	n := filepath.Join(f.linkRepoPath, newPath)
-	err = os.Rename(o, n)
-	if err != nil {
-		return err
-	}
-	return nil
+	return f.linkRepo.Rename(oldPath, newPath)
 }

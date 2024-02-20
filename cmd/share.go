@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // shareCmd represents the share command
@@ -14,11 +13,8 @@ var shareCmd = &cobra.Command{
 	Use:   "share",
 	Short: "Share files with other users",
 	Long:  `Share files with other users`,
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
-			fmt.Println("You should pass a pattern")
-			os.Exit(1)
-		}
 		err := InitSecret()
 		if err != nil {
 			panic(err)

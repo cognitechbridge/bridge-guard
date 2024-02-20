@@ -14,9 +14,11 @@ type ObjectCacheRepository struct {
 }
 
 func NewObjectCacheRepository(path string) ObjectCacheRepository {
+	writePath := filepath.Join(path, "Write")
+	os.MkdirAll(writePath, os.ModePerm)
 	return ObjectCacheRepository{
 		readPath:  path,
-		writePath: filepath.Join(path, "Write"),
+		writePath: writePath,
 	}
 }
 
