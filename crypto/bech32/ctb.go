@@ -1,25 +1,26 @@
 package bech32
 
-import "errors"
+import (
+	"errors"
+	"github.com/btcsuite/btcutil/base58"
+)
 
 var (
 	InvalidPublicKey = errors.New("invalid public key")
-	UidHrp           = "ctb-uid-"
-	PubHrp           = "ctb-pub-"
 )
 
 func EncodePublic(byte []byte) (string, error) {
-	return Encode(PubHrp, byte)
+	return base58.CheckEncode(byte, 1), nil
 }
 
 func DecodePublic(str string) ([]byte, error) {
-	hrp, pub, err := Decode(str)
-	if err != nil || hrp != PubHrp {
+	pub, version, err := base58.CheckDecode(str)
+	if err != nil || version != 1 {
 		return nil, InvalidPublicKey
 	}
 	return pub, nil
 }
 
 func EncodeUid(uid []byte) (string, error) {
-	return Encode(UidHrp, uid)
+	return base58.Encode(uid), nil
 }
