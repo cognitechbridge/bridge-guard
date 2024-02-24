@@ -3,8 +3,8 @@ package filesyetem_service
 import (
 	"ctb-cli/repositories"
 	"ctb-cli/services/object_service"
+	"ctb-cli/types"
 	"fmt"
-	"github.com/google/uuid"
 	"io/fs"
 	"path/filepath"
 )
@@ -84,12 +84,12 @@ func (f *FileSystem) RemoveDir(path string) (err error) {
 }
 
 func (f *FileSystem) CreateFile(path string) (err error) {
-	key, err := uuid.NewV7()
+	key, err := types.NewUid()
 	if err != nil {
 		return err
 	}
-	_ = f.linkRepo.Create(path, key.String(), 0)
-	err = f.objectService.Create(key.String())
+	_ = f.linkRepo.Create(path, key, 0)
+	err = f.objectService.Create(key)
 	if err != nil {
 		return err
 	}
@@ -119,8 +119,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 	if err != nil {
 		return "", err
 	}
-	uui, _ := uuid.NewV7()
-	newId = uui.String()
+	newId, _ = types.NewUid()
 	err = f.linkRepo.WriteId(path, newId)
 	if err != nil {
 		return "", err

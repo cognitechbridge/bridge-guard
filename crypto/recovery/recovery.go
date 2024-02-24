@@ -5,8 +5,6 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"ctb-cli/types"
-	"github.com/google/uuid"
-
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -49,7 +47,7 @@ func generateRecoveryBlob(key *types.Key, recoveryItems []types.RecoveryItem) ([
 func GenerateKey(recoveryItems []types.RecoveryItem) (*types.KeyInfo, error) {
 	key := types.NewKeyFromRand()
 
-	keyId, err := uuid.NewV7()
+	keyId, err := types.NewUid()
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +59,7 @@ func GenerateKey(recoveryItems []types.RecoveryItem) (*types.KeyInfo, error) {
 
 	return &types.KeyInfo{
 		Key:           key[:],
-		Id:            keyId.String(),
+		Id:            keyId,
 		RecoveryBlobs: blobs,
 	}, nil
 }
