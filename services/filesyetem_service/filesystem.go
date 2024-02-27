@@ -63,7 +63,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 			continue
 		} else {
 			p := filepath.Join(path, subFile.Name())
-			link, err := f.linkRepo.Read(p)
+			link, err := f.linkRepo.GetByPath(p)
 			if err != nil {
 				return nil, fmt.Errorf("error reading file size: %v", err)
 			}
@@ -100,7 +100,7 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	link, err := f.linkRepo.Read(path)
+	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
 		return 0, err
 	}
@@ -112,7 +112,7 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 		}
 	}
 	n, err = f.objectService.Write(id, buff, ofst)
-	if link, _ := f.linkRepo.Read(path); link.Size < ofst+int64(len(buff)) {
+	if link, _ := f.linkRepo.GetByPath(path); link.Size < ofst+int64(len(buff)) {
 		link.Size = ofst + int64(len(buff))
 		err = f.linkRepo.Update(path, link)
 		if err != nil {
@@ -123,7 +123,7 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 }
 
 func (f *FileSystem) changeFileId(path string) (newId string, err error) {
-	link, err := f.linkRepo.Read(path)
+	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +142,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 }
 
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
-	link, err := f.linkRepo.Read(path)
+	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
 		return 0, err
 	}
@@ -150,7 +150,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
-	link, err := f.linkRepo.Read(path)
+	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
 		return err
 	}
