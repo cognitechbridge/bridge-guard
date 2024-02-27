@@ -113,7 +113,8 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 	}
 	n, err = f.objectService.Write(id, buff, ofst)
 	if link, _ := f.linkRepo.Read(path); link.Size < ofst+int64(len(buff)) {
-		err = f.linkRepo.WriteSize(path, ofst+int64(len(buff)))
+		link.Size = ofst + int64(len(buff))
+		err = f.linkRepo.Update(path, link)
 		if err != nil {
 			return 0, err
 		}
@@ -128,7 +129,8 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 	}
 	oldId := link.ObjectId
 	newId, _ = types.NewUid()
-	err = f.linkRepo.WriteId(path, newId)
+	link.ObjectId = newId
+	err = f.linkRepo.Update(path, link)
 	if err != nil {
 		return "", err
 	}
@@ -148,11 +150,12 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
-	err = f.linkRepo.WriteSize(path, size)
+	link, err := f.linkRepo.Read(path)
 	if err != nil {
 		return err
 	}
-	link, err := f.linkRepo.Read(path)
+	link.Size = size
+	err = f.linkRepo.Update(path, link)
 	if err != nil {
 		return err
 	}
