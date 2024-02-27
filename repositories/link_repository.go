@@ -44,24 +44,6 @@ func (c *LinkRepository) Update(path string, link types.Link) error {
 	return err
 }
 
-func (c *LinkRepository) WriteSize(path string, size int64) (err error) {
-	link, err := c.Read(path)
-	if err != nil {
-		return err
-	}
-	link.Size = size
-	return c.Update(path, link)
-}
-
-func (c *LinkRepository) WriteId(path string, id string) (err error) {
-	link, err := c.Read(path)
-	if err != nil {
-		return err
-	}
-	link.ObjectId = id
-	return c.Update(path, link)
-}
-
 func (c *LinkRepository) Read(path string) (types.Link, error) {
 	p := filepath.Join(c.rootPath, path)
 	js, err := os.ReadFile(p)
