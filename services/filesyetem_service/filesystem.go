@@ -63,14 +63,14 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 			continue
 		} else {
 			p := filepath.Join(path, subFile.Name())
-			size, err := f.linkRepo.ReadSize(p)
+			link, err := f.linkRepo.Read(p)
 			if err != nil {
 				return nil, fmt.Errorf("error reading file size: %v", err)
 			}
 			var info fs.FileInfo = FileInfo{
 				isDir: false,
 				name:  subFile.Name(),
-				size:  size,
+				size:  link.Size,
 			}
 			infos = append(infos, info)
 		}
@@ -88,7 +88,10 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return err
 	}
-	_ = f.linkRepo.Create(path, key, 0)
+	_ = f.linkRepo.Create(path, types.Link{
+		ObjectId: key,
+		Size:     0,
+	})
 	err = f.objectService.Create(key)
 	if err != nil {
 		return err
@@ -97,7 +100,11 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
-	id, err := f.linkRepo.ReadId(path)
+	link, err := f.linkRepo.Read(path)
+	if err != nil {
+		return 0, err
+	}
+	id := link.ObjectId
 	if !f.objectService.IsInQueue(id) {
 		id, err = f.changeFileId(path)
 		if err != nil {
@@ -105,7 +112,7 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 		}
 	}
 	n, err = f.objectService.Write(id, buff, ofst)
-	if size, _ := f.linkRepo.ReadSize(path); size < ofst+int64(len(buff)) {
+	if link, _ := f.linkRepo.Read(path); link.Size < ofst+int64(len(buff)) {
 		err = f.linkRepo.WriteSize(path, ofst+int64(len(buff)))
 		if err != nil {
 			return 0, err
@@ -115,10 +122,11 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 }
 
 func (f *FileSystem) changeFileId(path string) (newId string, err error) {
-	oldId, err := f.linkRepo.ReadId(path)
+	link, err := f.linkRepo.Read(path)
 	if err != nil {
 		return "", err
 	}
+	oldId := link.ObjectId
 	newId, _ = types.NewUid()
 	err = f.linkRepo.WriteId(path, newId)
 	if err != nil {
@@ -132,11 +140,11 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 }
 
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
-	id, err := f.linkRepo.ReadId(path)
+	link, err := f.linkRepo.Read(path)
 	if err != nil {
 		return 0, err
 	}
-	return f.objectService.Read(id, buff, ofst)
+	return f.objectService.Read(link.ObjectId, buff, ofst)
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
@@ -144,11 +152,11 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 	if err != nil {
 		return err
 	}
-	id, err := f.linkRepo.ReadId(path)
+	link, err := f.linkRepo.Read(path)
 	if err != nil {
 		return err
 	}
-	err = f.objectService.Truncate(id, size)
+	err = f.objectService.Truncate(link.ObjectId, size)
 	if err != nil {
 		return err
 	}
