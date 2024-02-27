@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	"bytes"
-	"encoding/binary"
+	"ctb-cli/types"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,9 +12,6 @@ type LinkRepository struct {
 	rootPath string
 }
 
-const FsSizeOffset = 0
-const FsIdOffset = 8
-
 func NewLinkRepository(rootPath string) *LinkRepository {
 	return &LinkRepository{
 		rootPath: rootPath,
@@ -22,77 +19,61 @@ func NewLinkRepository(rootPath string) *LinkRepository {
 }
 
 // Create link file
-func (c *LinkRepository) Create(path string, key string, size int64) error {
+func (c *LinkRepository) Create(path string, link types.Link) error {
 	absPath := filepath.Join(c.rootPath, path)
 	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	file, err := c.open(path)
-	if err != nil {
-		return err
-	}
-	err = file.Close()
-	if err != nil {
-		return err
-	}
-	err = c.WriteSize(path, size)
-	if err != nil {
-		return err
-	}
-	err = c.WriteId(path, key)
-	if err != nil {
-		return err
-	}
+	file, err := os.OpenFile(absPath, os.O_RDWR|os.O_CREATE, 0666)
+	defer file.Close()
+	js, _ := json.Marshal(link)
+	_, _ = file.Write(js)
 	return nil
 }
 
+func (c *LinkRepository) Update(path string, link types.Link) error {
+	absPath := filepath.Join(c.rootPath, path)
+	file, err := os.OpenFile(absPath, os.O_RDWR, 0666)
+	if err != nil {
+		return fmt.Errorf("error updating link file: %v", err)
+	}
+	defer file.Close()
+	js, _ := json.Marshal(link)
+	_, err = file.Write(js)
+	return err
+}
+
 func (c *LinkRepository) WriteSize(path string, size int64) (err error) {
-	file, _ := c.open(path)
-	defer file.Close()
+	link, err := c.Read(path)
 	if err != nil {
 		return err
 	}
-	buf := new(bytes.Buffer)
-	_ = binary.Write(buf, binary.BigEndian, size)
-	_, err = file.WriteAt(buf.Bytes(), FsSizeOffset)
-	return
+	link.Size = size
+	return c.Update(path, link)
 }
 
-func (c *LinkRepository) ReadSize(path string) (size int64, err error) {
-	file, _ := c.open(path)
-	defer file.Close()
-	if err != nil {
-		return 0, err
-	}
-	buf := make([]byte, 8)
-	_, err = file.ReadAt(buf, FsSizeOffset)
-	err = binary.Read(bytes.NewReader(buf), binary.BigEndian, &size)
-	if err != nil {
-		return
-	}
-	return
-}
-
-func (c *LinkRepository) WriteId(path string, key string) (err error) {
-	file, _ := c.open(path)
-	defer file.Close()
+func (c *LinkRepository) WriteId(path string, id string) (err error) {
+	link, err := c.Read(path)
 	if err != nil {
 		return err
 	}
-	_, err = file.WriteAt([]byte(key), FsIdOffset)
-	return
+	link.ObjectId = id
+	return c.Update(path, link)
 }
 
-func (c *LinkRepository) ReadId(path string) (key string, err error) {
-	file, _ := c.open(path)
-	defer file.Close()
+func (c *LinkRepository) Read(path string) (types.Link, error) {
+	p := filepath.Join(c.rootPath, path)
+	js, err := os.ReadFile(p)
 	if err != nil {
-		return "", err
+		return types.Link{}, fmt.Errorf("error reading link file: %v", err)
 	}
-	id := make([]byte, 36)
-	_, _ = file.ReadAt(id, FsIdOffset)
-	return string(id), nil
+	var link types.Link
+	err = json.Unmarshal(js, &link)
+	if err != nil {
+		return types.Link{}, fmt.Errorf("error unmarshalink link file: %v", err)
+	}
+	return link, nil
 }
 
 func (c *LinkRepository) open(path string) (*os.File, error) {
@@ -108,11 +89,11 @@ func (c *LinkRepository) ListIdsByRegex(regex string) ([]string, error) {
 		return nil, err
 	}
 	for _, file := range list {
-		id, err := c.ReadId(file)
+		link, err := c.Read(file)
 		if err != nil {
 			return nil, err
 		}
-		matchedIds = append(matchedIds, id)
+		matchedIds = append(matchedIds, link.ObjectId)
 	}
 	return matchedIds, nil
 }
