@@ -44,7 +44,7 @@ func (c *LinkRepository) Update(path string, link types.Link) error {
 	return err
 }
 
-func (c *LinkRepository) Read(path string) (types.Link, error) {
+func (c *LinkRepository) GetByPath(path string) (types.Link, error) {
 	p := filepath.Join(c.rootPath, path)
 	js, err := os.ReadFile(p)
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *LinkRepository) ListIdsByRegex(regex string) ([]string, error) {
 		return nil, err
 	}
 	for _, file := range list {
-		link, err := c.Read(file)
+		link, err := c.GetByPath(file)
 		if err != nil {
 			return nil, err
 		}
