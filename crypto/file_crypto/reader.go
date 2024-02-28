@@ -2,7 +2,7 @@ package file_crypto
 
 import (
 	"ctb-cli/crypto/stream"
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"errors"
 	"io"
 )
@@ -19,7 +19,7 @@ func Parse(source io.Reader) (*Header, *EncryptedStream, error) {
 	return header, &EncryptedStream{source: source}, nil
 }
 
-func (e EncryptedStream) Decrypt(key *types.Key) (io.Reader, error) {
+func (e EncryptedStream) Decrypt(key *core.Key) (io.Reader, error) {
 	return stream.NewReader(key[:], e.source)
 }
 

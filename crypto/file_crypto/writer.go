@@ -2,7 +2,7 @@ package file_crypto
 
 import (
 	"ctb-cli/crypto/stream"
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"io"
 )
 
@@ -19,7 +19,7 @@ var (
 )
 
 // NewWriter creates a new writer.
-func NewWriter(dst io.Writer, keyInfo *types.KeyInfo, userId string, fileId string) (*writer, error) {
+func NewWriter(dst io.Writer, keyInfo *core.KeyInfo, userId string, fileId string) (*writer, error) {
 	streamWriter, err := stream.NewWriter(keyInfo.Key[:], dst)
 	if err != nil {
 		return nil, err

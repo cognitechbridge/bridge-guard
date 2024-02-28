@@ -7,7 +7,7 @@ import (
 	"crypto/rand"
 	"ctb-cli/config"
 	"ctb-cli/prompts"
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"fmt"
 	"github.com/spf13/cobra"
 	"io"
@@ -48,7 +48,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		userId, err := types.EncodeUid(bytes)
+		userId, err := core.EncodeUid(bytes)
 		if err != nil {
 			panic(err)
 		}
@@ -73,7 +73,7 @@ var genkeyCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		recipient, err := types.NewRecipient(email, publicKey, userId)
+		recipient, err := core.NewRecipient(email, publicKey, userId)
 		if err != nil {
 			panic(err)
 		}

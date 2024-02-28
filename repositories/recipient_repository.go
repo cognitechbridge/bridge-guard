@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"encoding/json"
 	"errors"
 	"github.com/samber/lo"
@@ -11,8 +11,8 @@ import (
 )
 
 type RecipientRepository interface {
-	GetRecipientByEmail(email string) (types.Recipient, error)
-	InsertRecipient(recipient types.Recipient) error
+	GetRecipientByEmail(email string) (core.Recipient, error)
+	InsertRecipient(recipient core.Recipient) error
 }
 
 var (
@@ -31,7 +31,7 @@ func NewRecipientRepositoryFile(rootPath string) *RecipientRepositoryFile {
 	}
 }
 
-func (r *RecipientRepositoryFile) InsertRecipient(recipient types.Recipient) error {
+func (r *RecipientRepositoryFile) InsertRecipient(recipient core.Recipient) error {
 	list, _ := r.openRepository()
 	list = append(list, recipient)
 	res, _ := json.Marshal(list)
@@ -46,20 +46,20 @@ func (r *RecipientRepositoryFile) InsertRecipient(recipient types.Recipient) err
 	return nil
 }
 
-func (r *RecipientRepositoryFile) GetRecipientByEmail(email string) (types.Recipient, error) {
+func (r *RecipientRepositoryFile) GetRecipientByEmail(email string) (core.Recipient, error) {
 	list, _ := r.openRepository()
-	rec, _ := lo.Find(list, func(r types.Recipient) bool {
+	rec, _ := lo.Find(list, func(r core.Recipient) bool {
 		return r.Email == email
 	})
 	return rec, nil
 }
 
-func (r *RecipientRepositoryFile) openRepository() ([]types.Recipient, error) {
+func (r *RecipientRepositoryFile) openRepository() ([]core.Recipient, error) {
 	path := filepath.Join(r.rootPath, "recipients.txt")
 	file, _ := os.Open(path)
 	defer file.Close()
 	data, _ := io.ReadAll(file)
-	var list []types.Recipient
+	var list []core.Recipient
 	_ = json.Unmarshal(data, &list)
 	return list, nil
 }

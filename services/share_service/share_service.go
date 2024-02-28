@@ -4,7 +4,7 @@ import (
 	"ctb-cli/keystore"
 	"ctb-cli/repositories"
 	"ctb-cli/services/object_service"
-	"ctb-cli/types"
+	"ctb-cli/core"
 )
 
 type Service struct {
@@ -45,7 +45,7 @@ func (s *Service) ShareByEmail(regex string, email string) error {
 	return nil
 }
 
-func (s *Service) SaveRecipient(recipient types.Recipient) error {
+func (s *Service) SaveRecipient(recipient core.Recipient) error {
 	err := s.recipientRepository.InsertRecipient(recipient)
 	return err
 }

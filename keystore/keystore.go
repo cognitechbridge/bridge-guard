@@ -4,7 +4,7 @@ import (
 	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
@@ -12,9 +12,9 @@ import (
 )
 
 type KeyStorer interface {
-	Get(keyID string) (*types.Key, error)
-	Insert(key *types.KeyInfo) error
-	GetRecoveryItems() ([]types.RecoveryItem, error)
+	Get(keyID string) (*core.Key, error)
+	Insert(key *core.KeyInfo) error
+	GetRecoveryItems() ([]core.RecoveryItem, error)
 	AddRecoveryKey(inPath string) error
 	GenerateUserKeys() (err error)
 	SetSecret(secret string)
@@ -29,14 +29,14 @@ var (
 	ErrorInvalidSecret = errors.New("invalid secret")
 )
 
-type Key = types.Key
+type Key = core.Key
 
 // KeyStoreDefault represents a key store
 type KeyStoreDefault struct {
 	userId        string
 	secret        string
 	privateKey    []byte
-	recoveryItems []types.RecoveryItem
+	recoveryItems []core.RecoveryItem
 	keyRepository repositories.KeyRepository
 }
 
@@ -47,7 +47,7 @@ func NewKeyStore(userId string, keyRepository repositories.KeyRepository) *KeySt
 	return &KeyStoreDefault{
 		userId:        userId,
 		keyRepository: keyRepository,
-		recoveryItems: make([]types.RecoveryItem, 0),
+		recoveryItems: make([]core.RecoveryItem, 0),
 	}
 }
 
@@ -56,7 +56,7 @@ func (ks *KeyStoreDefault) SetUserId(userId string) {
 }
 
 // Insert inserts a key into the key store
-func (ks *KeyStoreDefault) Insert(key *types.KeyInfo) error {
+func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
 	if err := ks.LoadKeys(); err != nil {
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
@@ -108,7 +108,7 @@ func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId
 	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientUserId)
 }
 
-func (ks *KeyStoreDefault) GetRecoveryItems() ([]types.RecoveryItem, error) {
+func (ks *KeyStoreDefault) GetRecoveryItems() ([]core.RecoveryItem, error) {
 	return ks.recoveryItems, nil
 }
 
@@ -149,7 +149,7 @@ func (ks *KeyStoreDefault) LoadKeys() error {
 
 func (ks *KeyStoreDefault) GenerateUserKeys() (err error) {
 	//Generate private key
-	privateKey := types.NewKeyFromRand()
+	privateKey := core.NewKeyFromRand()
 	ks.privateKey = privateKey[:]
 	//Save private key
 	sealPrivateKey, err := key_crypto.SealPrivateKey(privateKey[:], ks.secret)

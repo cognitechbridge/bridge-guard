@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -19,7 +19,7 @@ func NewLinkRepository(rootPath string) *LinkRepository {
 }
 
 // Create link file
-func (c *LinkRepository) Create(path string, link types.Link) error {
+func (c *LinkRepository) Create(path string, link core.Link) error {
 	absPath := filepath.Join(c.rootPath, path)
 	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
@@ -32,7 +32,7 @@ func (c *LinkRepository) Create(path string, link types.Link) error {
 	return nil
 }
 
-func (c *LinkRepository) Update(path string, link types.Link) error {
+func (c *LinkRepository) Update(path string, link core.Link) error {
 	absPath := filepath.Join(c.rootPath, path)
 	file, err := os.OpenFile(absPath, os.O_RDWR, 0666)
 	if err != nil {
@@ -44,16 +44,16 @@ func (c *LinkRepository) Update(path string, link types.Link) error {
 	return err
 }
 
-func (c *LinkRepository) GetByPath(path string) (types.Link, error) {
+func (c *LinkRepository) GetByPath(path string) (core.Link, error) {
 	p := filepath.Join(c.rootPath, path)
 	js, err := os.ReadFile(p)
 	if err != nil {
-		return types.Link{}, fmt.Errorf("error reading link file: %v", err)
+		return core.Link{}, fmt.Errorf("error reading link file: %v", err)
 	}
-	var link types.Link
+	var link core.Link
 	err = json.Unmarshal(js, &link)
 	if err != nil {
-		return types.Link{}, fmt.Errorf("error unmarshalink link file: %v", err)
+		return core.Link{}, fmt.Errorf("error unmarshalink link file: %v", err)
 	}
 	return link, nil
 }
