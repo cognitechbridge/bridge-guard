@@ -1,7 +1,7 @@
 package fuse
 
 import (
-	"ctb-cli/services/filesyetem_service"
+	"ctb-cli/core"
 	"fmt"
 	"github.com/winfsp/cgofuse/fuse"
 	"sync"
@@ -12,7 +12,7 @@ type CtbFs struct {
 
 	sync.Mutex
 
-	fs filesyetem_service.FileSystemHandler
+	fs core.FileSystemService
 
 	root    *Node
 	openMap map[uint64]*Node
@@ -36,7 +36,7 @@ type Ino struct {
 	counter uint64
 }
 
-func New(fs filesyetem_service.FileSystemHandler) *CtbFs {
+func New(fs core.FileSystemService) *CtbFs {
 	c := CtbFs{
 		openMap: make(map[uint64]*Node),
 		fs:      fs,

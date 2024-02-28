@@ -9,25 +9,13 @@ import (
 	"path/filepath"
 )
 
-type FileSystemHandler interface {
-	GetSubFiles(path string) (res []fs.FileInfo, err error)
-	CreateFile(path string) (err error)
-	CreateDir(path string) (err error)
-	RemoveDir(path string) (err error)
-	Write(path string, buff []byte, ofst int64) (n int, err error)
-	Read(path string, buff []byte, ofst int64) (n int, err error)
-	Rename(oldPath string, newPath string) (err error)
-	RemovePath(path string) (err error)
-	Resize(path string, size int64) (err error)
-}
-
 // FileSystem implements the FileSystem interface
 type FileSystem struct {
 	objectService object_service.Service
 	linkRepo      *repositories.LinkRepository
 }
 
-var _ FileSystemHandler = &FileSystem{}
+var _ core.FileSystemService = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
 func NewFileSystem(objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
