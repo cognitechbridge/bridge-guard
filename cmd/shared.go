@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"ctb-cli/keystore"
 	"ctb-cli/prompts"
+	"ctb-cli/services/key_service"
 	"errors"
 	"github.com/fatih/color"
 )
@@ -24,7 +24,7 @@ func InitSecret() error {
 			return nil // Success, exit function
 		}
 
-		if errors.Is(err, keystore.ErrorInvalidSecret) {
+		if errors.Is(err, key_service.ErrorInvalidSecret) {
 			// Notify user of invalid secret
 			c := color.New(color.FgRed, color.Bold)
 			_, _ = c.Println("Invalid secret. Try again")
