@@ -3,7 +3,7 @@ package key_crypto
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -84,9 +84,9 @@ func SealPrivateKey(privateKey []byte, secret string) (string, error) {
 	return res, nil
 }
 
-func deriveKey(rootKey []byte, salt []byte, info string) (derivedKey types.Key, err error) {
+func deriveKey(rootKey []byte, salt []byte, info string) (derivedKey core.Key, err error) {
 	hk := hkdf.New(sha256.New, rootKey[:], salt, []byte(info))
-	derivedKey = types.Key{}
+	derivedKey = core.Key{}
 	_, err = io.ReadFull(hk, derivedKey[:])
 	return
 }
@@ -131,7 +131,7 @@ func SealDataKey(key []byte, publicKey []byte) (string, error) {
 }
 
 // OpenDataKey decrypts and deserializes the key pair
-func OpenDataKey(serialized string, privateKey []byte) (*types.Key, error) {
+func OpenDataKey(serialized string, privateKey []byte) (*core.Key, error) {
 	parts := strings.Split(serialized, "\n")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid serialized key)")
@@ -168,14 +168,14 @@ func OpenDataKey(serialized string, privateKey []byte) (*types.Key, error) {
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}
 
-	key := types.Key{}
+	key := core.Key{}
 	copy(key[:], deciphered)
 
 	return &key, nil
 }
 
-func deriveKeyFromSecret(secret string, salt []byte) (*types.Key, error) {
+func deriveKeyFromSecret(secret string, salt []byte) (*core.Key, error) {
 	keyB := argon2.IDKey([]byte(secret), salt, 4, 64*1024, 2, 32)
-	key, err := types.KeyFromBytes(keyB)
+	key, err := core.KeyFromBytes(keyB)
 	return &key, err
 }

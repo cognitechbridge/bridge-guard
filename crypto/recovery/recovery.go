@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -17,7 +17,7 @@ type Recovery struct {
 	Sha1    string `json:"sha1"`
 }
 
-func generateRecoveryBlob(key *types.Key, recoveryItems []types.RecoveryItem) ([]string, error) {
+func generateRecoveryBlob(key *core.Key, recoveryItems []core.RecoveryItem) ([]string, error) {
 	recoveryList := recoveryItems
 	if recoveryList == nil || len(recoveryList) == 0 {
 		return nil, fmt.Errorf("recoveryItems key not found. Cannot generate data key")
@@ -44,10 +44,10 @@ func generateRecoveryBlob(key *types.Key, recoveryItems []types.RecoveryItem) ([
 	return blobs, nil
 }
 
-func GenerateKey(recoveryItems []types.RecoveryItem) (*types.KeyInfo, error) {
-	key := types.NewKeyFromRand()
+func GenerateKey(recoveryItems []core.RecoveryItem) (*core.KeyInfo, error) {
+	key := core.NewKeyFromRand()
 
-	keyId, err := types.NewUid()
+	keyId, err := core.NewUid()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func GenerateKey(recoveryItems []types.RecoveryItem) (*types.KeyInfo, error) {
 		return nil, err
 	}
 
-	return &types.KeyInfo{
+	return &core.KeyInfo{
 		Key:           key[:],
 		Id:            keyId,
 		RecoveryBlobs: blobs,

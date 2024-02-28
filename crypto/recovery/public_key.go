@@ -4,14 +4,14 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/x509"
-	"ctb-cli/types"
+	"ctb-cli/core"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
 )
 
-func UnmarshalRecoveryItem(pemBytes []byte) (*types.RecoveryItem, error) {
+func UnmarshalRecoveryItem(pemBytes []byte) (*core.RecoveryItem, error) {
 	block, _ := pem.Decode(pemBytes)
 	if block == nil || block.Type != "PUBLIC KEY" {
 		return nil, fmt.Errorf("invalid public key")
@@ -28,7 +28,7 @@ func UnmarshalRecoveryItem(pemBytes []byte) (*types.RecoveryItem, error) {
 		return nil, errors.New("public key is not of type RSA Public Key")
 	}
 
-	rec := types.RecoveryItem{}
+	rec := core.RecoveryItem{}
 
 	rec.PublicKey = pubKey
 

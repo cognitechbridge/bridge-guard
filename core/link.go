@@ -1,4 +1,4 @@
-package types
+package core
 
 type Link struct {
 	ObjectId string `json:"objectId"`
