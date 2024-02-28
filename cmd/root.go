@@ -8,10 +8,10 @@ package cmd
 import (
 	"ctb-cli/config"
 	"ctb-cli/core"
-	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
+	"ctb-cli/services/key_service"
 	"ctb-cli/services/object_service"
 	"ctb-cli/services/share_service"
 	"fmt"
@@ -107,7 +107,7 @@ func initManagerClient() {
 	recipientRepository := repositories.NewRecipientRepositoryFile(recipientsPath)
 	linkRepository := repositories.NewLinkRepository(filesystemPath)
 
-	keyStore = keystore.NewKeyStore(userId, keyRepository)
+	keyStore = key_service.NewKeyStore(userId, keyRepository)
 
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {

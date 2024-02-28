@@ -1,4 +1,4 @@
-package keystore
+package key_service
 
 import (
 	"ctb-cli/core"
