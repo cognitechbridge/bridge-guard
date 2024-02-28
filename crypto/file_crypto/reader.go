@@ -1,8 +1,8 @@
 package file_crypto
 
 import (
-	"ctb-cli/crypto/stream"
 	"ctb-cli/core"
+	"ctb-cli/crypto/stream"
 	"errors"
 	"io"
 )

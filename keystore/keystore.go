@@ -1,10 +1,10 @@
 package keystore
 
 import (
+	"ctb-cli/core"
 	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
-	"ctb-cli/core"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
