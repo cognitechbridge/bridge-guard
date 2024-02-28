@@ -6,8 +6,8 @@ package cmd
 import (
 	"crypto/rand"
 	"ctb-cli/config"
-	"ctb-cli/prompts"
 	"ctb-cli/core"
+	"ctb-cli/prompts"
 	"fmt"
 	"github.com/spf13/cobra"
 	"io"
