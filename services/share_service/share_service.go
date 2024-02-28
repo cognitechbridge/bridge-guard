@@ -2,7 +2,6 @@ package share_service
 
 import (
 	"ctb-cli/core"
-	"ctb-cli/keystore"
 	"ctb-cli/repositories"
 )
 
@@ -10,12 +9,12 @@ type Service struct {
 	recipientRepository repositories.RecipientRepository
 	linkRepository      *repositories.LinkRepository
 	objectService       core.ObjectService
-	keyStorer           keystore.KeyStorer
+	keyStorer           core.KeyService
 }
 
 func NewService(
 	recipientRepository repositories.RecipientRepository,
-	keyStorer keystore.KeyStorer,
+	keyStorer core.KeyService,
 	linkRepository *repositories.LinkRepository,
 	objectService core.ObjectService,
 ) *Service {

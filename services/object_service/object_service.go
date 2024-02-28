@@ -4,7 +4,6 @@ import (
 	"ctb-cli/core"
 	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/crypto/recovery"
-	"ctb-cli/keystore"
 	"ctb-cli/repositories"
 	"io"
 )
@@ -13,7 +12,7 @@ type Service struct {
 	objectCacheRepo *repositories.ObjectCacheRepository
 	objectRepo      *repositories.ObjectRepository
 	downloader      core.CloudStorage
-	keystore        keystore.KeyStorer
+	keystore        core.KeyService
 	userId          string
 
 	//internal queues and channels
@@ -22,7 +21,7 @@ type Service struct {
 	encryptQueue *EncryptQueue
 }
 
-func NewService(keystoreRepo keystore.KeyStorer, userId string, cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn core.CloudStorage) Service {
+func NewService(keystoreRepo core.KeyService, userId string, cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn core.CloudStorage) Service {
 	service := Service{
 		downloader:      dn,
 		objectCacheRepo: cache,

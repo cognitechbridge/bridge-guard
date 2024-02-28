@@ -23,3 +23,17 @@ type FileSystemService interface {
 	RemovePath(path string) (err error)
 	Resize(path string, size int64) (err error)
 }
+
+type KeyService interface {
+	Get(keyID string) (*Key, error)
+	Insert(key *KeyInfo) error
+	GetRecoveryItems() ([]RecoveryItem, error)
+	AddRecoveryKey(inPath string) error
+	GenerateUserKeys() (err error)
+	SetSecret(secret string)
+	LoadKeys() error
+	ChangeSecret(secret string) error
+	Share(keyId string, recipient []byte, recipientUserId string) error
+	GetPublicKey() ([]byte, error)
+	SetUserId(userId string)
+}

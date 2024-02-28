@@ -7,6 +7,7 @@ package cmd
 
 import (
 	"ctb-cli/config"
+	"ctb-cli/core"
 	"ctb-cli/keystore"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/repositories"
@@ -82,7 +83,7 @@ func initConfig() {
 }
 
 var fileSystem *filesyetem_service.FileSystem
-var keyStore keystore.KeyStorer
+var keyStore core.KeyService
 var shareService *share_service.Service
 
 func initManagerClient() {

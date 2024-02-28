@@ -11,20 +11,6 @@ import (
 	"os"
 )
 
-type KeyStorer interface {
-	Get(keyID string) (*core.Key, error)
-	Insert(key *core.KeyInfo) error
-	GetRecoveryItems() ([]core.RecoveryItem, error)
-	AddRecoveryKey(inPath string) error
-	GenerateUserKeys() (err error)
-	SetSecret(secret string)
-	LoadKeys() error
-	ChangeSecret(secret string) error
-	Share(keyId string, recipient []byte, recipientUserId string) error
-	GetPublicKey() ([]byte, error)
-	SetUserId(userId string)
-}
-
 var (
 	ErrorInvalidSecret = errors.New("invalid secret")
 )
@@ -40,7 +26,7 @@ type KeyStoreDefault struct {
 	keyRepository repositories.KeyRepository
 }
 
-var _ KeyStorer = &KeyStoreDefault{}
+var _ core.KeyService = &KeyStoreDefault{}
 
 // NewKeyStore creates a new instance of KeyStoreDefault
 func NewKeyStore(userId string, keyRepository repositories.KeyRepository) *KeyStoreDefault {
