@@ -5,6 +5,7 @@ import (
 	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
+	"fmt"
 	"io"
 )
 
@@ -14,7 +15,7 @@ type Service struct {
 	downloader      core.CloudStorage
 	keystore        core.KeyService
 	userId          string
-
+	
 	//internal queues and channels
 	encryptChan  chan encryptChanItem
 	uploadChan   chan uploadChanItem
@@ -150,4 +151,14 @@ func (o *Service) GetKeyIdByObjectId(id string) (string, error) {
 		return "", err
 	}
 	return header.KeyId, nil
+}
+
+func (o *Service) Commit(link core.Link) error {
+	if o.encryptQueue.IsInQueue(link.ObjectId) {
+		err := o.encrypt(link.ObjectId)
+		if err != nil {
+			return fmt.Errorf("error commiting the file: %s %v", link.ObjectId, err)
+		}
+	}
+	return nil
 }

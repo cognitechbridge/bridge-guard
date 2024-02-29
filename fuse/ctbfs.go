@@ -42,8 +42,7 @@ func New(fs core.FileSystemService) *CtbFs {
 		fs:      fs,
 	}
 	defer c.synchronize()()
-	c.root = c.newNode(0, true)
-	c.root.path = "/"
+	c.root = c.newNode(0, true, "/")
 	return &c
 }
 
@@ -113,6 +112,7 @@ func (c *CtbFs) closeNode(fh uint64) int {
 	node := c.openMap[fh]
 	node.opencnt--
 	if 0 == node.opencnt {
+		c.commit(node)
 		delete(c.openMap, node.stat.Ino)
 	}
 	return 0
@@ -127,7 +127,7 @@ func (c *CtbFs) exploreDir(path string) (err error) {
 	for _, info := range names {
 		_, _, node := c.lookupNode(info.Name(), parent)
 		if node == nil {
-			node := c.newNode(0, info.IsDir())
+			node := c.newNode(0, info.IsDir(), path)
 			node.path = join(path, info.Name())
 			node.stat.Size = info.Size()
 			parent.chld[info.Name()] = node
@@ -148,7 +148,7 @@ func (c *CtbFs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 		return -fuse.EEXIST
 	}
 	_ = c.fs.CreateFile(path)
-	node = c.newNode(0, false)
+	node = c.newNode(0, false, path)
 	prnt.chld[name] = node
 	return 0
 }
@@ -164,7 +164,7 @@ func (c *CtbFs) Mkdir(path string, mode uint32) (errc int) {
 	if nil != node {
 		return -fuse.EEXIST
 	}
-	node = c.newNode(0, true)
+	node = c.newNode(0, true, path)
 	prnt.chld[name] = node
 	return 0
 }
@@ -222,7 +222,7 @@ func (c *CtbFs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	return
 }
 
-func (c *CtbFs) newNode(dev uint64, isDir bool) *Node {
+func (c *CtbFs) newNode(dev uint64, isDir bool, path string) *Node {
 	uid, gid := c.getUid()
 	tmsp := fuse.Now()
 	ino := c.getIno()
@@ -241,6 +241,7 @@ func (c *CtbFs) newNode(dev uint64, isDir bool) *Node {
 			Birthtim: tmsp,
 			Flags:    0,
 		},
+		path: path,
 	}
 	if isDir {
 		self.chld = map[string]*Node{}
@@ -567,4 +568,8 @@ func (c *CtbFs) synchronize() func() {
 	return func() {
 		c.Unlock()
 	}
+}
+
+func (c *CtbFs) commit(node *Node) error {
+	return c.fs.Commit(node.path)
 }
