@@ -13,6 +13,12 @@ import (
 type FileSystem struct {
 	objectService object_service.Service
 	linkRepo      *repositories.LinkRepository
+
+	openToWrite map[string]openToWrite
+}
+
+type openToWrite struct {
+	id string
 }
 
 var _ core.FileSystemService = &FileSystem{}
@@ -22,6 +28,7 @@ func NewFileSystem(objectSerivce object_service.Service, linkRepository *reposit
 	fileSys := FileSystem{
 		objectService: objectSerivce,
 		linkRepo:      linkRepository,
+		openToWrite:   make(map[string]openToWrite),
 	}
 
 	return &fileSys
@@ -72,33 +79,31 @@ func (f *FileSystem) RemoveDir(path string) (err error) {
 }
 
 func (f *FileSystem) CreateFile(path string) (err error) {
-	key, err := core.NewUid()
+	id, err := core.NewUid()
 	if err != nil {
 		return err
 	}
 	_ = f.linkRepo.Create(path, core.Link{
-		ObjectId: key,
+		ObjectId: id,
 		Size:     0,
 	})
-	err = f.objectService.Create(key)
+	err = f.objectService.Create(id)
 	if err != nil {
 		return err
 	}
+	f.openToWrite[path] = openToWrite{id: id}
 	return
 }
 
 func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err error) {
+	if err := f.OpenInWrite(path); err != nil {
+		return 0, err
+	}
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
 		return 0, err
 	}
 	id := link.ObjectId
-	if !f.objectService.IsInQueue(id) {
-		id, err = f.changeFileId(path)
-		if err != nil {
-			return 0, err
-		}
-	}
 	n, err = f.objectService.Write(id, buff, ofst)
 	if link, _ := f.linkRepo.GetByPath(path); link.Size < ofst+int64(len(buff)) {
 		link.Size = ofst + int64(len(buff))
@@ -138,6 +143,9 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
+	if err := f.OpenInWrite(path); err != nil {
+		return err
+	}
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
 		return err
@@ -156,4 +164,28 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 
 func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	return f.linkRepo.Rename(oldPath, newPath)
+}
+
+func (f *FileSystem) Commit(path string) error {
+	_, ex := f.openToWrite[path]
+	if ex {
+		delete(f.openToWrite, path)
+		_ = "Commit Detected"
+		//link, _ := f.linkRepo.GetByPath(path)
+		//return f.objectService.Commit(link)
+	}
+	return nil
+}
+
+func (f *FileSystem) OpenInWrite(path string) error {
+	_, ex := f.openToWrite[path]
+	if ex == false {
+		f.linkRepo.GetByPath(path)
+		newId, err := f.changeFileId(path)
+		if err != nil {
+			return err
+		}
+		f.openToWrite[path] = openToWrite{id: newId}
+	}
+	return nil
 }

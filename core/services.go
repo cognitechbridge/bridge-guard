@@ -22,6 +22,8 @@ type FileSystemService interface {
 	Rename(oldPath string, newPath string) (err error)
 	RemovePath(path string) (err error)
 	Resize(path string, size int64) (err error)
+	Commit(path string) error
+	OpenInWrite(path string) error
 }
 
 type KeyService interface {
