@@ -1,7 +1,8 @@
 package object_service
 
 type encryptChanItem struct {
-	id string
+	id      string
+	vaultId string
 }
 
 type uploadChanItem struct {

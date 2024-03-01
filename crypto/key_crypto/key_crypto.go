@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	X25519V1Info = "cognitechbridge.com/v1/X25519"
+	X25519V1Info           = "cognitechbridge.com/v1/X25519"
+	ChaCha20Poly1350V1Info = "cognitechbridge.com/v1/ChaCha20Poly1350"
 )
 
 var (
@@ -89,6 +90,64 @@ func deriveKey(rootKey []byte, salt []byte, info string) (derivedKey core.Key, e
 	derivedKey = core.Key{}
 	_, err = io.ReadFull(hk, derivedKey[:])
 	return
+}
+
+func SealVaultDataKey(dataKey []byte, vaultKey []byte) (string, error) {
+	salt := make([]byte, 32)
+	_, err := rand.Read(salt)
+	if err != nil {
+		return "", fmt.Errorf("error generating random salt: %v", err)
+	}
+
+	derivedKey, err := deriveKey(vaultKey, salt, ChaCha20Poly1350V1Info)
+	if err != nil {
+		return "", fmt.Errorf("error generating derivedKey key: %v", err)
+	}
+	aead, err := chacha20poly1305.New(derivedKey[:])
+	if err != nil {
+		return "", fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	nonce := make([]byte, chacha20poly1305.NonceSize)
+	ciphered := aead.Seal(nil, nonce, dataKey, nil)
+
+	res := fmt.Sprintf("%s:%s",
+		base64.RawStdEncoding.EncodeToString(salt),
+		base64.RawStdEncoding.EncodeToString(ciphered),
+	)
+
+	return res, nil
+}
+
+func OpenVaultDataKey(serialized string, vaultKey []byte) ([]byte, error) {
+	parts := strings.Split(serialized, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid serialized key)")
+	}
+	salt, err1 := base64.RawStdEncoding.DecodeString(parts[0])
+	ciphered, err2 := base64.RawStdEncoding.DecodeString(parts[1])
+	if errors.Join(err1, err2) != nil {
+		return nil, fmt.Errorf("invalid serialized key")
+	}
+
+	derivedKey, err := deriveKey(vaultKey, salt, ChaCha20Poly1350V1Info)
+	if err != nil {
+		return nil, fmt.Errorf("error generating derivedKey key: %v", err)
+	}
+
+	aead, err := chacha20poly1305.New(derivedKey[:])
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cipher: %w", err)
+	}
+
+	nonce := make([]byte, chacha20poly1305.NonceSize)
+
+	deciphered, err := aead.Open(nil, nonce, ciphered, nil)
+	if err != nil {
+		return nil, ErrorInvalidKey
+	}
+
+	return deciphered, nil
 }
 
 // SealDataKey encrypts and serializes the key pair

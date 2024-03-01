@@ -38,4 +38,5 @@ type KeyService interface {
 	GetPublicKey() ([]byte, error)
 	SetUserId(userId string)
 	CreateVault() (*Vault, error)
+	GenerateKeyInVault(vaultId string) (*KeyInfo, error)
 }

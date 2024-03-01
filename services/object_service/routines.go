@@ -9,30 +9,30 @@ import (
 func (o *Service) StartEncryptRoutine() {
 	for {
 		item := <-o.encryptChan
-		err := o.encrypt(item.id)
+		err := o.encrypt(item)
 		if err != nil {
 			continue
 		}
 	}
 }
 
-func (o *Service) encrypt(fileId string) (err error) {
+func (o *Service) encrypt(e encryptChanItem) (err error) {
 	//Open object file
-	inputFile, err := o.objectCacheRepo.AsFile(fileId)
+	inputFile, err := o.objectCacheRepo.AsFile(e.id)
 	defer closeFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
 
 	//Create output file
-	file, err := o.objectRepo.CreateFile(fileId)
+	file, err := o.objectRepo.CreateFile(e.id)
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
 	defer file.Close()
 
 	//Create encrypted writer
-	encryptedWriter, err := o.encryptWriter(file, fileId)
+	encryptedWriter, err := o.encryptWriter(file, e.id, e.vaultId)
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)
@@ -44,13 +44,13 @@ func (o *Service) encrypt(fileId string) (err error) {
 		return
 	}
 
-	err = o.objectCacheRepo.Flush(fileId)
+	err = o.objectCacheRepo.Flush(e.id)
 	if err != nil {
 		return
 	}
-	fmt.Printf("File Encrypted: %s \n", fileId)
+	fmt.Printf("File Encrypted: %s \n", e.id)
 
-	o.uploadChan <- uploadChanItem{id: fileId}
+	o.uploadChan <- uploadChanItem{id: e.id}
 
 	return nil
 }

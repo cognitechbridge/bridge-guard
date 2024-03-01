@@ -182,7 +182,12 @@ func (f *FileSystem) Commit(path string) error {
 	if ex {
 		delete(f.openToWrite, path)
 		link, _ := f.linkRepo.GetByPath(path)
-		return f.objectService.Commit(link)
+		dir := filepath.Dir(path)
+		vault, err := f.linkRepo.GetVaultLinkByPath(dir)
+		if err != nil {
+			return err
+		}
+		return f.objectService.Commit(link, vault.VaultId)
 	}
 	return nil
 }
