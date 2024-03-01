@@ -5,5 +5,5 @@ type encryptChanItem struct {
 }
 
 type uploadChanItem struct {
-	path string
+	id string
 }
