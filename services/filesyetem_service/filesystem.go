@@ -13,6 +13,7 @@ import (
 type FileSystem struct {
 	objectService object_service.Service
 	linkRepo      *repositories.LinkRepository
+	keyService    core.KeyService
 
 	openToWrite map[string]openToWrite
 }
@@ -24,17 +25,27 @@ type openToWrite struct {
 var _ core.FileSystemService = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
+func NewFileSystem(keyService core.KeyService, objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
 	fileSys := FileSystem{
 		objectService: objectSerivce,
 		linkRepo:      linkRepository,
+		keyService:    keyService,
 		openToWrite:   make(map[string]openToWrite),
 	}
 
 	return &fileSys
 }
 
-func (f *FileSystem) CreateDir(path string) (err error) {
+func (f *FileSystem) CreateDir(path string) error {
+	vault, err := f.keyService.CreateVault()
+	if err != nil {
+		return err
+	}
+	link := core.NewVaultLink(vault.Id, vault.KeyId)
+	err = f.linkRepo.InsertVaultLink(path, link)
+	if err != nil {
+		return err
+	}
 	return f.linkRepo.CreateDir(path)
 }
 

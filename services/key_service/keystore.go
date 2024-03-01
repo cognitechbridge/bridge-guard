@@ -172,3 +172,28 @@ func (ks *KeyStoreDefault) ChangeSecret(secret string) error {
 	}
 	return nil
 }
+
+func (ks *KeyStoreDefault) CreateVault() (*core.Vault, error) {
+	id, err := core.NewUid()
+	if err != nil {
+		return nil, fmt.Errorf("error generating vault id")
+	}
+	key, err := recovery.GenerateKey(make([]core.RecoveryItem, 0))
+	if err != nil {
+		return nil, fmt.Errorf("error generating key")
+	}
+	err = ks.Insert(key)
+	if err != nil {
+		return nil, err
+	}
+	vault := core.Vault{
+		Id:            id,
+		KeyId:         key.Id,
+		EncryptedKeys: make([]string, 0),
+	}
+	err = ks.keyRepository.SaveVault(vault)
+	if err != nil {
+		return nil, err
+	}
+	return &vault, nil
+}
