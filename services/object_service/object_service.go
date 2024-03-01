@@ -3,7 +3,6 @@ package object_service
 import (
 	"ctb-cli/core"
 	"ctb-cli/crypto/file_crypto"
-	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
 	"io"
 )
@@ -104,12 +103,8 @@ func (o *Service) downloadToObject(id string) error {
 	return nil
 }
 
-func (o *Service) encryptWriter(writer io.Writer, fileId string) (write io.WriteCloser, err error) {
-	recoveryItems, err := o.keystore.GetRecoveryItems()
-	if err != nil {
-		return nil, err
-	}
-	keyInfo, err := recovery.GenerateKey(recoveryItems)
+func (o *Service) encryptWriter(writer io.Writer, fileId string, vaultId string) (write io.WriteCloser, err error) {
+	keyInfo, err := o.keystore.GenerateKeyInVault(vaultId)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +138,7 @@ func (o *Service) GetKeyIdByObjectId(id string) (string, error) {
 	return header.KeyId, nil
 }
 
-func (o *Service) Commit(link core.Link) error {
-	o.encryptChan <- encryptChanItem{id: link.ObjectId}
+func (o *Service) Commit(link core.Link, vaultId string) error {
+	o.encryptChan <- encryptChanItem{id: link.ObjectId, vaultId: vaultId}
 	return nil
 }

@@ -46,6 +46,20 @@ func (c *LinkRepository) InsertVaultLink(path string, link core.VaultLink) error
 	return nil
 }
 
+func (c *LinkRepository) GetVaultLinkByPath(path string) (core.VaultLink, error) {
+	p := filepath.Join(c.rootPath, path, ".vault")
+	js, err := os.ReadFile(p)
+	if err != nil {
+		return core.VaultLink{}, fmt.Errorf("error reading vault link file: %v", err)
+	}
+	var link core.VaultLink
+	err = json.Unmarshal(js, &link)
+	if err != nil {
+		return core.VaultLink{}, fmt.Errorf("error unmarshalink vault link file: %v", err)
+	}
+	return link, nil
+}
+
 func (c *LinkRepository) Update(path string, link core.Link) error {
 	absPath := filepath.Join(c.rootPath, path)
 	file, err := os.OpenFile(absPath, os.O_RDWR, 0666)

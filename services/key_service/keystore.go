@@ -189,11 +189,39 @@ func (ks *KeyStoreDefault) CreateVault() (*core.Vault, error) {
 	vault := core.Vault{
 		Id:            id,
 		KeyId:         key.Id,
-		EncryptedKeys: make([]string, 0),
+		EncryptedKeys: make(map[string]core.EncryptedDataKey, 0),
 	}
 	err = ks.keyRepository.SaveVault(vault)
 	if err != nil {
 		return nil, err
 	}
 	return &vault, nil
+}
+
+func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, error) {
+	vault, err := ks.keyRepository.GetVault(vaultId)
+	if err != nil {
+		return nil, err
+	}
+	vKey, err := ks.Get(vault.KeyId)
+	if err != nil {
+		return nil, err
+	}
+	key, err := recovery.GenerateKey(make([]core.RecoveryItem, 0))
+	if err != nil {
+		return nil, err
+	}
+	sealedKey, err := key_crypto.SealVaultDataKey(key.Key, vKey[:])
+	if err != nil {
+		return nil, err
+	}
+	err = vault.AddKey(sealedKey, key.Id)
+	if err != nil {
+		return nil, err
+	}
+	err = ks.keyRepository.SaveVault(vault)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
