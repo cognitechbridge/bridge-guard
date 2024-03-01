@@ -52,14 +52,8 @@ func GenerateKey(recoveryItems []core.RecoveryItem) (*core.KeyInfo, error) {
 		return nil, err
 	}
 
-	blobs, err := generateRecoveryBlob(key, recoveryItems)
-	if err != nil {
-		return nil, err
-	}
-
 	return &core.KeyInfo{
-		Key:           key[:],
-		Id:            keyId,
-		RecoveryBlobs: blobs,
+		Key: key[:],
+		Id:  keyId,
 	}, nil
 }

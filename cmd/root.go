@@ -122,7 +122,7 @@ func initManagerClient() {
 	objectService := object_service.NewService(keyStore, userId, &objectCacheRepository, &objectRepository, cloudClient)
 	shareService = share_service.NewService(recipientRepository, keyStore, linkRepository, &objectService)
 
-	fileSystem = filesyetem_service.NewFileSystem(objectService, linkRepository)
+	fileSystem = filesyetem_service.NewFileSystem(keyStore, objectService, linkRepository)
 }
 
 func CreateAndReturn(path string) string {

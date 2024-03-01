@@ -32,6 +32,20 @@ func (c *LinkRepository) Create(path string, link core.Link) error {
 	return nil
 }
 
+// InsertVaultLink create vault link file
+func (c *LinkRepository) InsertVaultLink(path string, link core.VaultLink) error {
+	absPath := filepath.Join(c.rootPath, path, ".vault")
+	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	file, err := os.OpenFile(absPath, os.O_RDWR|os.O_CREATE, 0666)
+	defer file.Close()
+	js, _ := json.Marshal(link)
+	_, _ = file.Write(js)
+	return nil
+}
+
 func (c *LinkRepository) Update(path string, link core.Link) error {
 	absPath := filepath.Join(c.rootPath, path)
 	file, err := os.OpenFile(absPath, os.O_RDWR, 0666)
