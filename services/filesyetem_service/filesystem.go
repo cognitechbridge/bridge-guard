@@ -170,9 +170,8 @@ func (f *FileSystem) Commit(path string) error {
 	_, ex := f.openToWrite[path]
 	if ex {
 		delete(f.openToWrite, path)
-		_ = "Commit Detected"
-		//link, _ := f.linkRepo.GetByPath(path)
-		//return f.objectService.Commit(link)
+		link, _ := f.linkRepo.GetByPath(path)
+		return f.objectService.Commit(link)
 	}
 	return nil
 }
@@ -180,7 +179,6 @@ func (f *FileSystem) Commit(path string) error {
 func (f *FileSystem) OpenInWrite(path string) error {
 	_, ex := f.openToWrite[path]
 	if ex == false {
-		f.linkRepo.GetByPath(path)
 		newId, err := f.changeFileId(path)
 		if err != nil {
 			return err

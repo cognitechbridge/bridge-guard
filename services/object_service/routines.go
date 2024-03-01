@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 )
 
 func (o *Service) StartEncryptRoutine() {
@@ -51,9 +50,7 @@ func (o *Service) encrypt(fileId string) (err error) {
 	}
 	fmt.Printf("File Encrypted: %s \n", fileId)
 
-	path, _ := o.objectRepo.GetPath(fileId)
-
-	o.uploadChan <- uploadChanItem{path: path}
+	o.uploadChan <- uploadChanItem{id: fileId}
 
 	return nil
 }
@@ -61,25 +58,26 @@ func (o *Service) encrypt(fileId string) (err error) {
 func (o *Service) StartUploadRoutine() {
 	for {
 		item := <-o.uploadChan
-		err := o.upload(item.path)
+		err := o.upload(item.id)
 		if err != nil {
 			continue
 		}
 	}
 }
 
-func (o *Service) upload(path string) (err error) {
-	_, fileId := filepath.Split(path)
-
+func (o *Service) upload(id string) error {
+	path, err := o.objectRepo.GetPath(id)
+	if err != nil {
+		return err
+	}
 	file, err := os.Open(path)
 	if err != nil {
-		return
+		return fmt.Errorf("error opening file for upload")
 	}
-
 	//upload
-	err = o.downloader.Upload(file, fileId)
+	err = o.downloader.Upload(file, id)
 	if err != nil {
-		return
+		return err
 	}
 
 	fmt.Printf("File Uploaded: %s \n", path)

@@ -5,7 +5,6 @@ import (
 	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
-	"fmt"
 	"io"
 )
 
@@ -15,11 +14,10 @@ type Service struct {
 	downloader      core.CloudStorage
 	keystore        core.KeyService
 	userId          string
-	
+
 	//internal queues and channels
-	encryptChan  chan encryptChanItem
-	uploadChan   chan uploadChanItem
-	encryptQueue *EncryptQueue
+	encryptChan chan encryptChanItem
+	uploadChan  chan uploadChanItem
 }
 
 func NewService(keystoreRepo core.KeyService, userId string, cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn core.CloudStorage) Service {
@@ -32,8 +30,6 @@ func NewService(keystoreRepo core.KeyService, userId string, cache *repositories
 		encryptChan:     make(chan encryptChanItem, 10),
 		uploadChan:      make(chan uploadChanItem, 10),
 	}
-
-	service.encryptQueue = service.NewEncryptQueue()
 
 	go service.StartEncryptRoutine()
 	go service.StartUploadRoutine()
@@ -52,7 +48,6 @@ func (o *Service) Read(id string, buff []byte, ofst int64) (n int, err error) {
 
 func (o *Service) Write(id string, buff []byte, ofst int64) (n int, err error) {
 	n, err = o.objectCacheRepo.Write(id, buff, ofst)
-	o.encryptQueue.Enqueue(id)
 	return n, err
 }
 
@@ -61,7 +56,6 @@ func (o *Service) Create(id string) (err error) {
 	if err != nil {
 		return err
 	}
-	o.encryptQueue.Enqueue(id)
 	return nil
 }
 
@@ -71,10 +65,6 @@ func (o *Service) Move(oldId string, newId string) (err error) {
 
 func (o *Service) Truncate(id string, size int64) (err error) {
 	return o.objectCacheRepo.Truncate(id, size)
-}
-
-func (o *Service) IsInQueue(id string) bool {
-	return o.encryptQueue.IsInQueue(id)
 }
 
 func (o *Service) availableInCache(id string) error {
@@ -154,11 +144,6 @@ func (o *Service) GetKeyIdByObjectId(id string) (string, error) {
 }
 
 func (o *Service) Commit(link core.Link) error {
-	if o.encryptQueue.IsInQueue(link.ObjectId) {
-		err := o.encrypt(link.ObjectId)
-		if err != nil {
-			return fmt.Errorf("error commiting the file: %s %v", link.ObjectId, err)
-		}
-	}
+	o.encryptChan <- encryptChanItem{id: link.ObjectId}
 	return nil
 }
