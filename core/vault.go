@@ -10,17 +10,12 @@ var (
 )
 
 type Vault struct {
-	Id            string                      `json:"id"`
-	KeyId         string                      `json:"keyId"`
-	EncryptedKeys map[string]EncryptedDataKey `json:"encryptedKeys"`
+	Id            string            `json:"id"`
+	KeyId         string            `json:"keyId"`
+	EncryptedKeys map[string]string `json:"encryptedKeys"`
 }
 
-type EncryptedDataKey struct {
-	KeyId          string
-	EncryptedValue string
-}
-
-func (v *Vault) Serialize() ([]byte, error) {
+func (v *Vault) Marshal() ([]byte, error) {
 	return json.Marshal(v)
 }
 
@@ -34,10 +29,6 @@ func UnmarshalVault(data []byte) (Vault, error) {
 }
 
 func (v *Vault) AddKey(sealed string, keyId string) error {
-	e := EncryptedDataKey{
-		KeyId:          keyId,
-		EncryptedValue: sealed,
-	}
-	v.EncryptedKeys[keyId] = e
+	v.EncryptedKeys[keyId] = sealed
 	return nil
 }

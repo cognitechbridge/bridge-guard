@@ -189,7 +189,7 @@ func (ks *KeyStoreDefault) CreateVault() (*core.Vault, error) {
 	vault := core.Vault{
 		Id:            id,
 		KeyId:         key.Id,
-		EncryptedKeys: make(map[string]core.EncryptedDataKey, 0),
+		EncryptedKeys: make(map[string]string),
 	}
 	err = ks.keyRepository.SaveVault(vault)
 	if err != nil {
