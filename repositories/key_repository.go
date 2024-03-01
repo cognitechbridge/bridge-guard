@@ -98,7 +98,7 @@ func (k *KeyRepositoryFile) SaveVault(vault core.Vault) (err error) {
 		return err
 	}
 	defer file.Close()
-	serialized, err := vault.Serialize()
+	serialized, err := vault.Marshal()
 	if err != nil {
 		return fmt.Errorf("error serializing vault")
 	}
