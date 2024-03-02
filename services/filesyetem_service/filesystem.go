@@ -37,7 +37,24 @@ func NewFileSystem(keyService core.KeyService, objectSerivce object_service.Serv
 }
 
 func (f *FileSystem) CreateDir(path string) error {
-	vault, err := f.keyService.CreateVault()
+	err := f.CreateVaultInPath(path)
+	if err != nil {
+		return err
+	}
+	return f.linkRepo.CreateDir(path)
+}
+
+func (f *FileSystem) CreateVaultInPath(path string) error {
+	parentKeyId := ""
+	if filepath.Clean(path) != string(filepath.Separator) {
+		parentPath := filepath.Dir(path)
+		vaultLink, err := f.getVaultLink(parentPath)
+		if err != nil {
+			return err
+		}
+		parentKeyId = vaultLink.VaultId
+	}
+	vault, err := f.keyService.CreateVault(parentKeyId)
 	if err != nil {
 		return err
 	}
@@ -46,7 +63,8 @@ func (f *FileSystem) CreateDir(path string) error {
 	if err != nil {
 		return err
 	}
-	return f.linkRepo.CreateDir(path)
+
+	return nil
 }
 
 func (f *FileSystem) RemovePath(path string) (err error) {
@@ -182,12 +200,11 @@ func (f *FileSystem) Commit(path string) error {
 	if ex {
 		delete(f.openToWrite, path)
 		link, _ := f.linkRepo.GetByPath(path)
-		dir := filepath.Dir(path)
-		vault, err := f.linkRepo.GetVaultLinkByPath(dir)
+		vaultLink, err := f.getVaultLink(path)
 		if err != nil {
 			return err
 		}
-		return f.objectService.Commit(link, vault.VaultId)
+		return f.objectService.Commit(link, vaultLink.VaultId)
 	}
 	return nil
 }
@@ -202,4 +219,10 @@ func (f *FileSystem) OpenInWrite(path string) error {
 		f.openToWrite[path] = openToWrite{id: newId}
 	}
 	return nil
+}
+
+func (f *FileSystem) getVaultLink(path string) (core.VaultLink, error) {
+	dir := filepath.Dir(path)
+	vaultLink, err := f.linkRepo.GetVaultLinkByPath(dir)
+	return vaultLink, err
 }

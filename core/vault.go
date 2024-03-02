@@ -13,6 +13,7 @@ type Vault struct {
 	Id            string            `json:"id"`
 	KeyId         string            `json:"keyId"`
 	EncryptedKeys map[string]string `json:"encryptedKeys"`
+	ParentId      string            `json:"parentId"`
 }
 
 func (v *Vault) Marshal() ([]byte, error) {

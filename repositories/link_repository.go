@@ -3,9 +3,15 @@ package repositories
 import (
 	"ctb-cli/core"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+)
+
+var (
+	ErrorVaultLinkNotFount = errors.New("vault link not found")
+	ErrorReadingLinkFile   = errors.New("error reading link file")
 )
 
 type LinkRepository struct {
@@ -75,8 +81,11 @@ func (c *LinkRepository) Update(path string, link core.Link) error {
 func (c *LinkRepository) GetByPath(path string) (core.Link, error) {
 	p := filepath.Join(c.rootPath, path)
 	js, err := os.ReadFile(p)
+	if os.IsNotExist(err) {
+		return core.Link{}, ErrorVaultLinkNotFount
+	}
 	if err != nil {
-		return core.Link{}, fmt.Errorf("error reading link file: %v", err)
+		return core.Link{}, ErrorReadingLinkFile
 	}
 	var link core.Link
 	err = json.Unmarshal(js, &link)
