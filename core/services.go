@@ -37,6 +37,6 @@ type KeyService interface {
 	Share(keyId string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
 	SetUserId(userId string)
-	CreateVault() (*Vault, error)
+	CreateVault(parentId string) (*Vault, error)
 	GenerateKeyInVault(vaultId string) (*KeyInfo, error)
 }
