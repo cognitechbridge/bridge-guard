@@ -202,13 +202,18 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error generating vault id")
 	}
-	key, err := ks.GenerateKeyInVault(parentId)
-	if err != nil {
-		return nil, fmt.Errorf("error generating key")
-	}
-	err = ks.Insert(key)
-	if err != nil {
-		return nil, err
+	var key *core.KeyInfo
+	if parentId != "" {
+		key, err = ks.GenerateKeyInVault(parentId)
+		if err != nil {
+			return nil, fmt.Errorf("error generating key")
+		}
+	} else {
+		key, err = recovery.GenerateKey(make([]core.RecoveryItem, 0))
+		err = ks.Insert(key)
+		if err != nil {
+			return nil, err
+		}
 	}
 	vault := core.Vault{
 		Id:            id,
@@ -224,7 +229,7 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 }
 
 func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) error {
-	vKey, err := ks.Get(vault.KeyId, vault.KeyId)
+	vKey, err := ks.Get(vault.KeyId, vault.ParentId)
 	if err != nil {
 		return err
 	}

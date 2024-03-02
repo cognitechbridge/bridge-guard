@@ -108,10 +108,6 @@ func (o *Service) encryptWriter(writer io.Writer, fileId string, vaultId string)
 	if err != nil {
 		return nil, err
 	}
-	err = o.keystore.Insert(keyInfo)
-	if err != nil {
-		return nil, err
-	}
 	return file_crypto.NewWriter(writer, keyInfo, o.userId, fileId)
 }
 
