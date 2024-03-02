@@ -168,7 +168,16 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	if err != nil {
 		return 0, err
 	}
-	return f.objectService.Read(link.ObjectId, buff, ofst)
+	vaultLink, err := f.getVaultLink(path)
+	if err != nil {
+		return 0, err
+	}
+	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId)
+	if err != nil {
+		return 0, err
+	}
+	key, err := f.keyService.Get(keyId, vaultLink.VaultId)
+	return f.objectService.Read(link.ObjectId, buff, ofst, key)
 }
 
 func (f *FileSystem) Resize(path string, size int64) (err error) {
