@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrorInvalidSecret = errors.New("invalid secret")
+	KeyNotFound        = errors.New("key not found")
 )
 
 type Key = core.Key
@@ -60,19 +61,41 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
 }
 
 // Get retrieves a key from the key store
-func (ks *KeyStoreDefault) Get(keyID string) (*Key, error) {
+func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*Key, error) {
 	if err := ks.LoadKeys(); err != nil {
 		return nil, fmt.Errorf("cannot load keys: %v", err)
 	}
-	sk, err := ks.keyRepository.GetDataKey(keyID, ks.userId)
+	//Check Direct
+	if ks.keyRepository.DataKeyExist(keyId, ks.userId) {
+		sk, err := ks.keyRepository.GetDataKey(keyId, ks.userId)
+		if err != nil {
+			return nil, err
+		}
+		key, err := key_crypto.OpenDataKey(sk, ks.privateKey)
+		if err != nil {
+			return nil, err
+		}
+		return key, nil
+	}
+	if startVaultId == "" {
+		return nil, KeyNotFound
+	}
+	vault, err := ks.keyRepository.GetVault(startVaultId)
 	if err != nil {
 		return nil, err
 	}
-	key, err := key_crypto.OpenDataKey(sk, ks.privateKey)
+	encKey, found := vault.EncryptedKeys[keyId]
+	if !found {
+		return nil, KeyNotFound
+	}
+	vaultKey, err := ks.Get(vault.KeyId, vault.ParentId)
 	if err != nil {
 		return nil, err
 	}
-
+	key, err := key_crypto.OpenVaultDataKey(encKey, vaultKey[:])
+	if err != nil {
+		return nil, err
+	}
 	return key, nil
 }
 
@@ -81,7 +104,8 @@ func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId
 		return fmt.Errorf("cannot load keys: %v", err)
 	}
 
-	key, err := ks.Get(keyId)
+	//@Todo: Fix it
+	key, err := ks.Get(keyId, "")
 	if err != nil {
 		return fmt.Errorf("cannot load key: %v", err)
 	}
@@ -200,7 +224,7 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 }
 
 func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) error {
-	vKey, err := ks.Get(vault.KeyId)
+	vKey, err := ks.Get(vault.KeyId, vault.KeyId)
 	if err != nil {
 		return err
 	}

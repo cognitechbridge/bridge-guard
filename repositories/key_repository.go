@@ -2,10 +2,15 @@ package repositories
 
 import (
 	"ctb-cli/core"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+)
+
+var (
+	KeyNotFound = errors.New("key not found")
 )
 
 // KeyRepository KeyStorePersist is an interface for persisting keys
@@ -16,6 +21,7 @@ type KeyRepository interface {
 	SavePrivateKey(key string, userId string) (err error)
 	GetVault(vaultId string) (core.Vault, error)
 	SaveVault(vault core.Vault) (err error)
+	DataKeyExist(keyId string, userId string) bool
 }
 
 type KeyRepositoryFile struct {
@@ -72,6 +78,9 @@ func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, err
 	p := filepath.Join(k.getDataPath(userId), keyID)
 	file, err := os.Open(p)
 	defer file.Close()
+	if os.IsNotExist(err) {
+		return "", KeyNotFound
+	}
 	if err != nil {
 		return "", err
 	}
@@ -131,4 +140,13 @@ func (k *KeyRepositoryFile) getPrivatePath() string {
 		os.MkdirAll(p, os.ModePerm)
 	}
 	return p
+}
+
+func (k *KeyRepositoryFile) DataKeyExist(keyId string, userId string) bool {
+	p := filepath.Join(k.getDataPath(userId), keyId)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return false
+	} else {
+		return true
+	}
 }

@@ -119,7 +119,7 @@ func SealVaultDataKey(dataKey []byte, vaultKey []byte) (string, error) {
 	return res, nil
 }
 
-func OpenVaultDataKey(serialized string, vaultKey []byte) ([]byte, error) {
+func OpenVaultDataKey(serialized string, vaultKey []byte) (*core.Key, error) {
 	parts := strings.Split(serialized, ":")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid serialized key)")
@@ -147,7 +147,9 @@ func OpenVaultDataKey(serialized string, vaultKey []byte) ([]byte, error) {
 		return nil, ErrorInvalidKey
 	}
 
-	return deciphered, nil
+	key := core.Key{}
+	copy(key[:], deciphered)
+	return &key, nil
 }
 
 // SealDataKey encrypts and serializes the key pair
@@ -186,6 +188,7 @@ func SealDataKey(key []byte, publicKey []byte) (string, error) {
 		ephemeralShareString,
 		base64.RawStdEncoding.EncodeToString(ciphered),
 	)
+
 	return res, nil
 }
 
