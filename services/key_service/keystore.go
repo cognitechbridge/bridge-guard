@@ -3,12 +3,10 @@ package key_service
 import (
 	"ctb-cli/core"
 	"ctb-cli/crypto/key_crypto"
-	"ctb-cli/crypto/recovery"
 	"ctb-cli/repositories"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
-	"os"
 )
 
 var (
@@ -23,7 +21,6 @@ type KeyStoreDefault struct {
 	userId          string
 	secret          string
 	privateKey      []byte
-	recoveryItems   []core.RecoveryItem
 	keyRepository   repositories.KeyRepository
 	vaultRepository repositories.VaultRepository
 }
@@ -36,7 +33,6 @@ func NewKeyStore(userId string, keyRepository repositories.KeyRepository, vaultR
 		userId:          userId,
 		keyRepository:   keyRepository,
 		vaultRepository: vaultRepository,
-		recoveryItems:   make([]core.RecoveryItem, 0),
 	}
 }
 
@@ -122,27 +118,6 @@ func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId
 	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientUserId)
 }
 
-func (ks *KeyStoreDefault) GetRecoveryItems() ([]core.RecoveryItem, error) {
-	return ks.recoveryItems, nil
-}
-
-func (ks *KeyStoreDefault) AddRecoveryKey(inPath string) error {
-	path := os.ExpandEnv(inPath)
-	pemBytes, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	rec, err := recovery.UnmarshalRecoveryItem(pemBytes)
-	if err != nil {
-		return err
-	}
-
-	ks.recoveryItems = append(ks.recoveryItems, *rec)
-
-	return nil
-}
-
 func (ks *KeyStoreDefault) LoadKeys() error {
 
 	if ks.privateKey != nil {
@@ -213,7 +188,7 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 			return nil, fmt.Errorf("error generating key")
 		}
 	} else {
-		key, err = recovery.GenerateKey(make([]core.RecoveryItem, 0))
+		key, err = core.GenerateKey()
 		err = ks.Insert(key)
 		if err != nil {
 			return nil, err
@@ -294,7 +269,7 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, er
 	if err != nil {
 		return nil, err
 	}
-	key, err := recovery.GenerateKey(make([]core.RecoveryItem, 0))
+	key, err := core.GenerateKey()
 	if err != nil {
 		return nil, err
 	}

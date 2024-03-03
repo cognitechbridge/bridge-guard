@@ -9,12 +9,11 @@ import (
 
 // Header represents the header of an encryption file
 type Header struct {
-	Version    string   `json:"version"`
-	Alg        string   `json:"alg"`
-	UserID     string   `json:"user_id"`
-	FileID     string   `json:"file_id"`
-	KeyId      string   `json:"key_id"`
-	Recoveries []string `json:"recoveries"`
+	Version string `json:"version"`
+	Alg     string `json:"alg"`
+	UserID  string `json:"user_id"`
+	FileID  string `json:"file_id"`
+	KeyId   string `json:"key_id"`
 }
 
 // Marshal header

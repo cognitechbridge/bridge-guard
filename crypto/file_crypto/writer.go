@@ -26,7 +26,7 @@ func NewWriter(dst io.Writer, keyInfo *core.KeyInfo, userId string, fileId strin
 	}
 	return &writer{
 		dst:          dst,
-		header:       newHeader(userId, fileId, keyInfo.Id, keyInfo.RecoveryBlobs),
+		header:       newHeader(userId, fileId, keyInfo.Id),
 		notFirst:     false,
 		streamWriter: streamWriter,
 	}, nil
@@ -63,13 +63,12 @@ func (e *writer) Close() error {
 	return e.streamWriter.Close()
 }
 
-func newHeader(userId string, fileId string, keyId string, recoveryBlobs []string) Header {
+func newHeader(userId string, fileId string, keyId string) Header {
 	return Header{
-		Version:    "V1",
-		Alg:        getAlgorithmName(), // Set default algorithm
-		UserID:     userId,
-		FileID:     fileId,
-		KeyId:      keyId,
-		Recoveries: recoveryBlobs,
+		Version: "V1",
+		Alg:     getAlgorithmName(), // Set default algorithm
+		UserID:  userId,
+		FileID:  fileId,
+		KeyId:   keyId,
 	}
 }

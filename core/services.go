@@ -28,8 +28,6 @@ type FileSystemService interface {
 type KeyService interface {
 	Get(keyID string, startVaultId string) (*KeyInfo, error)
 	Insert(key *KeyInfo) error
-	GetRecoveryItems() ([]RecoveryItem, error)
-	AddRecoveryKey(inPath string) error
 	GenerateUserKeys() (err error)
 	SetSecret(secret string)
 	LoadKeys() error
