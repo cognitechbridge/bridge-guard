@@ -36,7 +36,7 @@ func NewService(keystoreRepo core.KeyService, userId string, cache *repositories
 	return service
 }
 
-func (o *Service) Read(id string, buff []byte, ofst int64, key *core.Key) (n int, err error) {
+func (o *Service) Read(id string, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
 	err = o.availableInCache(id, key)
 	if err != nil {
 		return 0, err
@@ -66,7 +66,7 @@ func (o *Service) Truncate(id string, size int64) (err error) {
 	return o.objectCacheRepo.Truncate(id, size)
 }
 
-func (o *Service) availableInCache(id string, key *core.Key) error {
+func (o *Service) availableInCache(id string, key *core.KeyInfo) error {
 	if o.objectCacheRepo.IsInCache(id) {
 		return nil
 	}
@@ -83,7 +83,7 @@ func (o *Service) availableInCache(id string, key *core.Key) error {
 	return nil
 }
 
-func (o *Service) decryptToCache(id string, key *core.Key) error {
+func (o *Service) decryptToCache(id string, key *core.KeyInfo) error {
 	openObject, _ := o.objectRepo.OpenObject(id)
 	defer openObject.Close()
 	decryptedReader, _ := o.decryptReader(openObject, key)
@@ -111,7 +111,7 @@ func (o *Service) encryptWriter(writer io.Writer, fileId string, vaultId string)
 	return file_crypto.NewWriter(writer, keyInfo, o.userId, fileId)
 }
 
-func (o *Service) decryptReader(reader io.Reader, key *core.Key) (read io.Reader, err error) {
+func (o *Service) decryptReader(reader io.Reader, key *core.KeyInfo) (read io.Reader, err error) {
 	_, enc, err := file_crypto.Parse(reader)
 	if err != nil {
 		return nil, err

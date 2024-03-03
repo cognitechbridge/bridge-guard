@@ -19,8 +19,8 @@ func Parse(source io.Reader) (*Header, *EncryptedStream, error) {
 	return header, &EncryptedStream{source: source}, nil
 }
 
-func (e EncryptedStream) Decrypt(key *core.Key) (io.Reader, error) {
-	return stream.NewReader(key[:], e.source)
+func (e EncryptedStream) Decrypt(key *core.KeyInfo) (io.Reader, error) {
+	return stream.NewReader(key.Key[:], e.source)
 }
 
 func readFileVersionAndHeader(source io.Reader) (*Header, error) {

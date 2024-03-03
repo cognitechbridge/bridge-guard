@@ -219,7 +219,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 			if err != nil {
 				return err
 			}
-			err = f.keyService.MoveVault(vault, oldVault, newVault)
+			err = f.keyService.MoveVault(vault.VaultId, oldVault.VaultId, newVault.VaultId)
 			if err != nil {
 				return err
 			}
@@ -229,7 +229,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 				return err
 			}
 			keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId)
-			err = f.keyService.MoveKey(keyId, oldVault, newVault)
+			err = f.keyService.MoveKey(keyId, oldVault.VaultId, newVault.VaultId)
 			if err != nil {
 				return err
 			}
