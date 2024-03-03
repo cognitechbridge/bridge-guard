@@ -20,21 +20,23 @@ type Key = core.Key
 
 // KeyStoreDefault represents a key store
 type KeyStoreDefault struct {
-	userId        string
-	secret        string
-	privateKey    []byte
-	recoveryItems []core.RecoveryItem
-	keyRepository repositories.KeyRepository
+	userId          string
+	secret          string
+	privateKey      []byte
+	recoveryItems   []core.RecoveryItem
+	keyRepository   repositories.KeyRepository
+	vaultRepository repositories.VaultRepository
 }
 
 var _ core.KeyService = &KeyStoreDefault{}
 
 // NewKeyStore creates a new instance of KeyStoreDefault
-func NewKeyStore(userId string, keyRepository repositories.KeyRepository) *KeyStoreDefault {
+func NewKeyStore(userId string, keyRepository repositories.KeyRepository, vaultRepository repositories.VaultRepository) *KeyStoreDefault {
 	return &KeyStoreDefault{
-		userId:        userId,
-		keyRepository: keyRepository,
-		recoveryItems: make([]core.RecoveryItem, 0),
+		userId:          userId,
+		keyRepository:   keyRepository,
+		vaultRepository: vaultRepository,
+		recoveryItems:   make([]core.RecoveryItem, 0),
 	}
 }
 
@@ -80,7 +82,7 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*Key, error) 
 	if startVaultId == "" {
 		return nil, KeyNotFound
 	}
-	vault, err := ks.keyRepository.GetVault(startVaultId)
+	vault, err := ks.vaultRepository.GetVault(startVaultId)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +223,7 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 		ParentId:      parentId,
 		EncryptedKeys: make(map[string]string),
 	}
-	err = ks.keyRepository.SaveVault(vault)
+	err = ks.vaultRepository.SaveVault(vault)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +257,7 @@ func (ks *KeyStoreDefault) MoveKey(keyId string, oldVault core.VaultLink, newVau
 }
 
 func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, error) {
-	vault, err := ks.keyRepository.GetVault(vaultId)
+	vault, err := ks.vaultRepository.GetVault(vaultId)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +269,7 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, er
 	if err != nil {
 		return nil, err
 	}
-	err = ks.keyRepository.SaveVault(vault)
+	err = ks.vaultRepository.SaveVault(vault)
 	if err != nil {
 		return nil, err
 	}

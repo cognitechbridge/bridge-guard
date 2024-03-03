@@ -100,14 +100,16 @@ func initManagerClient() {
 	recipientsPath := CreateAndReturn(filepath.Join(root, "recipients"))
 	filesystemPath := CreateAndReturn(filepath.Join(root, "filesystem"))
 	cachePath := CreateAndReturn(filepath.Join(tempRoot, "cache"))
+	vaultPath := CreateAndReturn(filepath.Join(root, "vault"))
 
 	keyRepository := repositories.NewKeyRepositoryFile(keysPath)
 	objectCacheRepository := repositories.NewObjectCacheRepository(cachePath)
 	objectRepository := repositories.NewObjectRepository(objectPath)
 	recipientRepository := repositories.NewRecipientRepositoryFile(recipientsPath)
 	linkRepository := repositories.NewLinkRepository(filesystemPath)
+	vaultRepository := repositories.NewVaultRepositoryFile(vaultPath)
 
-	keyStore = key_service.NewKeyStore(userId, keyRepository)
+	keyStore = key_service.NewKeyStore(userId, keyRepository, vaultRepository)
 
 	path, err := config.Crypto.GetRecoveryPublicCertPath()
 	if err != nil {
