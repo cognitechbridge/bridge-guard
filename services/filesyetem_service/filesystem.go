@@ -247,7 +247,8 @@ func (f *FileSystem) Commit(path string) error {
 		if err != nil {
 			return err
 		}
-		return f.objectService.Commit(link, vaultLink.VaultId)
+		keyInfo, err := f.keyService.GenerateKeyInVault(vaultLink.VaultId)
+		return f.objectService.Commit(link, keyInfo)
 	}
 	return nil
 }

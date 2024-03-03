@@ -11,7 +11,6 @@ type Service struct {
 	objectCacheRepo *repositories.ObjectCacheRepository
 	objectRepo      *repositories.ObjectRepository
 	downloader      core.CloudStorage
-	keystore        core.KeyService
 	userId          string
 
 	//internal queues and channels
@@ -19,12 +18,11 @@ type Service struct {
 	uploadChan  chan uploadChanItem
 }
 
-func NewService(keystoreRepo core.KeyService, userId string, cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn core.CloudStorage) Service {
+func NewService(userId string, cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn core.CloudStorage) Service {
 	service := Service{
 		downloader:      dn,
 		objectCacheRepo: cache,
 		objectRepo:      objectRepo,
-		keystore:        keystoreRepo,
 		userId:          userId,
 		encryptChan:     make(chan encryptChanItem, 10),
 		uploadChan:      make(chan uploadChanItem, 10),
@@ -103,12 +101,8 @@ func (o *Service) downloadToObject(id string) error {
 	return nil
 }
 
-func (o *Service) encryptWriter(writer io.Writer, fileId string, vaultId string) (write io.WriteCloser, err error) {
-	keyInfo, err := o.keystore.GenerateKeyInVault(vaultId)
-	if err != nil {
-		return nil, err
-	}
-	return file_crypto.NewWriter(writer, keyInfo, o.userId, fileId)
+func (o *Service) encryptWriter(writer io.Writer, fileId string, key *core.KeyInfo) (write io.WriteCloser, err error) {
+	return file_crypto.NewWriter(writer, key, o.userId, fileId)
 }
 
 func (o *Service) decryptReader(reader io.Reader, key *core.KeyInfo) (read io.Reader, err error) {
@@ -130,7 +124,7 @@ func (o *Service) GetKeyIdByObjectId(id string) (string, error) {
 	return header.KeyId, nil
 }
 
-func (o *Service) Commit(link core.Link, vaultId string) error {
-	o.encryptChan <- encryptChanItem{id: link.ObjectId, vaultId: vaultId}
+func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
+	o.encryptChan <- encryptChanItem{id: link.ObjectId, key: key}
 	return nil
 }
