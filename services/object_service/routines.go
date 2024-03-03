@@ -32,7 +32,7 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	defer file.Close()
 
 	//Create encrypted writer
-	encryptedWriter, err := o.encryptWriter(file, e.id, e.vaultId)
+	encryptedWriter, err := o.encryptWriter(file, e.id, e.key)
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)
