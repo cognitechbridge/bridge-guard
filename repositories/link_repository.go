@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ErrorVaultLinkNotFount = errors.New("vault link not found")
-	ErrorReadingLinkFile   = errors.New("error reading link file")
+	ErrorVaultLinkNotFount     = errors.New("vault link not found")
+	ErrorReadingLinkFile       = errors.New("error reading link file")
+	ErrorRemovingVaultLinkFile = errors.New("error removing vault link file")
 )
 
 type LinkRepository struct {
@@ -210,4 +211,13 @@ func (c *LinkRepository) IsDir(path string) (bool, error) {
 		return false, err
 	}
 	return fi.IsDir(), nil
+}
+
+func (c *LinkRepository) RemoveVaultLink(path string) error {
+	absPath := filepath.Join(c.rootPath, path, ".vault")
+	err := os.Remove(absPath)
+	if err != nil {
+		return ErrorRemovingVaultLinkFile
+	}
+	return nil
 }
