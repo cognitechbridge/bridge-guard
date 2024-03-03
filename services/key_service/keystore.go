@@ -244,6 +244,16 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) er
 	return nil
 }
 
+func (ks *KeyStoreDefault) MoveVault(vault core.VaultLink, oldVault core.VaultLink, newVault core.VaultLink) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ks *KeyStoreDefault) MoveKey(keyId string, oldVault core.VaultLink, newVault core.VaultLink) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, error) {
 	vault, err := ks.keyRepository.GetVault(vaultId)
 	if err != nil {
