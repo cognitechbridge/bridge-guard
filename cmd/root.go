@@ -90,7 +90,7 @@ func initManagerClient() {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
-	userId, err := config.Workspace.GetUserId()
+	userId, _ := config.Workspace.GetUserId()
 
 	root, _ := config.GetRepoCtbRoot()
 	tempRoot, _ := config.GetTempRoot()
@@ -110,16 +110,6 @@ func initManagerClient() {
 	vaultRepository := repositories.NewVaultRepositoryFile(vaultPath)
 
 	keyStore = key_service.NewKeyStore(userId, keyRepository, vaultRepository)
-
-	path, err := config.Crypto.GetRecoveryPublicCertPath()
-	if err != nil {
-		return
-	}
-	err = keyStore.AddRecoveryKey(path)
-	if err != nil {
-		fmt.Println("Error reading crt:", err)
-		return
-	}
 
 	objectService := object_service.NewService(userId, &objectCacheRepository, &objectRepository, cloudClient)
 	shareService = share_service.NewService(recipientRepository, keyStore, linkRepository, &objectService)

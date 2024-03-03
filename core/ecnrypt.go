@@ -2,7 +2,6 @@ package core
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
 	"errors"
 	"golang.org/x/crypto/chacha20poly1305"
 	"io"
@@ -32,20 +31,14 @@ func KeyFromBytes(bytes []byte) (Key, error) {
 }
 
 type KeyInfo struct {
-	Key           []byte
-	Id            string
-	RecoveryBlobs []string
+	Key []byte
+	Id  string
 }
 
 type SerializedKey struct {
 	ID    string
 	Nonce string
 	Key   string
-}
-
-type RecoveryItem struct {
-	PublicKey *rsa.PublicKey
-	Sha1      string
 }
 
 func NewKeyInfo(keyId string, key []byte) KeyInfo {
