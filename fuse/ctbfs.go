@@ -156,7 +156,6 @@ func (c *CtbFs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 func (c *CtbFs) Mkdir(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer c.synchronize()()
-	_ = c.fs.CreateDir(path)
 	prnt, name, node := c.lookupNode(path, nil)
 	if nil == prnt {
 		return -fuse.ENOENT
@@ -166,6 +165,7 @@ func (c *CtbFs) Mkdir(path string, mode uint32) (errc int) {
 	}
 	node = c.newNode(0, true, path)
 	prnt.chld[name] = node
+	_ = c.fs.CreateDir(path)
 	return 0
 }
 

@@ -40,6 +40,6 @@ type KeyService interface {
 	CreateVault(parentId string) (*Vault, error)
 	GenerateKeyInVault(vaultId string) (*KeyInfo, error)
 	AddKeyToVault(vault *Vault, key KeyInfo) error
-	MoveVault(vault VaultLink, oldVault VaultLink, newVault VaultLink)
-	MoveKey(keyId string, oldVault VaultLink, newVault VaultLink)
+	MoveVault(vaultLink VaultLink, oldVault VaultLink, newVault VaultLink) error
+	MoveKey(keyId string, oldVault VaultLink, newVault VaultLink) error
 }

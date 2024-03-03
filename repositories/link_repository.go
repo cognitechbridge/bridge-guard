@@ -202,3 +202,12 @@ func (c *LinkRepository) listFilesByRegex(pattern string) ([]string, error) {
 
 	return matchedFiles, nil // Return the slice of matched file paths
 }
+
+func (c *LinkRepository) IsDir(path string) (bool, error) {
+	p := filepath.Join(c.rootPath, path)
+	fi, err := os.Stat(p)
+	if err != nil {
+		return false, err
+	}
+	return fi.IsDir(), nil
+}
