@@ -6,6 +6,7 @@ import (
 	"ctb-cli/services/object_service"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 )
 
@@ -201,6 +202,35 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 }
 
 func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
+	if filepath.Dir(oldPath) != filepath.Dir(newPath) {
+		fileInfo, err := os.Stat(oldPath)
+		if err != nil {
+			return err
+		}
+		oldVault, err := f.linkRepo.GetVaultLinkByPath(filepath.Dir(oldPath))
+		if err != nil {
+			return err
+		}
+		newVault, err := f.linkRepo.GetVaultLinkByPath(filepath.Dir(newPath))
+		if err != nil {
+			return err
+		}
+
+		if fileInfo.IsDir() {
+			vault, err := f.linkRepo.GetVaultLinkByPath(newPath)
+			if err != nil {
+				return err
+			}
+			f.keyService.MoveVault(vault, oldVault, newVault)
+		} else {
+			obj, err := f.linkRepo.GetByPath(oldPath)
+			if err != nil {
+				return err
+			}
+			keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId)
+			f.keyService.MoveKey(keyId, oldVault, newVault)
+		}
+	}
 	return f.linkRepo.Rename(oldPath, newPath)
 }
 
