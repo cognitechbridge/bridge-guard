@@ -2,8 +2,8 @@ package core
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"errors"
+	"github.com/btcsuite/btcutil/base58"
 	"io"
 )
 
@@ -12,14 +12,11 @@ var (
 )
 
 func EncodePublic(byte []byte) (string, error) {
-	return hex.EncodeToString(byte), nil
+	return base58.Encode(byte), nil
 }
 
 func DecodePublic(str string) ([]byte, error) {
-	pub, err := hex.DecodeString(str)
-	if err != nil {
-		return nil, InvalidPublicKey
-	}
+	pub := base58.Decode(str)
 	return pub, nil
 }
 
@@ -30,5 +27,5 @@ func NewUid() (string, error) {
 }
 
 func EncodeUid(uid []byte) (string, error) {
-	return hex.EncodeToString(uid), nil
+	return base58.Encode(uid), nil
 }
