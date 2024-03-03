@@ -47,3 +47,10 @@ type RecoveryItem struct {
 	PublicKey *rsa.PublicKey
 	Sha1      string
 }
+
+func NewKeyInfo(keyId string, key []byte) KeyInfo {
+	return KeyInfo{
+		Key: key,
+		Id:  keyId,
+	}
+}

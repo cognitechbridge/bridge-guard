@@ -3,7 +3,7 @@ package core
 import "io/fs"
 
 type ObjectService interface {
-	Read(id string, buff []byte, ofst int64, key *Key) (int, error)
+	Read(id string, buff []byte, ofst int64, key *KeyInfo) (int, error)
 	Write(id string, buff []byte, ofst int64) (int, error)
 	Create(id string) error
 	Move(oldId string, newId string) error
@@ -26,7 +26,7 @@ type FileSystemService interface {
 }
 
 type KeyService interface {
-	Get(keyID string, startVaultId string) (*Key, error)
+	Get(keyID string, startVaultId string) (*KeyInfo, error)
 	Insert(key *KeyInfo) error
 	GetRecoveryItems() ([]RecoveryItem, error)
 	AddRecoveryKey(inPath string) error
@@ -40,6 +40,6 @@ type KeyService interface {
 	CreateVault(parentId string) (*Vault, error)
 	GenerateKeyInVault(vaultId string) (*KeyInfo, error)
 	AddKeyToVault(vault *Vault, key KeyInfo) error
-	MoveVault(vaultLink VaultLink, oldVault VaultLink, newVault VaultLink) error
-	MoveKey(keyId string, oldVault VaultLink, newVault VaultLink) error
+	MoveVault(vaultId string, oldParentVaultId string, newParentVaultId string) error
+	MoveKey(keyId string, oldVaultId string, newVaultId string) error
 }

@@ -63,7 +63,7 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
 }
 
 // Get retrieves a key from the key store
-func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*Key, error) {
+func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo, error) {
 	if err := ks.LoadKeys(); err != nil {
 		return nil, fmt.Errorf("cannot load keys: %v", err)
 	}
@@ -77,7 +77,8 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*Key, error) 
 		if err != nil {
 			return nil, err
 		}
-		return key, nil
+		keyInfo := core.NewKeyInfo(keyId, key[:])
+		return &keyInfo, nil
 	}
 	if startVaultId == "" {
 		return nil, KeyNotFound
@@ -94,11 +95,12 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*Key, error) 
 	if err != nil {
 		return nil, err
 	}
-	key, err := key_crypto.OpenVaultDataKey(encKey, vaultKey[:])
+	key, err := key_crypto.OpenVaultDataKey(encKey, vaultKey.Key[:])
 	if err != nil {
 		return nil, err
 	}
-	return key, nil
+	keyInfo := core.NewKeyInfo(keyId, key[:])
+	return &keyInfo, nil
 }
 
 func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId string) error {
@@ -112,7 +114,7 @@ func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId
 		return fmt.Errorf("cannot load key: %v", err)
 	}
 
-	keyHashed, err := key_crypto.SealDataKey(key[:], recipient)
+	keyHashed, err := key_crypto.SealDataKey(key.Key[:], recipient)
 	if err != nil {
 		return err
 	}
@@ -234,7 +236,7 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) er
 	if err != nil {
 		return err
 	}
-	sealedKey, err := key_crypto.SealVaultDataKey(key.Key, vKey[:])
+	sealedKey, err := key_crypto.SealVaultDataKey(key.Key, vKey.Key[:])
 	if err != nil {
 		return err
 	}
@@ -245,16 +247,16 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) er
 	return nil
 }
 
-func (ks *KeyStoreDefault) MoveVault(vaultLink core.VaultLink, oldVault core.VaultLink, newVault core.VaultLink) error {
-	vault, err := ks.vaultRepository.GetVault(vaultLink.VaultId)
+func (ks *KeyStoreDefault) MoveVault(vaultId string, oldParentVaultId string, newParentVaultId string) error {
+	vault, err := ks.vaultRepository.GetVault(vaultId)
 	if err != nil {
 		return err
 	}
-	err = ks.MoveKey(vault.KeyId, oldVault, newVault)
+	err = ks.MoveKey(vault.KeyId, oldParentVaultId, newParentVaultId)
 	if err != nil {
 		return err
 	}
-	vault.ParentId = newVault.VaultId
+	vault.ParentId = newParentVaultId
 	err = ks.vaultRepository.SaveVault(vault)
 	if err != nil {
 		return err
@@ -262,29 +264,24 @@ func (ks *KeyStoreDefault) MoveVault(vaultLink core.VaultLink, oldVault core.Vau
 	return nil
 }
 
-func (ks *KeyStoreDefault) MoveKey(keyId string, oldVault core.VaultLink, newVaultLink core.VaultLink) error {
-	key, err := ks.Get(keyId, oldVault.VaultId)
+func (ks *KeyStoreDefault) MoveKey(keyId string, oldVaultId string, newVaultId string) error {
+	key, err := ks.Get(keyId, oldVaultId)
 	if err != nil {
 		return err
-	}
-	//TODO return keyInfo directly from Get
-	keyInfo := core.KeyInfo{
-		Key: key[:],
-		Id:  keyId,
 	}
 
 	//Add key to new vault
-	newVault, err := ks.vaultRepository.GetVault(newVaultLink.VaultId)
+	newVault, err := ks.vaultRepository.GetVault(newVaultId)
 	if err != nil {
 		return err
 	}
-	err = ks.AddKeyToVault(&newVault, keyInfo)
+	err = ks.AddKeyToVault(&newVault, *key)
 	if err != nil {
 		return err
 	}
 
 	// Remove key from old vault
-	err = ks.vaultRepository.RemoveKey(keyId, oldVault.VaultId)
+	err = ks.vaultRepository.RemoveKey(keyId, oldVaultId)
 	if err != nil {
 		return err
 	}

@@ -51,9 +51,6 @@ func GenerateKey(recoveryItems []core.RecoveryItem) (*core.KeyInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return &core.KeyInfo{
-		Key: key[:],
-		Id:  keyId,
-	}, nil
+	keyInfo := core.NewKeyInfo(keyId, key[:])
+	return &keyInfo, nil
 }
