@@ -10,10 +10,9 @@ var (
 )
 
 type Vault struct {
-	Id            string            `json:"id"`
-	KeyId         string            `json:"keyId"`
-	EncryptedKeys map[string]string `json:"encryptedKeys"`
-	ParentId      string            `json:"parentId"`
+	Id       string `json:"id"`
+	KeyId    string `json:"keyId"`
+	ParentId string `json:"parentId"`
 }
 
 func (v *Vault) Marshal() ([]byte, error) {
@@ -27,9 +26,4 @@ func UnmarshalVault(data []byte) (Vault, error) {
 		return Vault{}, err
 	}
 	return vault, nil
-}
-
-func (v *Vault) AddKey(sealed string, keyId string) error {
-	v.EncryptedKeys[keyId] = sealed
-	return nil
 }

@@ -86,7 +86,7 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*Key, error) 
 	if err != nil {
 		return nil, err
 	}
-	encKey, found := vault.EncryptedKeys[keyId]
+	encKey, found := ks.vaultRepository.GetKey(keyId, vault.Id)
 	if !found {
 		return nil, KeyNotFound
 	}
@@ -218,10 +218,9 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 		}
 	}
 	vault := core.Vault{
-		Id:            id,
-		KeyId:         key.Id,
-		ParentId:      parentId,
-		EncryptedKeys: make(map[string]string),
+		Id:       id,
+		KeyId:    key.Id,
+		ParentId: parentId,
 	}
 	err = ks.vaultRepository.SaveVault(vault)
 	if err != nil {
@@ -239,7 +238,7 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) er
 	if err != nil {
 		return err
 	}
-	err = vault.AddKey(sealedKey, key.Id)
+	err = ks.vaultRepository.AddKeyToVault(vault, key.Id, sealedKey)
 	if err != nil {
 		return err
 	}
