@@ -54,6 +54,12 @@ func (e *writer) writeFileVersionAndHeader() (err error) {
 }
 
 func (e *writer) Close() error {
+	if e.notFirst == false {
+		if err := e.writeFileVersionAndHeader(); err != nil {
+			return err
+		}
+		e.notFirst = true
+	}
 	return e.streamWriter.Close()
 }
 

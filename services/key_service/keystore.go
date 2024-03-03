@@ -222,7 +222,7 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 		KeyId:    key.Id,
 		ParentId: parentId,
 	}
-	err = ks.vaultRepository.SaveVault(vault)
+	err = ks.vaultRepository.InsertVault(vault)
 	if err != nil {
 		return nil, err
 	}
@@ -245,14 +245,51 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) er
 	return nil
 }
 
-func (ks *KeyStoreDefault) MoveVault(vault core.VaultLink, oldVault core.VaultLink, newVault core.VaultLink) {
-	//TODO implement me
-	panic("implement me")
+func (ks *KeyStoreDefault) MoveVault(vaultLink core.VaultLink, oldVault core.VaultLink, newVault core.VaultLink) error {
+	vault, err := ks.vaultRepository.GetVault(vaultLink.VaultId)
+	if err != nil {
+		return err
+	}
+	err = ks.MoveKey(vault.KeyId, oldVault, newVault)
+	if err != nil {
+		return err
+	}
+	vault.ParentId = newVault.VaultId
+	err = ks.vaultRepository.SaveVault(vault)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (ks *KeyStoreDefault) MoveKey(keyId string, oldVault core.VaultLink, newVault core.VaultLink) {
-	//TODO implement me
-	panic("implement me")
+func (ks *KeyStoreDefault) MoveKey(keyId string, oldVault core.VaultLink, newVaultLink core.VaultLink) error {
+	key, err := ks.Get(keyId, oldVault.VaultId)
+	if err != nil {
+		return err
+	}
+	//TODO return keyInfo directly from Get
+	keyInfo := core.KeyInfo{
+		Key: key[:],
+		Id:  keyId,
+	}
+
+	//Add key to new vault
+	newVault, err := ks.vaultRepository.GetVault(newVaultLink.VaultId)
+	if err != nil {
+		return err
+	}
+	err = ks.AddKeyToVault(&newVault, keyInfo)
+	if err != nil {
+		return err
+	}
+
+	// Remove key from old vault
+	err = ks.vaultRepository.RemoveKey(keyId, oldVault.VaultId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, error) {
@@ -265,10 +302,6 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, er
 		return nil, err
 	}
 	err = ks.AddKeyToVault(&vault, *key)
-	if err != nil {
-		return nil, err
-	}
-	err = ks.vaultRepository.SaveVault(vault)
 	if err != nil {
 		return nil, err
 	}

@@ -11,8 +11,10 @@ import (
 type VaultRepository interface {
 	GetVault(vaultId string) (core.Vault, error)
 	SaveVault(vault core.Vault) (err error)
+	InsertVault(vault core.Vault) error
 	AddKeyToVault(vault *core.Vault, keyIs string, serialized string) error
 	GetKey(keyId string, vaultId string) (string, bool)
+	RemoveKey(keyId string, vaultId string) error
 }
 
 type VaultRepositoryFile struct {
@@ -36,6 +38,19 @@ func (k *VaultRepositoryFile) GetVault(vaultId string) (core.Vault, error) {
 	return core.UnmarshalVault(content)
 }
 
+func (k *VaultRepositoryFile) InsertVault(vault core.Vault) error {
+	err := k.SaveVault(vault)
+	if err != nil {
+		return err
+	}
+	insidePath := k.vaultKeyFolder(vault.Id)
+	err = os.MkdirAll(insidePath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (k *VaultRepositoryFile) SaveVault(vault core.Vault) (err error) {
 	p := filepath.Join(k.rootPath, vault.Id)
 	file, err := os.Create(p)
@@ -51,7 +66,7 @@ func (k *VaultRepositoryFile) SaveVault(vault core.Vault) (err error) {
 	if err != nil {
 		return err
 	}
-	insidePath := k.vaultKeyFolder(vault.KeyId)
+	insidePath := k.vaultKeyFolder(vault.Id)
 	err = os.MkdirAll(insidePath, os.ModePerm)
 	if err != nil {
 		return err
@@ -69,7 +84,7 @@ func (k *VaultRepositoryFile) GetKey(keyId string, vaultId string) (string, bool
 }
 
 func (k *VaultRepositoryFile) AddKeyToVault(vault *core.Vault, keyId string, serialized string) error {
-	path := filepath.Join(k.vaultKeyFolder(vault.KeyId), keyId)
+	path := filepath.Join(k.vaultKeyFolder(vault.Id), keyId)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
 	defer file.Close()
 	if err != nil {
@@ -80,6 +95,11 @@ func (k *VaultRepositoryFile) AddKeyToVault(vault *core.Vault, keyId string, ser
 		return err
 	}
 	return nil
+}
+
+func (k *VaultRepositoryFile) RemoveKey(keyId string, vaultId string) error {
+	path := filepath.Join(k.vaultKeyFolder(vaultId), keyId)
+	return os.Remove(path)
 }
 
 func (k *VaultRepositoryFile) vaultKeyFolder(vaultId string) string {
