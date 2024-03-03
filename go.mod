@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.26.6
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/erikgeiser/promptkit v0.9.0
 	github.com/fatih/color v1.16.0
 	github.com/samber/lo v1.39.0
