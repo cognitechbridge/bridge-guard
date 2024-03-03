@@ -78,6 +78,9 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 	}
 	var infos []fs.FileInfo
 	for _, subFile := range subFiles {
+		if subFile.Name() == ".vault" { //Ignore .vault files
+			continue
+		}
 		if subFile.IsDir() {
 			var info fs.FileInfo = FileInfo{
 				isDir: true,
@@ -103,7 +106,11 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 	return infos, nil
 }
 
-func (f *FileSystem) RemoveDir(path string) (err error) {
+func (f *FileSystem) RemoveDir(path string) error {
+	err := f.linkRepo.RemoveVaultLink(path)
+	if err != nil {
+		return err
+	}
 	return f.linkRepo.RemoveDir(path)
 }
 
