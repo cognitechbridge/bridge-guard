@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="download" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="storage-go" />
+    <working_directory value="$PROJECT_DIR$/../../Repo" />
+    <parameters value="download -p D:\sample-downloaded.txt -n Test" />
+    <kind value="PACKAGE" />
+    <package value="ctb-cli" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>
