@@ -4,7 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"ctb-cli/fuse"
+	"ctb-cli/app"
 	"github.com/spf13/cobra"
 )
 
@@ -18,8 +18,7 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		ctbFuse := fuse.New(fileSystem)
-		ctbFuse.Mount()
+		app.Mount()
 	},
 }
 

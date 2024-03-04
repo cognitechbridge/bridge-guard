@@ -4,13 +4,11 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"crypto/rand"
+	"ctb-cli/app"
 	"ctb-cli/config"
-	"ctb-cli/core"
 	"ctb-cli/prompts"
 	"fmt"
 	"github.com/spf13/cobra"
-	"io"
 )
 
 // genkeyCmd represents the genkey command
@@ -42,42 +40,7 @@ var genkeyCmd = &cobra.Command{
 			panic(err)
 		}
 
-		//Generate random use id
-		bytes := make([]byte, 128/8)
-		_, err = io.ReadFull(rand.Reader, bytes)
-		if err != nil {
-			panic(err)
-		}
-		userId, err := core.EncodeUid(bytes)
-		if err != nil {
-			panic(err)
-		}
-
-		//Save user id to config and keystore
-		err = config.Workspace.SetUserId(userId)
-		keyStore.SetUserId(userId)
-		if err != nil {
-			panic(err)
-		}
-
-		keyStore.SetSecret(secret)
-		if err != nil {
-			panic(err)
-		}
-		err = keyStore.GenerateUserKeys()
-		if err != nil {
-			panic(err)
-		}
-
-		publicKey, err := keyStore.GetPublicKey()
-		if err != nil {
-			panic(err)
-		}
-		recipient, err := core.NewRecipient(email, publicKey, userId)
-		if err != nil {
-			panic(err)
-		}
-		err = shareService.SaveRecipient(recipient)
+		err = app.GenerateKey(secret, email)
 		if err != nil {
 			panic(err)
 		}

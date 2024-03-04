@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"ctb-cli/app"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,10 @@ var shareCmd = &cobra.Command{
 		}
 		pattern := args[0]
 		recipient, _ := cmd.Flags().GetString("recipient")
-		shareService.ShareByEmail(pattern, recipient)
+		err = app.Share(pattern, recipient)
+		if err != nil {
+			panic(err)
+		}
 		fmt.Println("share called")
 	},
 }
