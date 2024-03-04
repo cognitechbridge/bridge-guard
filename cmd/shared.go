@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"ctb-cli/app"
 	"ctb-cli/prompts"
 	"ctb-cli/services/key_service"
 	"errors"
@@ -18,8 +19,7 @@ func InitSecret() error {
 				return err // If there's an error getting the secret, return immediately
 			}
 		}
-		keyStore.SetSecret(secret)
-		err := keyStore.LoadKeys()
+		err := app.SetAndCheckSecret(secret)
 		if err == nil {
 			return nil // Success, exit function
 		}

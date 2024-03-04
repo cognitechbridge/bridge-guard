@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"ctb-cli/app"
 	"ctb-cli/prompts"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,7 @@ var chsecretCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		err = keyStore.ChangeSecret(secret)
+		err = app.ChangeSecret(secret)
 		if err != nil {
 			panic(err)
 		}

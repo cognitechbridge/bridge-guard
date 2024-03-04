@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"ctb-cli/app"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +18,7 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		err = fileSystem.CreateVaultInPath("/")
+		err = app.InitRepo()
 		if err != nil {
 			panic(err)
 		}
