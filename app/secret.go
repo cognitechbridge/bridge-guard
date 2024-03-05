@@ -1,7 +1,11 @@
 package app
 
-func SetAndCheckSecret(secret string) error {
+import "ctb-cli/core"
+
+func SetAndCheckSecret(secret string) core.AppResult {
 	keyStore.SetSecret(secret)
-	err := keyStore.LoadKeys()
-	return err
+	if err := keyStore.LoadKeys(); err != nil {
+		return core.AppErrorResult(err)
+	}
+	return core.AppOkResult()
 }

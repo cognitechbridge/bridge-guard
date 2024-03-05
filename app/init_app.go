@@ -4,14 +4,11 @@ import (
 	"ctb-cli/config"
 	"ctb-cli/core"
 	"ctb-cli/objectstorage/cloud"
-	"ctb-cli/prompts"
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
 	"ctb-cli/services/key_service"
 	"ctb-cli/services/object_service"
 	"ctb-cli/services/share_service"
-	"errors"
-	"github.com/fatih/color"
 	"os"
 	"path/filepath"
 )
@@ -19,37 +16,6 @@ import (
 var fileSystem *filesyetem_service.FileSystem
 var keyStore core.KeyService
 var shareService *share_service.Service
-
-func InitSecret(secret string) error {
-	needSecret := secret == "" // Determine if we need to prompt for the secret
-
-	for {
-		if needSecret {
-			var err error
-			secret, err = prompts.GetSecret()
-			if err != nil {
-				return err // If there's an error getting the secret, return immediately
-			}
-		}
-		keyStore.SetSecret(secret)
-		err := keyStore.LoadKeys()
-		if err == nil {
-			return nil // Success, exit function
-		}
-
-		if errors.Is(err, key_service.ErrorInvalidSecret) {
-			// Notify user of invalid secret
-			c := color.New(color.FgRed, color.Bold)
-			_, _ = c.Println("Invalid secret. Try again")
-
-			if !needSecret {
-				return err
-			}
-		} else {
-			return err // For any other error, return immediately
-		}
-	}
-}
 
 func Init() {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)

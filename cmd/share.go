@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"ctb-cli/app"
-	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -22,11 +21,8 @@ var shareCmd = &cobra.Command{
 		}
 		pattern := args[0]
 		recipient, _ := cmd.Flags().GetString("recipient")
-		err = app.Share(pattern, recipient)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("share called")
+		res := app.Share(pattern, recipient)
+		MarshalOutput(res)
 	},
 }
 

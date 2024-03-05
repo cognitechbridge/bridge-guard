@@ -18,10 +18,8 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		err = app.InitRepo()
-		if err != nil {
-			panic(err)
-		}
+		res := app.InitRepo()
+		MarshalOutput(res)
 	},
 }
 

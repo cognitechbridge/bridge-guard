@@ -1,5 +1,10 @@
 package app
 
-func Share(pattern string, recipient string) error {
-	return shareService.ShareByEmail(pattern, recipient)
+import "ctb-cli/core"
+
+func Share(pattern string, recipient string) core.AppResult {
+	if err := shareService.ShareByEmail(pattern, recipient); err != nil {
+		return core.AppErrorResult(err)
+	}
+	return core.AppOkResult()
 }

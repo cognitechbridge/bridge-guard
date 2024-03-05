@@ -7,7 +7,6 @@ import (
 	"ctb-cli/app"
 	"ctb-cli/config"
 	"ctb-cli/prompts"
-	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -40,12 +39,8 @@ var genkeyCmd = &cobra.Command{
 			panic(err)
 		}
 
-		err = app.GenerateKey(secret, email)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println("Code generated successfully")
+		res := app.GenerateKey(secret, email)
+		MarshalOutput(res)
 	},
 }
 
