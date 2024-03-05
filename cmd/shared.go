@@ -2,12 +2,9 @@ package cmd
 
 import (
 	"ctb-cli/app"
-	"ctb-cli/core"
 	"ctb-cli/prompts"
 	"ctb-cli/services/key_service"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/fatih/color"
 )
 
@@ -39,12 +36,4 @@ func InitSecret() error {
 			return res.Err // For any other error, return immediately
 		}
 	}
-}
-
-func MarshalOutput(result core.AppResult) {
-	res, err := json.Marshal(result)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(res))
 }
