@@ -2,7 +2,7 @@
   <configuration default="false" name="init" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="storage-go" />
     <working_directory value="$PROJECT_DIR$/../../Repo" />
-    <parameters value="init -s Aa12345" />
+    <parameters value="init -s Aa12345 -o xml" />
     <envs>
       <env name="CGO_ENABLED" value="1" />
       <env name="CPATH" value="C:\Program Files (x86)\WinFsp\inc\fuse" />

@@ -15,6 +15,7 @@ import (
 
 var cfgFile string
 var secret string
+var output outputEnum = outputEnumText
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -43,6 +44,7 @@ func init() {
 	addSubCommands()
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $USERPROFILE/.ctb/config.yaml)")
+	rootCmd.PersistentFlags().VarP(&output, "output", "o", `Output format. allowed: "json", "text", "yaml", and "xml"`)
 	rootCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Your secret")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
