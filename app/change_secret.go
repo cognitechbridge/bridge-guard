@@ -1,9 +1,10 @@
 package app
 
-func ChangeSecret(secret string) error {
-	err := keyStore.ChangeSecret(secret)
-	if err != nil {
-		return err
+import "ctb-cli/core"
+
+func ChangeSecret(secret string) core.AppResult {
+	if err := keyStore.ChangeSecret(secret); err != nil {
+		return core.AppErrorResult(err)
 	}
-	return nil
+	return core.AppOkResult()
 }

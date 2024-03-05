@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"ctb-cli/app"
+	"ctb-cli/core"
 	"ctb-cli/prompts"
 	"ctb-cli/services/key_service"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/fatih/color"
 )
 
@@ -19,21 +22,29 @@ func InitSecret() error {
 				return err // If there's an error getting the secret, return immediately
 			}
 		}
-		err := app.SetAndCheckSecret(secret)
-		if err == nil {
+		res := app.SetAndCheckSecret(secret)
+		if res.Ok {
 			return nil // Success, exit function
 		}
 
-		if errors.Is(err, key_service.ErrorInvalidSecret) {
+		if errors.Is(res.Err, key_service.ErrorInvalidSecret) {
 			// Notify user of invalid secret
 			c := color.New(color.FgRed, color.Bold)
 			_, _ = c.Println("Invalid secret. Try again")
 
 			if !needSecret {
-				return err
+				return res.Err
 			}
 		} else {
-			return err // For any other error, return immediately
+			return res.Err // For any other error, return immediately
 		}
 	}
+}
+
+func MarshalOutput(result core.AppResult) {
+	res, err := json.Marshal(result)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(res))
 }

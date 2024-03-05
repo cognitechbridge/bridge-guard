@@ -23,10 +23,8 @@ var chsecretCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		err = app.ChangeSecret(secret)
-		if err != nil {
-			panic(err)
-		}
+		res := app.ChangeSecret(secret)
+		MarshalOutput(res)
 	},
 }
 
