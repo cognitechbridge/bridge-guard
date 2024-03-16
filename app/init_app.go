@@ -9,6 +9,7 @@ import (
 	"ctb-cli/services/key_service"
 	"ctb-cli/services/object_service"
 	"ctb-cli/services/share_service"
+	"errors"
 	"os"
 	"path/filepath"
 )
@@ -16,6 +17,10 @@ import (
 var fileSystem *filesyetem_service.FileSystem
 var keyStore core.KeyService
 var shareService *share_service.Service
+
+var (
+	ErrPrivateKeyCheckFailed = errors.New("private key check failed")
+)
 
 func Init() {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
@@ -26,12 +31,12 @@ func Init() {
 	root, _ := config.GetRepoCtbRoot()
 	tempRoot, _ := config.GetTempRoot()
 
-	keysPath := CreateAndReturn(filepath.Join(root, "keys"))
-	objectPath := CreateAndReturn(filepath.Join(root, "object"))
-	recipientsPath := CreateAndReturn(filepath.Join(root, "recipients"))
-	filesystemPath := CreateAndReturn(filepath.Join(root, "filesystem"))
-	cachePath := CreateAndReturn(filepath.Join(tempRoot, "cache"))
-	vaultPath := CreateAndReturn(filepath.Join(root, "vault"))
+	keysPath := createAndReturn(filepath.Join(root, "keys"))
+	objectPath := createAndReturn(filepath.Join(root, "object"))
+	recipientsPath := createAndReturn(filepath.Join(root, "recipients"))
+	filesystemPath := createAndReturn(filepath.Join(root, "filesystem"))
+	cachePath := createAndReturn(filepath.Join(tempRoot, "cache"))
+	vaultPath := createAndReturn(filepath.Join(root, "vault"))
 
 	keyRepository := repositories.NewKeyRepositoryFile(keysPath)
 	objectCacheRepository := repositories.NewObjectCacheRepository(cachePath)
@@ -48,7 +53,20 @@ func Init() {
 	fileSystem = filesyetem_service.NewFileSystem(keyStore, objectService, linkRepository)
 }
 
-func CreateAndReturn(path string) string {
+func createAndReturn(path string) string {
 	os.MkdirAll(path, os.ModePerm)
 	return path
+}
+
+func SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
+	privateKey, err := core.DecodePrivateKey(encodedPrivateKey)
+	if err != nil {
+		return core.AppErrorResult(err)
+	}
+	keyStore.SetPrivateKey(privateKey)
+	res, err := keyStore.CheckPrivateKey()
+	if !res {
+		return core.AppErrorResult(ErrPrivateKeyCheckFailed)
+	}
+	return core.AppOkResult()
 }

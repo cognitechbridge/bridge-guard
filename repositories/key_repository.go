@@ -15,8 +15,6 @@ var (
 type KeyRepository interface {
 	SaveDataKey(keyId, key, recipient string) error
 	GetDataKey(keyID string, userId string) (string, error)
-	GetPrivateKey(userId string) (string, error)
-	SavePrivateKey(key string, userId string) (err error)
 	DataKeyExist(keyId string, userId string) bool
 }
 
@@ -30,30 +28,6 @@ func NewKeyRepositoryFile(rootPath string) *KeyRepositoryFile {
 	return &KeyRepositoryFile{
 		rootPath: rootPath,
 	}
-}
-
-func (k *KeyRepositoryFile) GetPrivateKey(userId string) (string, error) {
-	p := filepath.Join(k.getPrivatePath(), userId)
-	content, err := os.ReadFile(p)
-	if err != nil {
-		return "", err
-	}
-	return string(content), nil
-}
-
-func (k *KeyRepositoryFile) SavePrivateKey(key string, userId string) (err error) {
-	p := filepath.Join(k.getPrivatePath(), userId)
-	file, err := os.Create(p)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(key)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (k *KeyRepositoryFile) SaveDataKey(keyId, key, recipient string) error {

@@ -8,13 +8,14 @@ package cmd
 import (
 	"ctb-cli/app"
 	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
 )
 
 var cfgFile string
-var secret string
+var encpdedPrivateKey string
 var output outputEnum = outputEnumText
 
 // rootCmd represents the base command when called without any subcommands
@@ -45,7 +46,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $USERPROFILE/.ctb/config.yaml)")
 	rootCmd.PersistentFlags().VarP(&output, "output", "o", `Output format. allowed: "json", "text", "yaml", and "xml"`)
-	rootCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Your secret")
+	rootCmd.PersistentFlags().StringVarP(&encpdedPrivateKey, "key", "k", "", "Your private key")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 

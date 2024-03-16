@@ -1,51 +1,59 @@
 package key_service
 
 import (
+	"crypto/rand"
 	"ctb-cli/core"
 	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/repositories"
 	"errors"
 	"fmt"
+
 	"golang.org/x/crypto/curve25519"
 )
 
 var (
-	ErrorInvalidSecret = errors.New("invalid secret")
-	KeyNotFound        = errors.New("key not found")
+	ErrInvalidPrivateKeyOrUserNotJoined = errors.New("invalid private key or user not joined")
+	ErrDataKeyNotFound                  = errors.New("data key not found")
 )
 
 type Key = core.Key
 
 // KeyStoreDefault represents a key store
 type KeyStoreDefault struct {
-	userId          string
-	secret          string
 	privateKey      []byte
 	keyRepository   repositories.KeyRepository
 	vaultRepository repositories.VaultRepository
 }
 
+// Ensure KeyStoreDefault implements KeyService
 var _ core.KeyService = &KeyStoreDefault{}
 
 // NewKeyStore creates a new instance of KeyStoreDefault
 func NewKeyStore(userId string, keyRepository repositories.KeyRepository, vaultRepository repositories.VaultRepository) *KeyStoreDefault {
 	return &KeyStoreDefault{
-		userId:          userId,
 		keyRepository:   keyRepository,
 		vaultRepository: vaultRepository,
 	}
 }
 
-func (ks *KeyStoreDefault) SetUserId(userId string) {
-	ks.userId = userId
+func (ks *KeyStoreDefault) SetPrivateKey(privateKey []byte) {
+	ks.privateKey = privateKey
+}
+
+func (ks *KeyStoreDefault) GetUserId() (string, error) {
+	publicKey, err := ks.GetPublicKey()
+	if err != nil {
+		return "", err
+	}
+	userId, err := core.EncodePublic(publicKey)
+	if err != nil {
+		return "", err
+	}
+	return userId, nil
 }
 
 // Insert inserts a key into the key store
 func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
-	if err := ks.LoadKeys(); err != nil {
-		return fmt.Errorf("cannot load keys: %v", err)
-	}
-
 	pk, err := ks.GetPublicKey()
 	if err != nil {
 		return err
@@ -54,18 +62,22 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
 	if err != nil {
 		return err
 	}
-
-	return ks.keyRepository.SaveDataKey(key.Id, keyHashed, ks.userId)
+	userId, err := ks.GetUserId()
+	if err != nil {
+		return err
+	}
+	return ks.keyRepository.SaveDataKey(key.Id, keyHashed, userId)
 }
 
 // Get retrieves a key from the key store
 func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo, error) {
-	if err := ks.LoadKeys(); err != nil {
-		return nil, fmt.Errorf("cannot load keys: %v", err)
+	userId, err := ks.GetUserId()
+	if err != nil {
+		return nil, err
 	}
 	//Check Direct
-	if ks.keyRepository.DataKeyExist(keyId, ks.userId) {
-		sk, err := ks.keyRepository.GetDataKey(keyId, ks.userId)
+	if ks.keyRepository.DataKeyExist(keyId, userId) {
+		sk, err := ks.keyRepository.GetDataKey(keyId, userId)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +89,8 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo
 		return &keyInfo, nil
 	}
 	if startVaultId == "" {
-		return nil, KeyNotFound
+		return nil, ErrDataKeyNotFound
+
 	}
 	vault, err := ks.vaultRepository.GetVault(startVaultId)
 	if err != nil {
@@ -85,7 +98,8 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo
 	}
 	encKey, found := ks.vaultRepository.GetKey(keyId, vault.Id)
 	if !found {
-		return nil, KeyNotFound
+		return nil, ErrDataKeyNotFound
+
 	}
 	vaultKey, err := ks.Get(vault.KeyId, vault.ParentId)
 	if err != nil {
@@ -100,10 +114,6 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo
 }
 
 func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId string) error {
-	if err := ks.LoadKeys(); err != nil {
-		return fmt.Errorf("cannot load keys: %v", err)
-	}
-
 	//@Todo: Fix it
 	key, err := ks.Get(keyId, "")
 	if err != nil {
@@ -118,62 +128,8 @@ func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId
 	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientUserId)
 }
 
-func (ks *KeyStoreDefault) LoadKeys() error {
-
-	if ks.privateKey != nil {
-		return nil
-	}
-	serializedPrivateKey, err := ks.keyRepository.GetPrivateKey(ks.userId)
-	if err != nil {
-		return err
-	}
-	ks.privateKey, err = key_crypto.OpenPrivateKey(serializedPrivateKey, ks.secret)
-	if errors.Is(err, key_crypto.ErrorInvalidKey) {
-		return ErrorInvalidSecret
-	} else if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (ks *KeyStoreDefault) GenerateUserKeys() (err error) {
-	//Generate private key
-	privateKey := core.NewKeyFromRand()
-	ks.privateKey = privateKey[:]
-	//Save private key
-	sealPrivateKey, err := key_crypto.SealPrivateKey(privateKey[:], ks.secret)
-	if err != nil {
-		return err
-	}
-	err = ks.keyRepository.SavePrivateKey(sealPrivateKey, ks.userId)
-	if err != nil {
-		return err
-	}
-
-	err = ks.LoadKeys()
-	return
-}
-
 func (ks *KeyStoreDefault) GetPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
-}
-
-func (ks *KeyStoreDefault) SetSecret(secret string) {
-	ks.secret = secret
-	return
-}
-
-func (ks *KeyStoreDefault) ChangeSecret(secret string) error {
-	if err := ks.LoadKeys(); err != nil {
-		return fmt.Errorf("cannot load keys: %v", err)
-	}
-	sealPrivateKey, err := key_crypto.SealPrivateKey(ks.privateKey, secret)
-	ks.secret = secret
-	err = ks.keyRepository.SavePrivateKey(sealPrivateKey, ks.userId)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
@@ -239,13 +195,16 @@ func (ks *KeyStoreDefault) MoveVault(vaultId string, oldParentVaultId string, ne
 	return nil
 }
 
+// MoveKey moves a key from one vault to another.
+// It retrieves the key from the old vault, adds it to the new vault, and removes it from the old vault.
+// If any error occurs during the process, it returns the error.
 func (ks *KeyStoreDefault) MoveKey(keyId string, oldVaultId string, newVaultId string) error {
 	key, err := ks.Get(keyId, oldVaultId)
 	if err != nil {
 		return err
 	}
 
-	//Add key to new vault
+	// Add key to new vault
 	newVault, err := ks.vaultRepository.GetVault(newVaultId)
 	if err != nil {
 		return err
@@ -264,6 +223,8 @@ func (ks *KeyStoreDefault) MoveKey(keyId string, oldVaultId string, newVaultId s
 	return nil
 }
 
+// GenerateKeyInVault generates a new key and adds it to the specified vault.
+// It returns the generated key information or an error if the operation fails.
 func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, error) {
 	vault, err := ks.vaultRepository.GetVault(vaultId)
 	if err != nil {
@@ -278,4 +239,43 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, er
 		return nil, err
 	}
 	return key, nil
+}
+
+// CheckPrivateKey checks if the private key is valid.
+// It returns a boolean indicating whether the private key is valid or not,
+// and an error if any occurred during the check.
+func (ks *KeyStoreDefault) CheckPrivateKey() (bool, error) {
+	userId, err := ks.GetUserId()
+	if err != nil {
+		return false, err
+	}
+	if !ks.keyRepository.DataKeyExist(userId, userId) {
+		return false, ErrInvalidPrivateKeyOrUserNotJoined
+	}
+	_, err = ks.keyRepository.GetDataKey(userId, userId)
+	if err != nil {
+		return false, ErrInvalidPrivateKeyOrUserNotJoined
+	}
+	return true, nil
+}
+
+// Join generates a dummy key and saves it in the key store for the current user.
+// It returns an error if there was a problem generating or saving the key.
+func (ks *KeyStoreDefault) Join() error {
+	userId, err := ks.GetUserId()
+	if err != nil {
+		return err
+	}
+	// Create dummy key
+	randomKey := make([]byte, 32)
+	_, err = rand.Read(randomKey)
+	if err != nil {
+		return err
+	}
+	// Save dummy key
+	err = ks.keyRepository.SaveDataKey(userId, string(randomKey), userId)
+	if err != nil {
+		return err
+	}
+	return nil
 }

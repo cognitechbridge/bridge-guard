@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"ctb-cli/app"
+
 	"github.com/spf13/cobra"
 )
 
@@ -14,10 +15,7 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `mount`,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := InitSecret()
-		if err != nil {
-			panic(err)
-		}
+		InitKey()
 		app.Mount()
 	},
 }

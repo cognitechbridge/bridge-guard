@@ -3,8 +3,9 @@ package core
 import (
 	"crypto/rand"
 	"errors"
-	"github.com/btcsuite/btcutil/base58"
 	"io"
+
+	"github.com/btcsuite/btcutil/base58"
 )
 
 var (
@@ -18,6 +19,10 @@ func EncodePublic(byte []byte) (string, error) {
 func DecodePublic(str string) ([]byte, error) {
 	pub := base58.Decode(str)
 	return pub, nil
+}
+
+func DecodePrivateKey(str string) ([]byte, error) {
+	return base58.Decode(str), nil
 }
 
 func NewUid() (string, error) {

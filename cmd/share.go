@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"ctb-cli/app"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,10 +16,7 @@ var shareCmd = &cobra.Command{
 	Long:  `Share files with other users`,
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		err := InitSecret()
-		if err != nil {
-			panic(err)
-		}
+		InitKey()
 		pattern := args[0]
 		recipient, _ := cmd.Flags().GetString("recipient")
 		res := app.Share(pattern, recipient)
