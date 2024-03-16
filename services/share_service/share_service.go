@@ -42,8 +42,3 @@ func (s *Service) ShareByEmail(regex string, email string) error {
 	}
 	return nil
 }
-
-func (s *Service) SaveRecipient(recipient core.Recipient) error {
-	err := s.recipientRepository.InsertRecipient(recipient)
-	return err
-}

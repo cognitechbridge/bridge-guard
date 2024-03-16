@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"ctb-cli/app"
+
 	"github.com/spf13/cobra"
 )
 
@@ -14,10 +15,7 @@ var initCmd = &cobra.Command{
 	Short: "Init in folder",
 	Long:  `Init in folder`,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := InitSecret()
-		if err != nil {
-			panic(err)
-		}
+		InitKey()
 		res := app.InitRepo()
 		MarshalOutput(res)
 	},

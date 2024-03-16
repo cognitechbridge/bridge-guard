@@ -7,12 +7,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
+	"strings"
+
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
-	"io"
-	"strings"
 )
 
 const (
@@ -23,67 +24,6 @@ const (
 var (
 	ErrorInvalidKey = errors.New("invalid key")
 )
-
-// OpenPrivateKey encrypts and serializes the private key
-func OpenPrivateKey(serialized string, secret string) ([]byte, error) {
-	parts := strings.Split(serialized, "\n")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid serialized key)")
-	}
-	salt, err1 := base64.RawStdEncoding.DecodeString(parts[0])
-	ciphered, err2 := base64.RawStdEncoding.DecodeString(parts[1])
-	if errors.Join(err1, err2) != nil {
-		return nil, fmt.Errorf("invalid serialized key")
-	}
-
-	derivedKey, err := deriveKeyFromSecret(secret, salt)
-	if err != nil {
-		return nil, fmt.Errorf("error generating derivedKey key: %v", err)
-	}
-
-	aead, err := chacha20poly1305.New(derivedKey[:])
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cipher: %w", err)
-	}
-
-	nonce := make([]byte, chacha20poly1305.NonceSize)
-
-	deciphered, err := aead.Open(nil, nonce, ciphered, nil)
-	if err != nil {
-		return nil, ErrorInvalidKey
-	}
-
-	return deciphered, nil
-}
-
-// SealPrivateKey encrypts and serializes the private key
-func SealPrivateKey(privateKey []byte, secret string) (string, error) {
-	salt := make([]byte, 32)
-	_, err := rand.Read(salt)
-	if err != nil {
-		return "", fmt.Errorf("error generating random salt: %v", err)
-	}
-
-	derivedKey, err := deriveKeyFromSecret(secret, salt)
-	if err != nil {
-		return "", fmt.Errorf("error generating derivedKey key: %v", err)
-	}
-
-	aead, err := chacha20poly1305.New(derivedKey[:])
-	if err != nil {
-		return "", fmt.Errorf("failed to create cipher: %w", err)
-	}
-
-	nonce := make([]byte, chacha20poly1305.NonceSize)
-	ciphered := aead.Seal(nil, nonce, privateKey, nil)
-
-	res := fmt.Sprintf("%s\n%s",
-		base64.RawStdEncoding.EncodeToString(salt),
-		base64.RawStdEncoding.EncodeToString(ciphered),
-	)
-
-	return res, nil
-}
 
 func deriveKey(rootKey []byte, salt []byte, info string) (derivedKey core.Key, err error) {
 	hk := hkdf.New(sha256.New, rootKey[:], salt, []byte(info))
@@ -178,7 +118,7 @@ func SealDataKey(key []byte, publicKey []byte) (string, error) {
 
 	aead, err := chacha20poly1305.New(wrapKey[:])
 	if err != nil {
-		return "", fmt.Errorf("failed to create cipher: %w\n", err)
+		return "", fmt.Errorf("failed to create cipher: %w", err)
 	}
 
 	nonce := make([]byte, chacha20poly1305.NonceSize)
@@ -236,7 +176,7 @@ func OpenDataKey(serialized string, privateKey []byte) (*core.Key, error) {
 	return &key, nil
 }
 
-func deriveKeyFromSecret(secret string, salt []byte) (*core.Key, error) {
+func DeriveKeyFromSecret(secret string, salt []byte) (*core.Key, error) {
 	keyB := argon2.IDKey([]byte(secret), salt, 4, 64*1024, 2, 32)
 	key, err := core.KeyFromBytes(keyB)
 	return &key, err
