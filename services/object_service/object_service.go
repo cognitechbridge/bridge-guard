@@ -11,19 +11,17 @@ type Service struct {
 	objectCacheRepo *repositories.ObjectCacheRepository
 	objectRepo      *repositories.ObjectRepository
 	downloader      core.CloudStorage
-	userId          string
 
 	//internal queues and channels
 	encryptChan chan encryptChanItem
 	uploadChan  chan uploadChanItem
 }
 
-func NewService(userId string, cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn core.CloudStorage) Service {
+func NewService(cache *repositories.ObjectCacheRepository, objectRepo *repositories.ObjectRepository, dn core.CloudStorage) Service {
 	service := Service{
 		downloader:      dn,
 		objectCacheRepo: cache,
 		objectRepo:      objectRepo,
-		userId:          userId,
 		encryptChan:     make(chan encryptChanItem, 10),
 		uploadChan:      make(chan uploadChanItem, 10),
 	}
@@ -105,7 +103,7 @@ func (o *Service) downloadToObject(id string) error {
 }
 
 func (o *Service) encryptWriter(writer io.Writer, fileId string, key *core.KeyInfo) (write io.WriteCloser, err error) {
-	return file_crypto.NewWriter(writer, key, o.userId, fileId)
+	return file_crypto.NewWriter(writer, key, fileId)
 }
 
 func (o *Service) decryptReader(reader io.Reader, key *core.KeyInfo) (read io.Reader, err error) {

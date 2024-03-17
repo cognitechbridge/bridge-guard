@@ -29,7 +29,7 @@ type KeyStoreDefault struct {
 var _ core.KeyService = &KeyStoreDefault{}
 
 // NewKeyStore creates a new instance of KeyStoreDefault
-func NewKeyStore(userId string, keyRepository repositories.KeyRepository, vaultRepository repositories.VaultRepository) *KeyStoreDefault {
+func NewKeyStore(keyRepository repositories.KeyRepository, vaultRepository repositories.VaultRepository) *KeyStoreDefault {
 	return &KeyStoreDefault{
 		keyRepository:   keyRepository,
 		vaultRepository: vaultRepository,

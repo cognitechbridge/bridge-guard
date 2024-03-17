@@ -11,7 +11,6 @@ import (
 type Header struct {
 	Version string `json:"version"`
 	Alg     string `json:"alg"`
-	UserID  string `json:"user_id"`
 	FileID  string `json:"file_id"`
 	KeyId   string `json:"key_id"`
 }
