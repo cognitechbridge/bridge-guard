@@ -13,13 +13,16 @@ import (
 var joinCmd = &cobra.Command{
 	Use:   "join",
 	Short: "Join user to the repository",
-	Long:  `Join user to the repository.`,
+	Long: `Join user to the repository. This command join the current user to the repository by storing the corresponding public key in the repository. 
+	Use generate-key command to generate the private key.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		setResult := app.SetPrivateKey(encpdedPrivateKey)
+		// set the private key
+		setResult := app.SetPrivateKey(encryptedPrivateKey)
 		if !setResult.Ok {
 			MarshalOutput(setResult)
 			return
 		}
+		// join the user
 		res := app.Join()
 		MarshalOutput(res)
 	},

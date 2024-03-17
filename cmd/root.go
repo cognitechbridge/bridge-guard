@@ -14,7 +14,7 @@ import (
 )
 
 var cfgFile string
-var encpdedPrivateKey string
+var encryptedPrivateKey string
 var output outputEnum = outputEnumText
 
 // rootCmd represents the base command when called without any subcommands
@@ -58,6 +58,7 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
+		// Search config in different directories
 		viper.AddConfigPath("/etc/.ctb/") // path to look for the config file in
 		viper.AddConfigPath(".")          // optionally look for config in the working directory
 		viper.AddConfigPath(home + "/.ctb")
