@@ -370,7 +370,7 @@ func (f *FileSystem) Commit(path string) error {
 // Returns an error if there was an issue changing the file ID or if the file is already open for writing.
 func (f *FileSystem) OpenInWrite(path string) error {
 	_, ex := f.openToWrite[path]
-	if ex == false {
+	if !ex {
 		newId, err := f.changeFileId(path)
 		if err != nil {
 			return err

@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrorKeyNotFoundInVault = errors.New("key not found in vault")
+	ErrKeyNotFoundInVault = errors.New("key not found in vault")
 )
 
 type Vault struct {

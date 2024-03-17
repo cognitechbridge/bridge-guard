@@ -61,6 +61,9 @@ func (o *ObjectCacheRepository) Write(id string, buff []byte, ofst int64) (n int
 func (o *ObjectCacheRepository) Truncate(id string, size int64) (err error) {
 	p := filepath.Join(o.writePath, id)
 	file, err := os.OpenFile(p, os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
 	defer file.Close()
 	err = file.Truncate(size)
 	if err != nil {
@@ -94,10 +97,10 @@ func (o *ObjectCacheRepository) Read(id string, buff []byte, ofst int64) (n int,
 	}
 
 	file, err := os.OpenFile(p, os.O_RDONLY, 0666)
-	defer file.Close()
 	if err != nil {
 		return 0, err
 	}
+	defer file.Close()
 	n, err = file.ReadAt(buff, ofst)
 	return
 }

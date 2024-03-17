@@ -23,6 +23,9 @@ func (h *Header) Marshal() (res []byte, err error) {
 		return nil, err
 	}
 	res, err = formatContext(headerBytes)
+	if err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 

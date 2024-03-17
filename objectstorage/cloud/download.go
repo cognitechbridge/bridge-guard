@@ -125,6 +125,9 @@ func (d *downloader) downloadChunk(chunk dlchunk) error {
 		query.Encode(),
 	)
 	req, err := http.NewRequest("POST", reqURL, nil)
+	if err != nil {
+		return err
+	}
 
 	client := http.Client{}
 	reqResponse, err := client.Do(req)

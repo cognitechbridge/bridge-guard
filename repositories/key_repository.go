@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	KeyNotFound        = errors.New("key not found")
-	ErrorUserNotJoined = errors.New("user not joined")
+	ErrKeyNotFound   = errors.New("key not found")
+	ErrUserNotJoined = errors.New("user not joined")
 )
 
 // KeyRepository KeyStorePersist is an interface for persisting keys
@@ -40,10 +40,10 @@ func (k *KeyRepositoryFile) SaveDataKey(keyId, key, recipient string) error {
 	}
 	p := filepath.Join(datapath, keyId)
 	file, err := os.Create(p)
-	defer file.Close()
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 	_, err = file.Write([]byte(key))
 	if err != nil {
 		return err
@@ -58,13 +58,13 @@ func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, err
 	}
 	p := filepath.Join(datapath, keyID)
 	file, err := os.Open(p)
-	defer file.Close()
 	if os.IsNotExist(err) {
-		return "", KeyNotFound
+		return "", ErrKeyNotFound
 	}
 	if err != nil {
 		return "", err
 	}
+	defer file.Close()
 	content, err := io.ReadAll(file)
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, err
 func (k *KeyRepositoryFile) getDataPath(recipient string) (string, error) {
 	p := filepath.Join(k.rootPath, "data", recipient)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
-		return "", ErrorUserNotJoined
+		return "", ErrUserNotJoined
 	}
 	return p, nil
 }

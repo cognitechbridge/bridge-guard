@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	InvalidPublicKey = errors.New("invalid public key")
+	ErrInvalidPublicKey = errors.New("invalid public key")
 )
 
 func encodedPrivateKey(privateKey []byte) (string, error) {

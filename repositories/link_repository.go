@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	ErrorVaultLinkNotFount     = errors.New("vault link not found")
-	ErrorReadingLinkFile       = errors.New("error reading link file")
-	ErrorRemovingVaultLinkFile = errors.New("error removing vault link file")
+	ErrVaultLinkNotFount     = errors.New("vault link not found")
+	ErrReadingLinkFile       = errors.New("error reading link file")
+	ErrRemovingVaultLinkFile = errors.New("error removing vault link file")
 )
 
 type LinkRepository struct {
@@ -33,6 +33,9 @@ func (c *LinkRepository) Create(path string, link core.Link) error {
 		return err
 	}
 	file, err := os.OpenFile(absPath, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
 	defer file.Close()
 	js, _ := json.Marshal(link)
 	_, _ = file.Write(js)
@@ -47,6 +50,9 @@ func (c *LinkRepository) InsertVaultLink(path string, link core.VaultLink) error
 		return err
 	}
 	file, err := os.OpenFile(absPath, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
 	defer file.Close()
 	js, _ := json.Marshal(link)
 	_, _ = file.Write(js)
@@ -83,10 +89,10 @@ func (c *LinkRepository) GetByPath(path string) (core.Link, error) {
 	p := filepath.Join(c.rootPath, path)
 	js, err := os.ReadFile(p)
 	if os.IsNotExist(err) {
-		return core.Link{}, ErrorVaultLinkNotFount
+		return core.Link{}, ErrVaultLinkNotFount
 	}
 	if err != nil {
-		return core.Link{}, ErrorReadingLinkFile
+		return core.Link{}, ErrReadingLinkFile
 	}
 	var link core.Link
 	err = json.Unmarshal(js, &link)
@@ -94,12 +100,6 @@ func (c *LinkRepository) GetByPath(path string) (core.Link, error) {
 		return core.Link{}, fmt.Errorf("error unmarshalink link file: %v", err)
 	}
 	return link, nil
-}
-
-func (c *LinkRepository) open(path string) (*os.File, error) {
-	p := filepath.Join(c.rootPath, path)
-	file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0666)
-	return file, err
 }
 
 func (c *LinkRepository) ListIdsByRegex(regex string) ([]string, error) {
@@ -155,10 +155,10 @@ func (c *LinkRepository) CreateDir(path string) (err error) {
 func (c *LinkRepository) GetSubFiles(path string) ([]os.FileInfo, error) {
 	p := filepath.Join(c.rootPath, path)
 	file, err := os.Open(p)
-	defer file.Close()
 	if err != nil {
 		return nil, fmt.Errorf("error opening dir to Read sub files: %v", err)
 	}
+	defer file.Close()
 	subFiles, _ := file.Readdir(0)
 	return subFiles, nil
 }
@@ -217,7 +217,7 @@ func (c *LinkRepository) RemoveVaultLink(path string) error {
 	absPath := filepath.Join(c.rootPath, path, ".vault")
 	err := os.Remove(absPath)
 	if err != nil {
-		return ErrorRemovingVaultLinkFile
+		return ErrRemovingVaultLinkFile
 	}
 	return nil
 }
