@@ -34,7 +34,6 @@ func Init() {
 
 	keysPath := createAndReturn(filepath.Join(root, "keys"))
 	objectPath := createAndReturn(filepath.Join(root, "object"))
-	recipientsPath := createAndReturn(filepath.Join(root, "recipients"))
 	filesystemPath := createAndReturn(filepath.Join(root, "filesystem"))
 	cachePath := createAndReturn(filepath.Join(tempRoot, "cache"))
 	vaultPath := createAndReturn(filepath.Join(root, "vault"))
@@ -42,14 +41,13 @@ func Init() {
 	keyRepository := repositories.NewKeyRepositoryFile(keysPath)
 	objectCacheRepository := repositories.NewObjectCacheRepository(cachePath)
 	objectRepository := repositories.NewObjectRepository(objectPath)
-	recipientRepository := repositories.NewRecipientRepositoryFile(recipientsPath)
 	linkRepository := repositories.NewLinkRepository(filesystemPath)
 	vaultRepository := repositories.NewVaultRepositoryFile(vaultPath)
 
 	keyStore = key_service.NewKeyStore(userId, keyRepository, vaultRepository)
 
 	objectService := object_service.NewService(userId, &objectCacheRepository, &objectRepository, cloudClient)
-	shareService = share_service.NewService(recipientRepository, keyStore, linkRepository, &objectService)
+	shareService = share_service.NewService(keyStore, linkRepository, &objectService)
 
 	fileSystem = filesyetem_service.NewFileSystem(keyStore, objectService, linkRepository)
 }
