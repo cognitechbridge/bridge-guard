@@ -9,6 +9,7 @@ type FileInfo struct {
 	name  string
 	size  int64
 	isDir bool
+	mode  fs.FileMode
 }
 
 var _ fs.FileInfo = FileInfo{}
@@ -22,7 +23,7 @@ func (f FileInfo) Size() int64 {
 }
 
 func (f FileInfo) Mode() fs.FileMode {
-	return 0
+	return f.mode
 }
 
 func (f FileInfo) ModTime() time.Time {

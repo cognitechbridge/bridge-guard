@@ -23,6 +23,7 @@ type FileSystemService interface {
 	Resize(path string, size int64) (err error)
 	Commit(path string) error
 	OpenInWrite(path string) error
+	GetUserFileAccess(path string, isDir bool) fs.FileMode
 }
 
 type KeyService interface {
