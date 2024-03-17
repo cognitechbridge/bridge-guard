@@ -1,7 +1,6 @@
 package key_service
 
 import (
-	"crypto/rand"
 	"ctb-cli/core"
 	"ctb-cli/crypto/key_crypto"
 	"ctb-cli/repositories"
@@ -14,6 +13,7 @@ import (
 var (
 	ErrInvalidPrivateKeyOrUserNotJoined = errors.New("invalid private key or user not joined")
 	ErrDataKeyNotFound                  = errors.New("data key not found")
+	ErrUserAlreadyJoined                = errors.New("user already joined")
 )
 
 type Key = core.Key
@@ -241,7 +241,7 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, er
 	return key, nil
 }
 
-// CheckPrivateKey checks if the private key is valid.
+// CheckPrivateKey checks if the private key is valid and if the user has joined the repository.
 // It returns a boolean indicating whether the private key is valid or not,
 // and an error if any occurred during the check.
 func (ks *KeyStoreDefault) CheckPrivateKey() (bool, error) {
@@ -259,21 +259,23 @@ func (ks *KeyStoreDefault) CheckPrivateKey() (bool, error) {
 	return true, nil
 }
 
-// Join generates a dummy key and saves it in the key store for the current user.
-// It returns an error if there was a problem generating or saving the key.
+// Join adds the current user to the key store.
+// It first retrieves the user ID using the GetUserId method.
+// Then it checks if the user has already joined the key store.
+// If the user has already joined, it returns an error.
+// If any error occurs during the process, it returns the error.
+// If the user is successfully added, it returns nil.
 func (ks *KeyStoreDefault) Join() error {
 	userId, err := ks.GetUserId()
 	if err != nil {
 		return err
 	}
-	// Create dummy key
-	randomKey := make([]byte, 32)
-	_, err = rand.Read(randomKey)
-	if err != nil {
-		return err
+	// Check if user already joined
+	if ks.keyRepository.IsUserJoined(userId) {
+		return ErrUserAlreadyJoined
 	}
-	// Save dummy key
-	err = ks.keyRepository.SaveDataKey(userId, string(randomKey), userId)
+	// Join user
+	err = ks.keyRepository.JoinUser(userId)
 	if err != nil {
 		return err
 	}
