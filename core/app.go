@@ -24,3 +24,11 @@ func AppOkResult() AppResult {
 		Result: nil,
 	}
 }
+
+func AppOkResultWithResult(result interface{}) AppResult {
+	return AppResult{
+		Ok:     true,
+		Err:    nil,
+		Result: result,
+	}
+}

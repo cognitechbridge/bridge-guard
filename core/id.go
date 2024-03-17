@@ -12,6 +12,10 @@ var (
 	InvalidPublicKey = errors.New("invalid public key")
 )
 
+func encodedPrivateKey(privateKey []byte) (string, error) {
+	return base58.Encode(privateKey), nil
+}
+
 func EncodePublic(byte []byte) (string, error) {
 	return base58.Encode(byte), nil
 }
