@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func InitKey() error {
+func initKey() error {
 	c := app.SetAndCheckPrivateKey(encpdedPrivateKey)
 	if c.Ok {
 		return nil // Success, exit function

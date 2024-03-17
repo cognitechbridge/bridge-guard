@@ -249,11 +249,7 @@ func (ks *KeyStoreDefault) CheckPrivateKey() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if !ks.keyRepository.DataKeyExist(userId, userId) {
-		return false, ErrInvalidPrivateKeyOrUserNotJoined
-	}
-	_, err = ks.keyRepository.GetDataKey(userId, userId)
-	if err != nil {
+	if !ks.keyRepository.IsUserJoined(userId) {
 		return false, ErrInvalidPrivateKeyOrUserNotJoined
 	}
 	return true, nil
@@ -280,4 +276,14 @@ func (ks *KeyStoreDefault) Join() error {
 		return err
 	}
 	return nil
+}
+
+// GenerateUserKey generates a new user key and returns it as a string.
+// If any error occurs during the process, it returns the error.
+func (ks *KeyStoreDefault) GenerateUserKey() (string, error) {
+	key, err := core.GenerateUserKey()
+	if err != nil {
+		return "", err
+	}
+	return key, nil
 }

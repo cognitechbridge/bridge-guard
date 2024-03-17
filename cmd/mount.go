@@ -15,7 +15,7 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `mount`,
 	Run: func(cmd *cobra.Command, args []string) {
-		InitKey()
+		initKey()
 		app.Mount()
 	},
 }

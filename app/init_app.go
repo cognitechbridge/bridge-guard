@@ -20,6 +20,7 @@ var shareService *share_service.Service
 
 var (
 	ErrPrivateKeyCheckFailed = errors.New("private key check failed")
+	ErrInvalidPrivateKeySize = errors.New("invalid private key size")
 )
 
 func Init() {
@@ -58,13 +59,24 @@ func createAndReturn(path string) string {
 	return path
 }
 
-func SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
+func SetPrivateKey(encodedPrivateKey string) core.AppResult {
 	privateKey, err := core.DecodePrivateKey(encodedPrivateKey)
 	if err != nil {
 		return core.AppErrorResult(err)
 	}
+	if len(privateKey) != 32 {
+		return core.AppErrorResult(ErrInvalidPrivateKeySize)
+	}
 	keyStore.SetPrivateKey(privateKey)
-	res, err := keyStore.CheckPrivateKey()
+	return core.AppOkResult()
+}
+
+func SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
+	setResult := SetPrivateKey(encodedPrivateKey)
+	if !setResult.Ok {
+		return setResult
+	}
+	res, _ := keyStore.CheckPrivateKey()
 	if !res {
 		return core.AppErrorResult(ErrPrivateKeyCheckFailed)
 	}

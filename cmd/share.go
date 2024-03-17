@@ -16,7 +16,7 @@ var shareCmd = &cobra.Command{
 	Long:  `Share files with other users`,
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		InitKey()
+		initKey()
 		pattern := args[0]
 		recipient, _ := cmd.Flags().GetString("recipient")
 		res := app.Share(pattern, recipient)

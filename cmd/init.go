@@ -15,7 +15,7 @@ var initCmd = &cobra.Command{
 	Short: "Init in folder",
 	Long:  `Init in folder`,
 	Run: func(cmd *cobra.Command, args []string) {
-		InitKey()
+		initKey()
 		res := app.InitRepo()
 		MarshalOutput(res)
 	},
