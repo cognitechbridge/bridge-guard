@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"ctb-cli/app"
+	"os"
+
+	"github.com/spf13/cobra"
 )
 
 func InitKey() error {
@@ -10,6 +13,12 @@ func InitKey() error {
 		return nil // Success, exit function
 	} else {
 		MarshalOutput(c)
-		panic(nil) // Exit program with panic
+		os.Exit(1) // Failure, exit program
 	}
+	return nil
+}
+
+func SetRequiredKeyFlag(c *cobra.Command) {
+	c.PersistentFlags().StringVarP(&encpdedPrivateKey, "key", "k", "", "Your private key")
+	c.MarkPersistentFlagRequired("key")
 }
