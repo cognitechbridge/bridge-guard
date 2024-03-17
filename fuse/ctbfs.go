@@ -3,8 +3,9 @@ package fuse
 import (
 	"ctb-cli/core"
 	"fmt"
-	"github.com/winfsp/cgofuse/fuse"
 	"sync"
+
+	"github.com/winfsp/cgofuse/fuse"
 )
 
 type CtbFs struct {
@@ -42,7 +43,8 @@ func New(fs core.FileSystemService) *CtbFs {
 		fs:      fs,
 	}
 	defer c.synchronize()()
-	c.root = c.newNode(0, true, "/")
+	modePerm := fs.GetUserFileAccess("/", true)
+	c.root = c.newNode(0, true, "/", uint32(modePerm))
 	return &c
 }
 
@@ -127,7 +129,7 @@ func (c *CtbFs) exploreDir(path string) (err error) {
 	for _, info := range names {
 		_, _, node := c.lookupNode(info.Name(), parent)
 		if node == nil {
-			node := c.newNode(0, info.IsDir(), path)
+			node := c.newNode(0, info.IsDir(), path, uint32(info.Mode()))
 			node.path = join(path, info.Name())
 			node.stat.Size = info.Size()
 			parent.chld[info.Name()] = node
@@ -148,7 +150,7 @@ func (c *CtbFs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 		return -fuse.EEXIST
 	}
 	_ = c.fs.CreateFile(path)
-	node = c.newNode(0, false, path)
+	node = c.newNode(0, false, path, 0777)
 	prnt.chld[name] = node
 	return 0
 }
@@ -163,7 +165,7 @@ func (c *CtbFs) Mkdir(path string, mode uint32) (errc int) {
 	if nil != node {
 		return -fuse.EEXIST
 	}
-	node = c.newNode(0, true, path)
+	node = c.newNode(0, true, path, 0777)
 	prnt.chld[name] = node
 	_ = c.fs.CreateDir(path)
 	return 0
@@ -222,11 +224,11 @@ func (c *CtbFs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	return
 }
 
-func (c *CtbFs) newNode(dev uint64, isDir bool, path string) *Node {
+func (c *CtbFs) newNode(dev uint64, isDir bool, path string, modePerm uint32) *Node {
 	uid, gid := c.getUid()
 	tmsp := fuse.Now()
 	ino := c.getIno()
-	mode := c.getMode(isDir)
+	mode := c.getMode(isDir, modePerm)
 	self := Node{
 		stat: fuse.Stat_t{
 			Dev:      dev,
@@ -249,11 +251,11 @@ func (c *CtbFs) newNode(dev uint64, isDir bool, path string) *Node {
 	return &self
 }
 
-func (c *CtbFs) getMode(isDir bool) uint32 {
+func (c *CtbFs) getMode(isDir bool, modePerm uint32) uint32 {
 	if isDir {
-		return fuse.S_IFDIR | 0777
+		return fuse.S_IFDIR | modePerm
 	} else {
-		return fuse.S_IFREG | 0777
+		return fuse.S_IFREG | modePerm
 	}
 }
 

@@ -85,6 +85,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 			var info fs.FileInfo = FileInfo{
 				isDir: true,
 				name:  subFile.Name(),
+				mode:  f.GetUserFileAccess(filepath.Join(path, subFile.Name()), true),
 			}
 			infos = append(infos, info)
 			continue
@@ -98,6 +99,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 				isDir: false,
 				name:  subFile.Name(),
 				size:  link.Size,
+				mode:  f.GetUserFileAccess(filepath.Join(path, subFile.Name()), false),
 			}
 			infos = append(infos, info)
 		}
@@ -270,6 +272,48 @@ func (f *FileSystem) OpenInWrite(path string) error {
 		f.openToWrite[path] = openToWrite{id: newId}
 	}
 	return nil
+}
+
+func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
+	//Get vault link
+	vaultLink, err := f.getVaultLink(path)
+	if err != nil {
+		return 0000
+	}
+	//If user has access to vault, he has access to the file
+	if _, err := f.keyService.Get(vaultLink.KeyId, vaultLink.VaultId); err == nil {
+		return 0777
+	}
+	//If the path is a file
+	if !isDir {
+		//Get file key id
+		link, err := f.linkRepo.GetByPath(path)
+		if err != nil {
+			return 0000
+		}
+		keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId)
+		if err != nil {
+			return 0000
+		}
+		//If user has access to file key, he has access to the file
+		if _, err := f.keyService.Get(keyId, vaultLink.VaultId); err == nil {
+			return 0777
+		}
+		//If user does not have access to file key, he does not have access to the file
+		return 0000
+	}
+	//If the path is a directory get all sub files
+	subFiles, err := f.linkRepo.GetSubFiles(path)
+	if err != nil {
+		return 0000
+	}
+	//Check if we have a file in the directory that the user has access to
+	for _, subFile := range subFiles {
+		if subFile.Mode()&0777 != 0 {
+			return 0555
+		}
+	}
+	return 0000
 }
 
 func (f *FileSystem) getVaultLink(path string) (core.VaultLink, error) {
