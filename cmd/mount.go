@@ -13,7 +13,7 @@ import (
 var mountCmd = &cobra.Command{
 	Use:   "mount",
 	Short: "Mount",
-	Long:  `mount`,
+	Long:  `Mount the file system. This command mounts the file system and blocks the terminal.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initKey()
 		app.Mount()

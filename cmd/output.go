@@ -6,9 +6,11 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+
 	"gopkg.in/yaml.v3"
 )
 
+// Output format enum for the CLI
 type outputEnum string
 
 const (
@@ -23,14 +25,14 @@ func (e *outputEnum) String() string {
 	return string(*e)
 }
 
-// Set must have pointer receiver so it doesn't change the value of a copy
+// Set is used by Cobra to parse the CLI flags
 func (e *outputEnum) Set(v string) error {
 	switch v {
 	case "json", "text", "yaml", "xml":
 		*e = outputEnum(v)
 		return nil
 	default:
-		return errors.New(`must be one of "text", or "josn"`)
+		return errors.New(`must be one of "text", "josn", "yaml", or "xml"`)
 	}
 }
 
@@ -39,6 +41,9 @@ func (e *outputEnum) Type() string {
 	return "output"
 }
 
+// MarshalOutput marshals the given AppResult into a byte slice and prints the result.
+// The output format is determined by the value of the `output` variable that is set by the CLI flags.
+// The formatted result is then printed to the console.
 func MarshalOutput(result core.AppResult) {
 	res := make([]byte, 0)
 	switch output {
