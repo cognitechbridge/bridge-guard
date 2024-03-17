@@ -27,9 +27,6 @@ func Init() {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
-	// Get the user id
-	userId, _ := config.Workspace.GetUserId()
-
 	// Get the root paths
 	root, _ := config.GetRepoCtbRoot()
 	tempRoot, _ := config.GetTempRoot()
@@ -49,8 +46,8 @@ func Init() {
 	vaultRepository := repositories.NewVaultRepositoryFile(vaultPath)
 
 	// Create the services
-	keyStore = key_service.NewKeyStore(userId, keyRepository, vaultRepository)
-	objectService := object_service.NewService(userId, &objectCacheRepository, &objectRepository, cloudClient)
+	keyStore = key_service.NewKeyStore(keyRepository, vaultRepository)
+	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
 	shareService = share_service.NewService(keyStore, linkRepository, &objectService)
 	fileSystem = filesyetem_service.NewFileSystem(keyStore, objectService, linkRepository)
 }

@@ -19,14 +19,14 @@ var (
 )
 
 // NewWriter creates a new writer.
-func NewWriter(dst io.Writer, keyInfo *core.KeyInfo, userId string, fileId string) (*writer, error) {
+func NewWriter(dst io.Writer, keyInfo *core.KeyInfo, fileId string) (*writer, error) {
 	streamWriter, err := stream.NewWriter(keyInfo.Key[:], dst)
 	if err != nil {
 		return nil, err
 	}
 	return &writer{
 		dst:          dst,
-		header:       newHeader(userId, fileId, keyInfo.Id),
+		header:       newHeader(fileId, keyInfo.Id),
 		notFirst:     false,
 		streamWriter: streamWriter,
 	}, nil
@@ -66,11 +66,10 @@ func (e *writer) Close() error {
 	return e.streamWriter.Close()
 }
 
-func newHeader(userId string, fileId string, keyId string) Header {
+func newHeader(fileId string, keyId string) Header {
 	return Header{
 		Version: "V1",
 		Alg:     getAlgorithmName(), // Set default algorithm
-		UserID:  userId,
 		FileID:  fileId,
 		KeyId:   keyId,
 	}
