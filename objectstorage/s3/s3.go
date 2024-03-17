@@ -3,12 +3,13 @@ package s3
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"io"
-	"log"
 )
 
 // Client S3Client represents the objectstorage configuration for S3
@@ -45,7 +46,7 @@ func (s *Client) Upload(reader io.Reader, key string) error {
 		Body:   reader,
 	})
 	if err != nil {
-		return fmt.Errorf("Couldn't upload object. Here's why: %v\n", err)
+		return fmt.Errorf("couldn't upload object. Here's why: %v", err)
 	}
 	return err
 }
@@ -60,7 +61,7 @@ func (s *Client) Download(key string, writeAt io.WriterAt) error {
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		return fmt.Errorf("Couldn't download. Here's why: %v\n", err)
+		return fmt.Errorf("couldn't download. Here's why: %v", err)
 	}
 	return nil
 }

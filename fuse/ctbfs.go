@@ -65,7 +65,7 @@ func (c *CtbFs) lookupNode(path string, ancestor *Node) (prnt *Node, name string
 	}
 	name = ""
 	for _, c := range split(path) {
-		if "" != c {
+		if c != "" {
 			if 255 < len(c) {
 				panic(fuse.Error(-fuse.ENAMETOOLONG))
 			}
@@ -104,7 +104,7 @@ func (c *CtbFs) openNode(path string, dir bool) (errc int, fh uint64) {
 		return -fuse.ENOTDIR, ^uint64(0)
 	}
 	node.opencnt++
-	if 1 == node.opencnt {
+	if node.opencnt == 1 {
 		c.openMap[node.stat.Ino] = node
 	}
 	return 0, node.stat.Ino
@@ -113,7 +113,7 @@ func (c *CtbFs) openNode(path string, dir bool) (errc int, fh uint64) {
 func (c *CtbFs) closeNode(fh uint64) int {
 	node := c.openMap[fh]
 	node.opencnt--
-	if 0 == node.opencnt {
+	if node.opencnt == 0 {
 		c.commit(node)
 		delete(c.openMap, node.stat.Ino)
 	}
@@ -304,7 +304,7 @@ func (c *CtbFs) Rename(oldPath string, newPath string) (errc int) {
 	if nil == newPrnt {
 		return -fuse.ENOENT
 	}
-	if "" == newName {
+	if newName == "" {
 		// guard against directory loop creation
 		return -fuse.EINVAL
 	}
@@ -420,7 +420,7 @@ func (c *CtbFs) Opendir(path string) (errc int, fh uint64) {
 	defer trace(path)(&errc, &fh)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if node.explored == false {
+	if !node.explored {
 		err := c.exploreDir(path)
 		if err != nil {
 			return errno(err), ^uint64(0)
@@ -460,7 +460,7 @@ func (c *CtbFs) Setxattr(path string, name string, value []byte, flags int) (err
 	if nil == node {
 		return -fuse.ENOENT
 	}
-	if "com.apple.ResourceFork" == name {
+	if name == "com.apple.ResourceFork" {
 		return -fuse.ENOTSUP
 	}
 	if fuse.XATTR_CREATE == flags {
@@ -488,7 +488,7 @@ func (c *CtbFs) Getxattr(path string, name string) (errc int, xatr []byte) {
 	if nil == node {
 		return -fuse.ENOENT, nil
 	}
-	if "com.apple.ResourceFork" == name {
+	if name == "com.apple.ResourceFork" {
 		return -fuse.ENOTSUP, nil
 	}
 	xatr, ok := node.xatr[name]
@@ -505,7 +505,7 @@ func (c *CtbFs) Removexattr(path string, name string) (errc int) {
 	if nil == node {
 		return -fuse.ENOENT
 	}
-	if "com.apple.ResourceFork" == name {
+	if name == "com.apple.ResourceFork" {
 		return -fuse.ENOTSUP
 	}
 	if _, ok := node.xatr[name]; !ok {

@@ -86,10 +86,10 @@ func (k *VaultRepositoryFile) GetKey(keyId string, vaultId string) (string, bool
 func (k *VaultRepositoryFile) AddKeyToVault(vault *core.Vault, keyId string, serialized string) error {
 	path := filepath.Join(k.vaultKeyFolder(vault.Id), keyId)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
-	defer file.Close()
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 	_, err = file.WriteString(serialized)
 	if err != nil {
 		return err

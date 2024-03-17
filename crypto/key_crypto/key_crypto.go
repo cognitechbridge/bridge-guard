@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	ErrorInvalidKey = errors.New("invalid key")
+	ErrInvalidKey = errors.New("invalid key")
 )
 
 func deriveKey(rootKey []byte, salt []byte, info string) (derivedKey core.Key, err error) {
@@ -84,7 +84,7 @@ func OpenVaultDataKey(serialized string, vaultKey []byte) (*core.Key, error) {
 
 	deciphered, err := aead.Open(nil, nonce, ciphered, nil)
 	if err != nil {
-		return nil, ErrorInvalidKey
+		return nil, ErrInvalidKey
 	}
 
 	key := core.Key{}
@@ -115,6 +115,9 @@ func SealDataKey(key []byte, publicKey []byte) (string, error) {
 	}
 
 	wrapKey, err := deriveKey(sharedSecret, []byte(salt), X25519V1Info)
+	if err != nil {
+		return "", fmt.Errorf("error generating wrap key: %v", err)
+	}
 
 	aead, err := chacha20poly1305.New(wrapKey[:])
 	if err != nil {
@@ -157,6 +160,9 @@ func OpenDataKey(serialized string, privateKey []byte) (*core.Key, error) {
 	}
 
 	wrapKey, err := deriveKey(sharedSecret, []byte(salt), X25519V1Info)
+	if err != nil {
+		return nil, fmt.Errorf("error generating wrap key: %v", err)
+	}
 
 	aead, err := chacha20poly1305.New(wrapKey[:])
 	if err != nil {

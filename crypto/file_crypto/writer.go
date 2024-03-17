@@ -33,7 +33,7 @@ func NewWriter(dst io.Writer, keyInfo *core.KeyInfo, userId string, fileId strin
 }
 
 func (e *writer) Write(buf []byte) (int, error) {
-	if e.notFirst == false {
+	if !e.notFirst {
 		if err := e.writeFileVersionAndHeader(); err != nil {
 			return 0, err
 		}
@@ -49,12 +49,15 @@ func (e *writer) writeFileVersionAndHeader() (err error) {
 		return err
 	}
 	headerBytes, err := e.header.Marshal()
+	if err != nil {
+		return err
+	}
 	_, err = e.dst.Write(headerBytes)
 	return err
 }
 
 func (e *writer) Close() error {
-	if e.notFirst == false {
+	if !e.notFirst {
 		if err := e.writeFileVersionAndHeader(); err != nil {
 			return err
 		}

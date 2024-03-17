@@ -68,7 +68,7 @@ func (o *Service) availableInCache(id string, key *core.KeyInfo) error {
 	if o.objectCacheRepo.IsInCache(id) {
 		return nil
 	}
-	if o.objectRepo.IsInRepo(id) == false {
+	if !o.objectRepo.IsInRepo(id) {
 		err := o.downloadToObject(id)
 		if err != nil {
 			return err
@@ -86,6 +86,9 @@ func (o *Service) decryptToCache(id string, key *core.KeyInfo) error {
 	defer openObject.Close()
 	decryptedReader, _ := o.decryptReader(openObject, key)
 	writer, err := o.objectCacheRepo.CacheObjectWriter(id)
+	if err != nil {
+		return err
+	}
 	defer writer.Close()
 	_, err = io.Copy(writer, decryptedReader)
 	return err
@@ -116,6 +119,9 @@ func (o *Service) decryptReader(reader io.Reader, key *core.KeyInfo) (read io.Re
 
 func (o *Service) GetKeyIdByObjectId(id string) (string, error) {
 	reader, err := o.objectRepo.OpenObject(id)
+	if err != nil {
+		return "", err
+	}
 	defer reader.Close()
 	header, _, err := file_crypto.Parse(reader)
 	if err != nil {

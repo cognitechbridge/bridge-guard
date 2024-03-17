@@ -17,7 +17,6 @@ type Uploader struct {
 	err       error
 	chunkSize uint64
 	client    *Client
-	fileName  string
 }
 
 type chunk struct {

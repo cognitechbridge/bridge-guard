@@ -145,6 +145,9 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 		}
 	} else {
 		key, err = core.GenerateKey()
+		if err != nil {
+			return nil, fmt.Errorf("error generating key")
+		}
 		err = ks.Insert(key)
 		if err != nil {
 			return nil, err
