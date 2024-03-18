@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// @TODO: Change the implementation of the closeFile function
 func closeFile(f *os.File) {
 	err := f.Close()
 	if err != nil {
