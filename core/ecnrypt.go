@@ -3,8 +3,9 @@ package core
 import (
 	"crypto/rand"
 	"errors"
-	"golang.org/x/crypto/chacha20poly1305"
 	"io"
+
+	"golang.org/x/crypto/chacha20poly1305"
 )
 
 // Key represents a 256-bit key used for ChaCha20-Poly1305.
@@ -12,7 +13,10 @@ type Key [chacha20poly1305.KeySize]byte
 
 func NewKeyFromRand() *Key {
 	key := Key{}
-	io.ReadFull(rand.Reader, key[:])
+	_, err := io.ReadFull(rand.Reader, key[:])
+	if err != nil {
+		panic(err)
+	}
 	return &key
 }
 

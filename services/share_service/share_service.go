@@ -34,7 +34,11 @@ func (s *Service) ShareByPublicKey(regex string, publicKeyEncoded string) error 
 		if err != nil {
 			return err
 		}
-		s.keyStorer.Share(keyId, publicKeyBytes, publicKeyEncoded)
+		err = s.keyStorer.Share(keyId, publicKeyBytes, publicKeyEncoded)
+		if err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
