@@ -434,3 +434,8 @@ func (f *FileSystem) getVaultLink(path string) (core.VaultLink, error) {
 	vaultLink, err := f.linkRepo.GetVaultLinkByPath(dir)
 	return vaultLink, err
 }
+
+// @Todo: Implement IsValidRepository
+func (f *FileSystem) IsValidRepository() (bool, error) {
+	return true, nil
+}

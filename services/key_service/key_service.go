@@ -350,3 +350,14 @@ func (ks *KeyStoreDefault) GenerateUserKey() (string, error) {
 	}
 	return key, nil
 }
+
+// IsUserJoined checks if the user with the specified user ID has joined the key store.
+// It returns a boolean indicating whether the user has joined or not.
+// If any error occurs during the process, it returns false.
+func (ks *KeyStoreDefault) IsUserJoined() bool {
+	userId, err := ks.GetUserId()
+	if err != nil {
+		return false
+	}
+	return ks.keyRepository.IsUserJoined(userId)
+}

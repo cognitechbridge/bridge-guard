@@ -40,4 +40,5 @@ type KeyService interface {
 	MoveKey(keyId string, oldVaultId string, newVaultId string) error
 	GenerateUserKey() (string, error)
 	CheckPrivateKey() (bool, error)
+	IsUserJoined() bool
 }
