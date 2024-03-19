@@ -114,7 +114,10 @@ func (c *CtbFs) closeNode(fh uint64) int {
 	node := c.openMap[fh]
 	node.opencnt--
 	if node.opencnt == 0 {
-		c.commit(node)
+		err := c.commit(node)
+		if err != nil {
+			return errno(err)
+		}
 		delete(c.openMap, node.stat.Ino)
 	}
 	return 0

@@ -54,7 +54,10 @@ func Init() {
 
 // CreateAndReturn creates a directory and returns the path.
 func createAndReturn(path string) string {
-	os.MkdirAll(path, os.ModePerm)
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 	return path
 }
 

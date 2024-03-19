@@ -106,6 +106,9 @@ func (k *KeyRepositoryFile) IsUserJoined(userId string) bool {
 // It takes the user ID as a parameter and returns an error if any.
 func (k *KeyRepositoryFile) JoinUser(userId string) error {
 	p := filepath.Join(k.rootPath, "data", userId)
-	os.MkdirAll(p, os.ModePerm)
+	err := os.MkdirAll(p, os.ModePerm)
+	if err != nil {
+		return err
+	}
 	return nil
 }

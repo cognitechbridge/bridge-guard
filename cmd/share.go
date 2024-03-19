@@ -29,5 +29,8 @@ func init() {
 	rootCmd.AddCommand(shareCmd)
 	SetRequiredKeyFlag(shareCmd)
 	shareCmd.PersistentFlags().StringP("recipient", "r", "", "recipient public key. Required.")
-	shareCmd.MarkPersistentFlagRequired("recipient")
+	err := shareCmd.MarkPersistentFlagRequired("recipient")
+	if err != nil {
+		panic(err)
+	}
 }
