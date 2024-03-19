@@ -32,3 +32,9 @@ func AppOkResultWithResult(result interface{}) AppResult {
 		Result: result,
 	}
 }
+
+// This is a struct for the repository status
+type RepositroyStatus struct {
+	IsValid  bool `json:"is_valid" yaml:"is_valid" xml:"is_valid"`
+	IsJoined bool `json:"is_joined" yaml:"is_joined" xml:"is_joined"`
+}
