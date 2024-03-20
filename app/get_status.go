@@ -7,7 +7,7 @@ import "ctb-cli/core"
 // Returns an AppResult with the repository status.
 func GetStatus(encryptedPrivateKey string) core.AppResult {
 	// init the app
-	initRes := initApp()
+	initRes := initServices()
 	if !initRes.Ok {
 		return initRes
 	}

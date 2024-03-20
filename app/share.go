@@ -6,7 +6,7 @@ import "ctb-cli/core"
 // Returns an AppResult indicating the success or failure of the operation.
 func Share(pattern string, publicKey string, encryptedPrivateKey string) core.AppResult {
 	// init the app
-	initRes := initApp()
+	initRes := initServices()
 	if !initRes.Ok {
 		return initRes
 	}

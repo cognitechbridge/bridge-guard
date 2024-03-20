@@ -7,7 +7,7 @@ import "ctb-cli/core"
 // or an AppErrorResult containing the error on failure.
 func GenerateUserKey() core.AppResult {
 	// init the app to be able to use the key store
-	initRes := initApp()
+	initRes := initServices()
 	if !initRes.Ok {
 		return initRes
 	}

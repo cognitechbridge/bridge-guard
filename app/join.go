@@ -8,7 +8,7 @@ import (
 // Returns an AppResult indicating the success or failure of the operation.
 func Join(encryptedPrivateKey string) core.AppResult {
 	// init the app
-	initRes := initApp()
+	initRes := initServices()
 	if !initRes.Ok {
 		return initRes
 	}
@@ -17,6 +17,7 @@ func Join(encryptedPrivateKey string) core.AppResult {
 	if !setResult.Ok {
 		return setResult
 	}
+	// Join the user using the key store
 	err := keyStore.Join()
 	if err != nil {
 		return core.AppErrorResult(err)
