@@ -15,6 +15,7 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `Mount the file system. This command mounts the file system and blocks the terminal.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		app.Init()
 		initKey()
 		app.Mount()
 	},
