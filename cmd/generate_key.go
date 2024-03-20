@@ -17,7 +17,6 @@ var generateKeyCmd = &cobra.Command{
 	This funtion doesnt affect the state of the repository and only returns the key. The key is not stored in the repository.
 	You can use join command to join the repository and store the corresponding public key in the repository.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		app.Init()
 		res := app.GenerateUserKey()
 		MarshalOutput(res)
 	},

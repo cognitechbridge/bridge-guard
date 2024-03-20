@@ -17,11 +17,9 @@ var shareCmd = &cobra.Command{
 	The files are shared with the user who has the corresponding private key.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		app.Init()
-		initKey()
 		pattern := args[0]
 		recipient, _ := cmd.Flags().GetString("recipient")
-		res := app.Share(pattern, recipient)
+		res := app.Share(pattern, recipient, encryptedPrivateKey)
 		MarshalOutput(res)
 	},
 }

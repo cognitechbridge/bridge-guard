@@ -17,11 +17,7 @@ var statusCmd = &cobra.Command{
 	Returns an AppResult with the repository status.
 	You can use the 'key' flag to pass your private key. If you don't pass it, the joined status will be false.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		app.Init()
-		if encryptedPrivateKey != "" {
-			app.SetAndCheckPrivateKey(encryptedPrivateKey)
-		}
-		res := app.GetStatus()
+		res := app.GetStatus(encryptedPrivateKey)
 		MarshalOutput(res)
 	},
 }
