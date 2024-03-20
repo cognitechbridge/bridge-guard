@@ -4,8 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"ctb-cli/app"
-
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +15,7 @@ var statusCmd = &cobra.Command{
 	Returns an AppResult with the repository status.
 	You can use the 'key' flag to pass your private key. If you don't pass it, the joined status will be false.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		res := app.GetStatus(encryptedPrivateKey)
+		res := ctbApp.GetStatus(encryptedPrivateKey)
 		MarshalOutput(res)
 	},
 }
