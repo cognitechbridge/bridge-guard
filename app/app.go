@@ -14,9 +14,14 @@ import (
 	"path/filepath"
 )
 
-var fileSystem *filesyetem_service.FileSystem
-var keyStore core.KeyService
-var shareService *share_service.Service
+type App struct {
+	// keyStore is the key service used by the application
+	keyStore core.KeyService
+	// fileSystem is the file system service used by the application
+	fileSystem *filesyetem_service.FileSystem
+	// shareService is the share service used by the application
+	shareService *share_service.Service
+}
 
 var (
 	ErrPrivateKeyCheckFailed     = errors.New("private key check failed")
@@ -25,7 +30,11 @@ var (
 	ErrRootFolderNotEmpty        = errors.New("root folder is not empty")
 )
 
-func initServices() core.AppResult {
+func New() App {
+	return App{}
+}
+
+func (a *App) initServices() core.AppResult {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
@@ -62,10 +71,10 @@ func initServices() core.AppResult {
 	vaultRepository := repositories.NewVaultRepositoryFile(vaultPath)
 
 	// Create the services
-	keyStore = key_service.NewKeyStore(keyRepository, vaultRepository)
+	a.keyStore = key_service.NewKeyStore(keyRepository, vaultRepository)
 	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
-	shareService = share_service.NewService(keyStore, linkRepository, &objectService)
-	fileSystem = filesyetem_service.NewFileSystem(keyStore, objectService, linkRepository)
+	a.shareService = share_service.NewService(a.keyStore, linkRepository, &objectService)
+	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository)
 
 	return core.AppOkResult()
 }
@@ -82,7 +91,7 @@ func checkFolderPath(path string) error {
 // It takes an encoded private key as input and returns an AppResult.
 // If the private key is successfully decoded and its size is valid, it is set in the keyStore.
 // Otherwise, an error result is returned.
-func SetPrivateKey(encodedPrivateKey string) core.AppResult {
+func (a *App) SetPrivateKey(encodedPrivateKey string) core.AppResult {
 	// Decode the private key
 	privateKey, err := core.DecodePrivateKey(encodedPrivateKey)
 	if err != nil {
@@ -93,20 +102,20 @@ func SetPrivateKey(encodedPrivateKey string) core.AppResult {
 		return core.AppErrorResult(ErrInvalidPrivateKeySize)
 	}
 	// Set the private key in the keyStore
-	keyStore.SetPrivateKey(privateKey)
+	a.keyStore.SetPrivateKey(privateKey)
 	return core.AppOkResult()
 }
 
 // SetAndCheckPrivateKey sets the private key and checks its validity.
 // It takes an encodedPrivateKey as input and returns an AppResult indicating the success or failure of the operation.
-func SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
+func (a *App) SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 	// Set the private key
-	setResult := SetPrivateKey(encodedPrivateKey)
+	setResult := a.SetPrivateKey(encodedPrivateKey)
 	if !setResult.Ok {
 		return setResult
 	}
 	// Check the private key
-	res, _ := keyStore.CheckPrivateKey()
+	res, _ := a.keyStore.CheckPrivateKey()
 	if !res {
 		return core.AppErrorResult(ErrPrivateKeyCheckFailed)
 	}
@@ -117,7 +126,7 @@ func SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 // and joining the user. It also creates a vault in the root path.
 // The encryptedPrivateKey parameter is the encrypted private key used for authentication.
 // It returns an AppResult indicating the success or failure of the initialization.
-func InitRepo(encryptedPrivateKey string) core.AppResult {
+func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	// Get the root and temp paths
 	root, _ := config.GetRepoCtbRoot()
 	tempRoot, _ := config.GetTempRoot()
@@ -144,19 +153,19 @@ func InitRepo(encryptedPrivateKey string) core.AppResult {
 	}
 
 	// init the app
-	initRes := initServices()
+	initRes := a.initServices()
 	if !initRes.Ok {
 		return initRes
 	}
 
 	// Join the user
-	joinResult := Join(encryptedPrivateKey)
+	joinResult := a.Join(encryptedPrivateKey)
 	if !joinResult.Ok {
 		return joinResult
 	}
 
 	// Create a vault in the root path
-	if err := fileSystem.CreateVaultInPath("/"); err != nil {
+	if err := a.fileSystem.CreateVaultInPath("/"); err != nil {
 		return core.AppErrorResult(err)
 	}
 	return core.AppOkResult()

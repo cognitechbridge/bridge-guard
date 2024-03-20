@@ -7,18 +7,18 @@ import (
 
 // Mount mounts the file system and returns the result.
 // It returns an AppResult containing the result of the operation.
-func Mount(encryptedPrivateKey string) core.AppResult {
+func (a *App) Mount(encryptedPrivateKey string) core.AppResult {
 	// init the app
-	initRes := initServices()
+	initRes := a.initServices()
 	if !initRes.Ok {
 		return initRes
 	}
 	// set the private key
-	keySetRes := SetAndCheckPrivateKey(encryptedPrivateKey)
+	keySetRes := a.SetAndCheckPrivateKey(encryptedPrivateKey)
 	if !keySetRes.Ok {
 		return keySetRes
 	}
-	ctbFuse := fuse.New(fileSystem)
+	ctbFuse := fuse.New(a.fileSystem)
 	ctbFuse.Mount()
 	return core.AppOkResult()
 }

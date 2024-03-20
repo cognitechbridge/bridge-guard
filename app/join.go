@@ -6,19 +6,19 @@ import (
 
 // Join joins the user in the repository by creating the user key folder.
 // Returns an AppResult indicating the success or failure of the operation.
-func Join(encryptedPrivateKey string) core.AppResult {
+func (a *App) Join(encryptedPrivateKey string) core.AppResult {
 	// init the app
-	initRes := initServices()
+	initRes := a.initServices()
 	if !initRes.Ok {
 		return initRes
 	}
 	// set the private key
-	setResult := SetPrivateKey(encryptedPrivateKey)
+	setResult := a.SetPrivateKey(encryptedPrivateKey)
 	if !setResult.Ok {
 		return setResult
 	}
 	// Join the user using the key store
-	err := keyStore.Join()
+	err := a.keyStore.Join()
 	if err != nil {
 		return core.AppErrorResult(err)
 	}

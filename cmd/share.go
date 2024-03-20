@@ -4,8 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"ctb-cli/app"
-
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +17,7 @@ var shareCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pattern := args[0]
 		recipient, _ := cmd.Flags().GetString("recipient")
-		res := app.Share(pattern, recipient, encryptedPrivateKey)
+		res := ctbApp.Share(pattern, recipient, encryptedPrivateKey)
 		MarshalOutput(res)
 	},
 }

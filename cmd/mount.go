@@ -4,8 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"ctb-cli/app"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +13,7 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `Mount the file system. This command mounts the file system and blocks the terminal.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		app.Mount(encryptedPrivateKey)
+		ctbApp.Mount(encryptedPrivateKey)
 	},
 }
 

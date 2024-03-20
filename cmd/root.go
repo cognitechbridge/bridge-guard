@@ -6,6 +6,7 @@ Copyright © 2024 Mohammad Saadatfar
 package cmd
 
 import (
+	"ctb-cli/app"
 	"ctb-cli/core"
 	"os"
 
@@ -16,6 +17,8 @@ import (
 var cfgFile string
 var encryptedPrivateKey string
 var output outputEnum = outputEnumText
+
+var ctbApp = app.New()
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

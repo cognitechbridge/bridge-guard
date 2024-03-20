@@ -4,8 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"ctb-cli/app"
-
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +15,7 @@ var joinCmd = &cobra.Command{
 	Use generate-key command to generate the private key.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// join the user
-		res := app.Join(encryptedPrivateKey)
+		res := ctbApp.Join(encryptedPrivateKey)
 		MarshalOutput(res)
 	},
 }

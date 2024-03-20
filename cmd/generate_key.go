@@ -4,8 +4,6 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"ctb-cli/app"
-
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +15,7 @@ var generateKeyCmd = &cobra.Command{
 	This funtion doesnt affect the state of the repository and only returns the key. The key is not stored in the repository.
 	You can use join command to join the repository and store the corresponding public key in the repository.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		res := app.GenerateUserKey()
+		res := ctbApp.GenerateUserKey()
 		MarshalOutput(res)
 	},
 }
