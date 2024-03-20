@@ -9,7 +9,7 @@ import (
 // It returns an AppResult containing the result of the operation.
 func Mount(encryptedPrivateKey string) core.AppResult {
 	// init the app
-	initRes := initApp()
+	initRes := initServices()
 	if !initRes.Ok {
 		return initRes
 	}

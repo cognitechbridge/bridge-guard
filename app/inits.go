@@ -25,7 +25,7 @@ var (
 	ErrRootFolderNotEmpty        = errors.New("root folder is not empty")
 )
 
-func initApp() core.AppResult {
+func initServices() core.AppResult {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
@@ -144,7 +144,7 @@ func InitRepo(encryptedPrivateKey string) core.AppResult {
 	}
 
 	// init the app
-	initRes := initApp()
+	initRes := initServices()
 	if !initRes.Ok {
 		return initRes
 	}
