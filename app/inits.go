@@ -25,7 +25,7 @@ var (
 	ErrRootFolderNotEmpty        = errors.New("root folder is not empty")
 )
 
-func Init() {
+func initApp() core.AppResult {
 	cloudClient := cloud.NewClient("http://localhost:1323", 10*1024*1024)
 	//cloudClient := objectstorage.NewDummyClient()
 
@@ -51,7 +51,7 @@ func Init() {
 
 	// If at least one path doesn't exist, panic
 	if err != nil {
-		panic(err)
+		return core.AppErrorResult(err)
 	}
 
 	// Create the repositories
@@ -66,6 +66,8 @@ func Init() {
 	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
 	shareService = share_service.NewService(keyStore, linkRepository, &objectService)
 	fileSystem = filesyetem_service.NewFileSystem(keyStore, objectService, linkRepository)
+
+	return core.AppOkResult()
 }
 
 // checkFolderPath checks if the path exists and returns an error if it doesn't.
@@ -111,10 +113,12 @@ func SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 	return core.AppOkResult()
 }
 
-// InitRepo initializes the repository.
-// It creates a vault in the root path.
-// Returns an AppResult indicating the success or failure of the operation.
+// InitRepo initializes the repository by creating the necessary folders, setting the private key,
+// and joining the user. It also creates a vault in the root path.
+// The encryptedPrivateKey parameter is the encrypted private key used for authentication.
+// It returns an AppResult indicating the success or failure of the initialization.
 func InitRepo(encryptedPrivateKey string) core.AppResult {
+	// Get the root and temp paths
 	root, _ := config.GetRepoCtbRoot()
 	tempRoot, _ := config.GetTempRoot()
 
@@ -139,17 +143,14 @@ func InitRepo(encryptedPrivateKey string) core.AppResult {
 		return core.AppErrorResult(ErrCreatingRepositoryFolders)
 	}
 
-	// Init repositories
-	Init()
-
-	// Set the private key
-	setResult := SetPrivateKey(encryptedPrivateKey)
-	if !setResult.Ok {
-		return setResult
+	// init the app
+	initRes := initApp()
+	if !initRes.Ok {
+		return initRes
 	}
 
 	// Join the user
-	joinResult := Join()
+	joinResult := Join(encryptedPrivateKey)
 	if !joinResult.Ok {
 		return joinResult
 	}
