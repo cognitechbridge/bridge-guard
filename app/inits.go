@@ -19,8 +19,10 @@ var keyStore core.KeyService
 var shareService *share_service.Service
 
 var (
-	ErrPrivateKeyCheckFailed = errors.New("private key check failed")
-	ErrInvalidPrivateKeySize = errors.New("invalid private key size")
+	ErrPrivateKeyCheckFailed     = errors.New("private key check failed")
+	ErrInvalidPrivateKeySize     = errors.New("invalid private key size")
+	ErrCreatingRepositoryFolders = errors.New("error creating repository folders")
+	ErrRootFolderNotEmpty        = errors.New("root folder is not empty")
 )
 
 func Init() {
@@ -31,12 +33,26 @@ func Init() {
 	root, _ := config.GetRepoCtbRoot()
 	tempRoot, _ := config.GetTempRoot()
 
-	// Get the repository paths and create them if they don't exist
-	keysPath := createAndReturn(filepath.Join(root, "keys"))
-	objectPath := createAndReturn(filepath.Join(root, "object"))
-	filesystemPath := createAndReturn(filepath.Join(root, "filesystem"))
-	cachePath := createAndReturn(filepath.Join(tempRoot, "cache"))
-	vaultPath := createAndReturn(filepath.Join(root, "vault"))
+	// Create the repository paths
+	keysPath := filepath.Join(root, "keys")
+	objectPath := filepath.Join(root, "object")
+	filesystemPath := filepath.Join(root, "filesystem")
+	cachePath := filepath.Join(tempRoot, "cache")
+	vaultPath := filepath.Join(root, "vault")
+
+	// Check if the paths exist
+	err := errors.Join(
+		checkFolderPath(keysPath),
+		checkFolderPath(objectPath),
+		checkFolderPath(filesystemPath),
+		checkFolderPath(cachePath),
+		checkFolderPath(vaultPath),
+	)
+
+	// If at least one path doesn't exist, panic
+	if err != nil {
+		panic(err)
+	}
 
 	// Create the repositories
 	keyRepository := repositories.NewKeyRepositoryFile(keysPath)
@@ -52,13 +68,12 @@ func Init() {
 	fileSystem = filesyetem_service.NewFileSystem(keyStore, objectService, linkRepository)
 }
 
-// CreateAndReturn creates a directory and returns the path.
-func createAndReturn(path string) string {
-	err := os.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		panic(err)
+// checkFolderPath checks if the path exists and returns an error if it doesn't.
+func checkFolderPath(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return err
 	}
-	return path
+	return nil
 }
 
 // SetPrivateKey sets the private key used by the application.
@@ -99,10 +114,49 @@ func SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 // InitRepo initializes the repository.
 // It creates a vault in the root path.
 // Returns an AppResult indicating the success or failure of the operation.
-func InitRepo() core.AppResult {
+func InitRepo(encryptedPrivateKey string) core.AppResult {
+	root, _ := config.GetRepoCtbRoot()
+	tempRoot, _ := config.GetTempRoot()
+
+	// Check if the root folder is empty
+	rootFiles, err := os.ReadDir(root)
+	if err != nil {
+		return core.AppErrorResult(err)
+	}
+	if len(rootFiles) > 0 {
+		return core.AppErrorResult(ErrRootFolderNotEmpty)
+	}
+
+	// Create the repository folders
+	err = errors.Join(
+		os.MkdirAll(filepath.Join(root, "keys"), os.ModePerm),
+		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
+		os.MkdirAll(filepath.Join(root, "object"), os.ModePerm),
+		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
+		os.MkdirAll(filepath.Join(root, "vault"), os.ModePerm),
+	)
+	if err != nil {
+		return core.AppErrorResult(ErrCreatingRepositoryFolders)
+	}
+
+	// Init repositories
+	Init()
+
+	// Set the private key
+	setResult := SetPrivateKey(encryptedPrivateKey)
+	if !setResult.Ok {
+		return setResult
+	}
+
+	// Join the user
+	joinResult := Join()
+	if !joinResult.Ok {
+		return joinResult
+	}
+
 	// Create a vault in the root path
 	if err := fileSystem.CreateVaultInPath("/"); err != nil {
-		core.AppErrorResult(err)
+		return core.AppErrorResult(err)
 	}
 	return core.AppOkResult()
 }

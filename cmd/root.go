@@ -6,7 +6,6 @@ Copyright © 2024 Mohammad Saadatfar
 package cmd
 
 import (
-	"ctb-cli/app"
 	"ctb-cli/core"
 	"os"
 
@@ -74,6 +73,4 @@ func initConfig() {
 		MarshalOutput(core.AppErrorResult(err))
 		os.Exit(1)
 	}
-
-	app.Init()
 }
