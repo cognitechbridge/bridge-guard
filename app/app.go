@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 )
 
+// App represents the main application struct.
 type App struct {
 	// keyStore is the key service used by the application
 	keyStore core.KeyService
@@ -21,6 +22,9 @@ type App struct {
 	fileSystem *filesyetem_service.FileSystem
 	// shareService is the share service used by the application
 	shareService *share_service.Service
+
+	// Config is the configuration of the application
+	cfg *config.Config
 }
 
 var (
@@ -30,8 +34,11 @@ var (
 	ErrRootFolderNotEmpty        = errors.New("root folder is not empty")
 )
 
-func New() App {
-	return App{}
+// New returns a new App
+func New(cfg config.Config) App {
+	return App{
+		cfg: &cfg,
+	}
 }
 
 func (a *App) initServices() core.AppResult {
@@ -39,8 +46,8 @@ func (a *App) initServices() core.AppResult {
 	//cloudClient := objectstorage.NewDummyClient()
 
 	// Get the root paths
-	root, _ := config.GetRepoCtbRoot()
-	tempRoot, _ := config.GetTempRoot()
+	root, _ := a.cfg.GetRepoCtbRoot()
+	tempRoot, _ := a.cfg.GetTempRoot()
 
 	// Create the repository paths
 	keysPath := filepath.Join(root, "keys")
@@ -128,8 +135,8 @@ func (a *App) SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 // It returns an AppResult indicating the success or failure of the initialization.
 func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	// Get the root and temp paths
-	root, _ := config.GetRepoCtbRoot()
-	tempRoot, _ := config.GetTempRoot()
+	root, _ := a.cfg.GetRepoCtbRoot()
+	tempRoot, _ := a.cfg.GetTempRoot()
 
 	// Check if the root folder is empty
 	rootFiles, err := os.ReadDir(root)
