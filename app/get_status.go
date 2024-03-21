@@ -11,19 +11,28 @@ func (a *App) GetStatus(encryptedPrivateKey string) core.AppResult {
 	if !initRes.Ok {
 		return initRes
 	}
+
 	// set the private key if it was passed
 	if encryptedPrivateKey != "" {
 		a.SetAndCheckPrivateKey(encryptedPrivateKey)
 	}
+
 	// check if the repository is valid
-	valid, err := a.fileSystem.IsValidRepository()
-	if err != nil {
-		return core.AppErrorResult(err)
+	valid := a.cfg.IsRepositoryConfigExists()
+
+	// get the repository id if it is valid
+	var repoId string
+	if valid {
+		repoId = a.cfg.GetRepoId()
+	} else {
+		repoId = ""
 	}
+
 	// check if the user has joined
 	isJoined := a.keyStore.IsUserJoined()
 	return core.AppOkResultWithResult(core.RepositroyStatus{
 		IsValid:  valid,
 		IsJoined: isJoined,
+		RepoId:   repoId,
 	})
 }

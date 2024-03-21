@@ -39,6 +39,10 @@ func New(repoPath string, tempPath string, cfgFile string) (*Config, error) {
 		}
 	}
 
+	// Read in the config file and ignore errors! User can check if the file exists using IsRepositoryConfigExists method
+	_ = userConfig.ReadInConfig()
+	_ = repoConfig.ReadInConfig()
+
 	return &Config{
 		repoPath:   repoPath,
 		tempPath:   tempPath,
@@ -62,6 +66,7 @@ func (c *Config) GetRepoCtbRoot() (string, error) {
 	return c.repoPath, nil
 }
 
+// InitRepoConfig generates the configuration file for the repository.
 func (c *Config) InitRepoConfig(repoId string) error {
 	// Set the default values for the configuration
 	c.repoConfig.SetConfigFile(filepath.Join(c.repoPath, "ctb.yaml"))
@@ -71,4 +76,15 @@ func (c *Config) InitRepoConfig(repoId string) error {
 		return err
 	}
 	return nil
+}
+
+// IsRepositoryConfigExists checks if the repository configuration exists.
+func (c *Config) IsRepositoryConfigExists() bool {
+	err := c.repoConfig.ReadInConfig()
+	return err == nil
+}
+
+// GetRepoId returns the id of the repository.
+func (c *Config) GetRepoId() string {
+	return c.repoConfig.GetString("id")
 }
