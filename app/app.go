@@ -68,7 +68,7 @@ func (a *App) initServices() core.AppResult {
 
 	// If at least one path doesn't exist, panic
 	if err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
 
 	// Create the repositories
@@ -84,7 +84,7 @@ func (a *App) initServices() core.AppResult {
 	a.shareService = share_service.NewService(a.keyStore, linkRepository, &objectService)
 	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository)
 
-	return core.AppOkResult()
+	return core.NewAppResult()
 }
 
 // checkFolderPath checks if the path exists and returns an error if it doesn't.
@@ -103,15 +103,15 @@ func (a *App) SetPrivateKey(encodedPrivateKey string) core.AppResult {
 	// Decode the private key
 	privateKey, err := core.DecodePrivateKey(encodedPrivateKey)
 	if err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
 	// Check the size of the private key
 	if len(privateKey) != 32 {
-		return core.AppErrorResult(ErrInvalidPrivateKeySize)
+		return core.NewAppResultWithError(ErrInvalidPrivateKeySize)
 	}
 	// Set the private key in the keyStore
 	a.keyStore.SetPrivateKey(privateKey)
-	return core.AppOkResult()
+	return core.NewAppResult()
 }
 
 // SetAndCheckPrivateKey sets the private key and checks its validity.
@@ -125,9 +125,9 @@ func (a *App) SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 	// Check the private key
 	res, _ := a.keyStore.CheckPrivateKey()
 	if !res {
-		return core.AppErrorResult(ErrPrivateKeyCheckFailed)
+		return core.NewAppResultWithError(ErrPrivateKeyCheckFailed)
 	}
-	return core.AppOkResult()
+	return core.NewAppResult()
 }
 
 // InitRepo initializes the repository by creating the necessary folders, setting the private key,
@@ -142,10 +142,10 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	// Check if the root folder is empty
 	rootFiles, err := os.ReadDir(root)
 	if err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
 	if len(rootFiles) > 0 {
-		return core.AppErrorResult(ErrRootFolderNotEmpty)
+		return core.NewAppResultWithError(ErrRootFolderNotEmpty)
 	}
 
 	// Create the repository folders
@@ -157,7 +157,7 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 		os.MkdirAll(filepath.Join(root, "vault"), os.ModePerm),
 	)
 	if err != nil {
-		return core.AppErrorResult(ErrCreatingRepositoryFolders)
+		return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
 	}
 
 	// init the app
@@ -169,11 +169,11 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	// Init the repository configuration
 	repoId, err := core.NewUid()
 	if err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
 	err = a.cfg.InitRepoConfig(repoId)
 	if err != nil {
-		return core.AppErrorResult(ErrCreatingRepositoryConfig)
+		return core.NewAppResultWithError(ErrCreatingRepositoryConfig)
 	}
 
 	// Join the user
@@ -184,7 +184,7 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 
 	// Create a vault in the root path
 	if err := a.fileSystem.CreateVaultInPath("/"); err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
-	return core.AppOkResult()
+	return core.NewAppResult()
 }

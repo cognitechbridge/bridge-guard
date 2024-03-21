@@ -16,7 +16,7 @@ func (a *App) Share(pattern string, publicKey string, encryptedPrivateKey string
 		return keySetRes
 	}
 	if err := a.shareService.ShareByPublicKey(pattern, publicKey); err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
-	return core.AppOkResult()
+	return core.NewAppResult()
 }

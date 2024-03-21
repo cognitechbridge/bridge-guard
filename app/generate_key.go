@@ -14,7 +14,7 @@ func (a *App) GenerateUserKey() core.AppResult {
 	// generate the key
 	key, err := a.keyStore.GenerateUserKey()
 	if err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
-	return core.AppOkResultWithResult(key)
+	return core.NewAppResultWithValue(key)
 }
