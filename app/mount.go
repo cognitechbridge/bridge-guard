@@ -20,5 +20,5 @@ func (a *App) Mount(encryptedPrivateKey string) core.AppResult {
 	}
 	ctbFuse := fuse.New(a.fileSystem)
 	ctbFuse.Mount()
-	return core.AppOkResult()
+	return core.NewAppResult()
 }

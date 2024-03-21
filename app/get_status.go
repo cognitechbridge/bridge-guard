@@ -30,7 +30,7 @@ func (a *App) GetStatus(encryptedPrivateKey string) core.AppResult {
 
 	// check if the user has joined
 	isJoined := a.keyStore.IsUserJoined()
-	return core.AppOkResultWithResult(core.RepositroyStatus{
+	return core.NewAppResultWithValue(core.RepositoryStatus{
 		IsValid:  valid,
 		IsJoined: isJoined,
 		RepoId:   repoId,

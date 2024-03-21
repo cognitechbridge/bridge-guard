@@ -20,7 +20,7 @@ func (a *App) Join(encryptedPrivateKey string) core.AppResult {
 	// Join the user using the key store
 	err := a.keyStore.Join()
 	if err != nil {
-		return core.AppErrorResult(err)
+		return core.NewAppResultWithError(err)
 	}
-	return core.AppOkResult()
+	return core.NewAppResult()
 }

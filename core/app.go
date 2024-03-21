@@ -2,6 +2,7 @@ package core
 
 import "encoding/xml"
 
+// AppResult represents the result of an application operation.
 type AppResult struct {
 	XMLName xml.Name    `json:"-" yaml:"-" xml:"Result"`
 	Ok      bool        `json:"ok,omitempty" yaml:"ok,omitempty"`
@@ -9,7 +10,8 @@ type AppResult struct {
 	Result  interface{} `json:"result,omitempty" yaml:"result,omitempty"`
 }
 
-func AppErrorResult(err error) AppResult {
+// NewAppResultWithError creates a new AppResult indicating a failed operation and includes an error.
+func NewAppResultWithError(err error) AppResult {
 	return AppResult{
 		Ok:     false,
 		Err:    err,
@@ -17,7 +19,8 @@ func AppErrorResult(err error) AppResult {
 	}
 }
 
-func AppOkResult() AppResult {
+// NewAppResult creates a new AppResult indicating a successful operation.
+func NewAppResult() AppResult {
 	return AppResult{
 		Ok:     true,
 		Err:    nil,
@@ -25,7 +28,8 @@ func AppOkResult() AppResult {
 	}
 }
 
-func AppOkResultWithResult(result interface{}) AppResult {
+// NewAppResultWithValue creates a new AppResult indicating a successful operation and includes a result value.
+func NewAppResultWithValue(result interface{}) AppResult {
 	return AppResult{
 		Ok:     true,
 		Err:    nil,
@@ -33,8 +37,8 @@ func AppOkResultWithResult(result interface{}) AppResult {
 	}
 }
 
-// This is a struct for the repository status
-type RepositroyStatus struct {
+// RepositoryStatus represents the status of a repository.
+type RepositoryStatus struct {
 	IsValid  bool   `json:"is_valid" yaml:"is_valid" xml:"is_valid"`
 	IsJoined bool   `json:"is_joined" yaml:"is_joined" xml:"is_joined"`
 	RepoId   string `json:"repo_id" yaml:"repo_id" xml:"repo_id"`
