@@ -11,6 +11,7 @@ import (
 // Key represents a 256-bit key used for ChaCha20-Poly1305.
 type Key [chacha20poly1305.KeySize]byte
 
+// NewKeyFromRand returns a new key generated from random bytes
 func NewKeyFromRand() *Key {
 	key := Key{}
 	_, err := io.ReadFull(rand.Reader, key[:])
@@ -20,6 +21,7 @@ func NewKeyFromRand() *Key {
 	return &key
 }
 
+// KeyFromBytes returns a new key from a byte slice
 func KeyFromBytes(bytes []byte) (Key, error) {
 	var key = Key{}
 
@@ -34,17 +36,13 @@ func KeyFromBytes(bytes []byte) (Key, error) {
 	return key, nil
 }
 
+// KeyInfo represents a key and its id
 type KeyInfo struct {
 	Key []byte
 	Id  string
 }
 
-type SerializedKey struct {
-	ID    string
-	Nonce string
-	Key   string
-}
-
+// NewKeyInfo returns a new KeyInfo struct with the given key and id
 func NewKeyInfo(keyId string, key []byte) KeyInfo {
 	return KeyInfo{
 		Key: key,
