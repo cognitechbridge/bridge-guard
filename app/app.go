@@ -32,6 +32,7 @@ var (
 	ErrInvalidPrivateKeySize     = errors.New("invalid private key size")
 	ErrCreatingRepositoryFolders = errors.New("error creating repository folders")
 	ErrRootFolderNotEmpty        = errors.New("root folder is not empty")
+	ErrCreatingRepositoryConfig  = errors.New("error creating repository config")
 )
 
 // New returns a new App
@@ -163,6 +164,16 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	initRes := a.initServices()
 	if !initRes.Ok {
 		return initRes
+	}
+
+	// Init the repository configuration
+	repoId, err := core.NewUid()
+	if err != nil {
+		return core.AppErrorResult(err)
+	}
+	err = a.cfg.InitRepoConfig(repoId)
+	if err != nil {
+		return core.AppErrorResult(ErrCreatingRepositoryConfig)
 	}
 
 	// Join the user

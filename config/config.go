@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -59,4 +60,15 @@ func (c *Config) GetTempRoot() (string, error) {
 // GetRepoCtbRoot returns the root path of the repository.
 func (c *Config) GetRepoCtbRoot() (string, error) {
 	return c.repoPath, nil
+}
+
+func (c *Config) InitRepoConfig(repoId string) error {
+	// Set the default values for the configuration
+	c.repoConfig.SetConfigFile(filepath.Join(c.repoPath, "ctb.yaml"))
+	c.repoConfig.Set("id", repoId)
+	err := c.repoConfig.WriteConfig()
+	if err != nil {
+		return err
+	}
+	return nil
 }
