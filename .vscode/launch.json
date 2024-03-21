@@ -5,13 +5,69 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch Package",
+      "name": "Mount FUSE",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}\\main.go",
       "cwd": "D:\\Repo",
-      "args": ["mount"]
+      "args": ["mount", "-k", "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ", "-p", "D:\\Repo"],
+      "console": "integratedTerminal",
+      "env": {
+        "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
+      }
+    },
+    {
+      "name": "init",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}\\main.go",
+      "cwd": "D:\\Repo2",
+      "args": ["init", "-k", "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ"],
+      "console": "integratedTerminal",
+      "env": {
+        "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
+      }
+    },
+    {
+      "name": "Join User",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}\\main.go",
+      "cwd": "D:\\Repo",
+      "args": ["join", "-k", "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ"],
+      "console": "integratedTerminal",
+      "env": {
+        "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
+      }
+    },
+    {
+      "name": "Genrate User Key",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}\\main.go",
+      "cwd": "D:\\Repo",
+      "args": ["generate-key"],
+      "console": "integratedTerminal",
+      "env": {
+        "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
+      }
+    },
+    {
+      "name": "status",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}\\main.go",
+      "cwd": "D:\\Repo",
+      "args": ["status", "-k", "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ", "-o", "json"],
+      "console": "integratedTerminal",
+      "env": {
+        "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
+      }
     }
   ]
 }

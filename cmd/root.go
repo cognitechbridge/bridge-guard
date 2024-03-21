@@ -8,12 +8,10 @@ package cmd
 import (
 	"ctb-cli/app"
 	"ctb-cli/config"
-	"ctb-cli/core"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var cfgFile string
@@ -79,35 +77,11 @@ func initConfig() {
 	cfg, err := config.New(
 		repoRootPath,
 		tempPath,
+		cfgFile,
 	)
 	if err != nil {
 		panic(err)
 	}
 	// Create the app
 	ctbApp = app.New(*cfg)
-
-	//@Todo: Fix the following codes
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-
-		// Search config in different directories
-		viper.AddConfigPath("/etc/.ctb/") // path to look for the config file in
-		viper.AddConfigPath(".")          // optionally look for config in the working directory
-		viper.AddConfigPath(home + "/.ctb")
-		viper.SetConfigName("config") // name of config file (without extension)
-		viper.SetConfigType("yaml")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err != nil {
-		MarshalOutput(core.AppErrorResult(err))
-		os.Exit(1)
-	}
 }
