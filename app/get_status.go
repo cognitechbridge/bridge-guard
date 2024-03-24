@@ -6,26 +6,27 @@ import "ctb-cli/core"
 // It checks if the repository is valid and if the user has joined.
 // Returns an AppResult with the repository status.
 func (a *App) GetStatus(encryptedPrivateKey string) core.AppResult {
+	// check if the repository is valid
+	valid := a.cfg.IsRepositoryConfigExists()
+
+	if !valid {
+		// return the repository status with IsValid = false if the repository config does not exist
+		return core.NewAppResultWithValue(core.NewInvalidRepositoyStatus())
+	}
+
+	// get the repository id if it is valid
+	repoId := a.cfg.GetRepoId()
+
 	// init the app
 	initRes := a.initServices()
 	if !initRes.Ok {
-		return initRes
+		// return the repository status with IsValid = false if the app failed to initialize the services
+		return core.NewAppResultWithValue(core.NewInvalidRepositoyStatus())
 	}
 
 	// set the private key if it was passed
 	if encryptedPrivateKey != "" {
 		a.SetAndCheckPrivateKey(encryptedPrivateKey)
-	}
-
-	// check if the repository is valid
-	valid := a.cfg.IsRepositoryConfigExists()
-
-	// get the repository id if it is valid
-	var repoId string
-	if valid {
-		repoId = a.cfg.GetRepoId()
-	} else {
-		repoId = ""
 	}
 
 	// check if the user has joined
