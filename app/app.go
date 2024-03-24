@@ -33,6 +33,7 @@ var (
 	ErrCreatingRepositoryFolders = errors.New("error creating repository folders")
 	ErrRootFolderNotEmpty        = errors.New("root folder is not empty")
 	ErrCreatingRepositoryConfig  = errors.New("error creating repository config")
+	ErrInitRepositoryFolders     = errors.New("error initializing repository folders")
 )
 
 // New returns a new App
@@ -68,7 +69,7 @@ func (a *App) initServices() core.AppResult {
 
 	// If at least one path doesn't exist, panic
 	if err != nil {
-		return core.NewAppResultWithError(err)
+		return core.NewAppResultWithError(ErrInitRepositoryFolders)
 	}
 
 	// Create the repositories

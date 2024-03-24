@@ -43,3 +43,11 @@ type RepositoryStatus struct {
 	IsJoined bool   `json:"is_joined" yaml:"is_joined" xml:"is_joined"`
 	RepoId   string `json:"repo_id" yaml:"repo_id" xml:"repo_id"`
 }
+
+func NewInvalidRepositoyStatus() RepositoryStatus {
+	return RepositoryStatus{
+		IsValid:  false,
+		IsJoined: false,
+		RepoId:   "",
+	}
+}
