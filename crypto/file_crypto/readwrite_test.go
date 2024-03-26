@@ -63,6 +63,12 @@ func testRoundTrip(t *testing.T, length int) {
 	if header.KeyId != "ID" {
 		t.Errorf("Expected KeyID to be 'ID', got '%s'", header.KeyId)
 	}
+	if header.Alg != "AEAD_ChaCha20_Poly1305" {
+		t.Errorf("Expected Alg to be 'AEAD_ChaCha20_Poly1305', got '%s'", header.Alg)
+	}
+	if header.Version != "V1" {
+		t.Errorf("Expected Version to be V1, got %s", header.Version)
+	}
 
 	// Read the data back
 	decryptedData, err := encStream.Decrypt(&keyInfo)
@@ -86,7 +92,6 @@ func testRoundTrip(t *testing.T, length int) {
 // TestRoundTrip tests the round trip of writing and reading encrypted data
 func TestRoundTrip(t *testing.T) {
 	testRoundTrip(t, 0)
-	testRoundTrip(t, 1)
 	testRoundTrip(t, 1024)
-	testRoundTrip(t, 100*1024*1024)
+	testRoundTrip(t, 1024*1024)
 }

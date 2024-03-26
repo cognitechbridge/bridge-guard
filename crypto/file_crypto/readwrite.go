@@ -3,6 +3,7 @@ package file_crypto
 import (
 	"ctb-cli/core"
 	"ctb-cli/crypto/stream"
+	"errors"
 	"io"
 )
 
@@ -89,8 +90,64 @@ func (e *writer) Close() error {
 func newHeader(fileId string, keyId string) Header {
 	return Header{
 		Version: "V1",
-		Alg:     getAlgorithmName(), // Set default algorithm
+		Alg:     "AEAD_ChaCha20_Poly1305", // Set default algorithm
 		FileID:  fileId,
 		KeyId:   keyId,
 	}
+}
+
+// EncryptedStream represents an encrypted stream of data.
+type EncryptedStream struct {
+	source io.Reader
+}
+
+// Parse reads the encrypted data from the provided source and returns the parsed header,
+// an encrypted stream, and any error encountered during the process.
+func Parse(source io.Reader) (*Header, *EncryptedStream, error) {
+	header, err := readFileVersionAndHeader(source)
+	if err != nil {
+		return nil, nil, err
+	}
+	return header, &EncryptedStream{source: source}, nil
+}
+
+// Decrypt decrypts the encrypted stream using the provided key.
+// It returns an io.Reader that can be used to read the decrypted data.
+// If an error occurs during decryption, it is returned along with nil reader.
+func (e EncryptedStream) Decrypt(key *core.KeyInfo) (io.Reader, error) {
+	return stream.NewReader(key.Key[:], e.source)
+}
+
+// readFileVersionAndHeader reads the file version and header from the given source.
+// It returns the parsed header and any error encountered during the process.
+func readFileVersionAndHeader(source io.Reader) (*Header, error) {
+	err := readFileVersion(source)
+	if err != nil {
+		return nil, err
+	}
+	header, err := ParseHeader(source)
+	if err != nil {
+		return nil, err
+	}
+	return header, err
+}
+
+// readFileVersion reads the version byte from the given source.
+// It returns an error if the version is not supported.
+// The version byte is expected to be the first byte in the source.
+// The current version is 1.
+func readFileVersion(source io.Reader) error {
+	// Create a buffer to hold the version byte
+	versionBuffer := make([]byte, 1)
+	_, err := io.ReadFull(source, versionBuffer)
+	if err != nil {
+		return err
+	}
+	version := versionBuffer[0]
+
+	// Check the version (assuming version 1 is expected)
+	if version != 1 {
+		return errors.New("unsupported file version")
+	}
+	return err
 }
