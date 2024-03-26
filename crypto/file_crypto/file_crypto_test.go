@@ -5,39 +5,43 @@ import (
 	"crypto/rand"
 	"ctb-cli/core"
 	"ctb-cli/crypto/file_crypto"
+	"io"
 	"testing"
 )
 
-func TestRoundTrip(t *testing.T) {
+func testRoundTrip(t *testing.T, length int) {
 	// Generate some random data
-	originalData := make([]byte, 1024)
-	_, err := rand.Read(originalData)
-	if err != nil {
-		t.Fatal(err)
+	originalData := make([]byte, length)
+	if length != 0 {
+		_, _ = rand.Read(originalData)
 	}
 
 	// Create a key
-	key := core.KeyInfo{
+	key := make([]byte, 32)
+	_, _ = rand.Read(key)
+	keyInfo := core.KeyInfo{
 		Id:  "ID",
-		Key: make([]byte, 32),
+		Key: key,
 	}
 
 	// Create an in-memory read-write buffer
 	memBuf := bytes.NewBuffer(nil)
 
 	// Create a writer that writes to the in-memory buffer
-	memEncryptedWriter, err := file_crypto.NewWriter(memBuf, &key, "fileId")
+	memEncryptedWriter, err := file_crypto.NewWriter(memBuf, &keyInfo, "fileId")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Write the data to the encrypted writer
-	n, err := memEncryptedWriter.Write(originalData)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != len(originalData) {
-		t.Errorf("Expected to write %d bytes, wrote %d", len(originalData), n)
+	if length > 0 {
+		n, err := memEncryptedWriter.Write(originalData)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n != len(originalData) {
+			t.Errorf("Expected to write %d bytes, wrote %d", len(originalData), n)
+		}
 	}
 
 	// Close the writer to finalize the encryption
@@ -61,15 +65,28 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// Read the data back
-	readData := make([]byte, 1024)
-	decryptedData, err := encStream.Decrypt(&key)
+	decryptedData, err := encStream.Decrypt(&keyInfo)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _ = decryptedData.Read(readData)
+	readData, err := io.ReadAll(decryptedData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(readData) != length {
+		t.Errorf("Expected to read %d bytes, read %d", length, len(readData))
+	}
 
 	// Check if the original and read data are the same
 	if !bytes.Equal(originalData, readData) {
 		t.Errorf("Original and read data do not match")
 	}
+}
+
+// TestRoundTrip tests the round trip of writing and reading encrypted data
+func TestRoundTrip(t *testing.T) {
+	testRoundTrip(t, 0)
+	testRoundTrip(t, 1)
+	testRoundTrip(t, 1024)
+	testRoundTrip(t, 100*1024*1024)
 }
