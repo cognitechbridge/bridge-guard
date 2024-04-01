@@ -31,7 +31,7 @@ type KeyService interface {
 	Join() error
 	Get(keyID string, startVaultId string) (*KeyInfo, error)
 	Insert(key *KeyInfo) error
-	Share(keyId string, recipient []byte, recipientUserId string) error
+	Share(keyId string, startVaultId string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
 	GetEncodablePublicKey() (string, error)
 	CreateVault(parentId string) (*Vault, error)

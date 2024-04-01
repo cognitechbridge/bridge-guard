@@ -143,9 +143,8 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo
 	return &keyInfo, nil
 }
 
-func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId string) error {
-	//@Todo: Fix it
-	key, err := ks.Get(keyId, "")
+func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, recipient []byte, recipientUserId string) error {
+	key, err := ks.Get(keyId, startVaultId)
 	if err != nil {
 		return fmt.Errorf("cannot load key: %v", err)
 	}
