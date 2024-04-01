@@ -11,13 +11,13 @@ import (
 var shareCmd = &cobra.Command{
 	Use:   "share",
 	Short: "Share files with other users",
-	Long: `This command shares files with other users.
+	Long: `This command shares file or directory with the specified path with the given public key.
 	The files are shared with the user who has the corresponding private key.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		pattern := args[0]
+		path := args[0]
 		recipient, _ := cmd.Flags().GetString("recipient")
-		res := ctbApp.Share(pattern, recipient, encryptedPrivateKey)
+		res := ctbApp.Share(path, recipient, encryptedPrivateKey)
 		MarshalOutput(res)
 	},
 }

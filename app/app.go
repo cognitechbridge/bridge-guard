@@ -82,7 +82,7 @@ func (a *App) initServices() core.AppResult {
 	// Create the services
 	a.keyStore = key_service.NewKeyStore(keyRepository, vaultRepository)
 	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
-	a.shareService = share_service.NewService(a.keyStore, linkRepository, &objectService)
+	a.shareService = share_service.NewService(a.keyStore, linkRepository, vaultRepository, &objectService)
 	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository)
 
 	return core.NewAppResult()
