@@ -166,6 +166,17 @@ func (ks *KeyStoreDefault) GetPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
 }
 
+// GetEncodablePublicKey returns the public key as a string.
+// It encode the public key using base58 encoding and returns it.
+// If any error occurs during the process, it returns the error.
+func (ks *KeyStoreDefault) GetEncodablePublicKey() (string, error) {
+	publicKey, err := ks.GetPublicKey()
+	if err != nil {
+		return "", err
+	}
+	return core.EncodePublic(publicKey)
+}
+
 // CreateVault generates a new vault and inserts it into the vault repository.
 // If parentId is provided, it generates a key in the parent vault and associates it with the new vault.
 // If parentId is not provided, it generates a key without a parent and inserts it into the keystore.
