@@ -77,6 +77,8 @@ func readContext(reader io.Reader) ([]byte, error) {
 	return bufferContext, nil
 }
 
+// readContextSize reads a 2-byte context size from the given reader and returns it.
+// It returns an error if there was a problem reading the context size.
 func readContextSize(reader io.Reader) (uint16, error) {
 	var buffer2 [2]byte
 	n, err := reader.Read(buffer2[:])

@@ -189,3 +189,14 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	}
 	return core.NewAppResult()
 }
+
+// IsRootEmpty checks if the root folder is empty.
+// It returns true if the folder is empty, false otherwise.
+func (a *App) IsRootEmpty() bool {
+	root, _ := a.cfg.GetRepoCtbRoot()
+	rootFiles, err := os.ReadDir(root)
+	if err != nil {
+		return false
+	}
+	return len(rootFiles) == 0
+}
