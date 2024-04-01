@@ -41,13 +41,17 @@ func NewAppResultWithValue(result interface{}) AppResult {
 type RepositoryStatus struct {
 	IsValid  bool   `json:"is_valid" yaml:"is_valid" xml:"is_valid"`
 	IsJoined bool   `json:"is_joined" yaml:"is_joined" xml:"is_joined"`
+	IsEmpty  bool   `json:"is_empty" yaml:"is_empty" xml:"is_empty"`
 	RepoId   string `json:"repo_id" yaml:"repo_id" xml:"repo_id"`
 }
 
-func NewInvalidRepositoyStatus() RepositoryStatus {
+// NewInvalidRepositoyStatus creates a new RepositoryStatus indicating an invalid repository.
+// If the repository is empty, it sets the IsEmpty field to true.
+func NewInvalidRepositoyStatus(isEmpty bool) RepositoryStatus {
 	return RepositoryStatus{
 		IsValid:  false,
 		IsJoined: false,
+		IsEmpty:  isEmpty,
 		RepoId:   "",
 	}
 }
