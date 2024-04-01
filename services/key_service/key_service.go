@@ -354,10 +354,10 @@ func (ks *KeyStoreDefault) Join() error {
 
 // GenerateUserKey generates a new user key and returns it as a string.
 // If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) GenerateUserKey() (string, error) {
+func (ks *KeyStoreDefault) GenerateUserKey() (*core.UserKeyPair, error) {
 	key, err := core.GenerateUserKey()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return key, nil
 }

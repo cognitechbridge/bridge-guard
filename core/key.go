@@ -1,6 +1,15 @@
 package core
 
-import "crypto/rand"
+import (
+	"crypto/rand"
+
+	"golang.org/x/crypto/curve25519"
+)
+
+type UserKeyPair struct {
+	PublicKey  string
+	PrivateKey string
+}
 
 func GenerateKey() (*KeyInfo, error) {
 	key := NewKeyFromRand()
@@ -12,15 +21,26 @@ func GenerateKey() (*KeyInfo, error) {
 	return &keyInfo, nil
 }
 
-func GenerateUserKey() (string, error) {
+func GenerateUserKey() (*UserKeyPair, error) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	encodeKey, err := encodedPrivateKey(key)
+	encodedPrivateKey, err := encodedPrivateKey(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return encodeKey, nil
+	publicKey, err := curve25519.X25519(key, curve25519.Basepoint)
+	if err != nil {
+		return nil, err
+	}
+	encodedPublicKey, err := EncodePublic(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	return &UserKeyPair{
+		PublicKey:  encodedPublicKey,
+		PrivateKey: encodedPrivateKey,
+	}, nil
 }
