@@ -39,7 +39,7 @@ type KeyService interface {
 	AddKeyToVault(vault *Vault, key KeyInfo) error
 	MoveVault(vaultId string, oldParentVaultId string, newParentVaultId string) error
 	MoveKey(keyId string, oldVaultId string, newVaultId string) error
-	GenerateUserKey() (string, error)
+	GenerateUserKey() (*UserKeyPair, error)
 	CheckPrivateKey() (bool, error)
 	IsUserJoined() bool
 }
