@@ -1,13 +1,33 @@
 package core
 
-import "encoding/xml"
+import (
+	"encoding/json"
+	"encoding/xml"
+)
 
 // AppResult represents the result of an application operation.
 type AppResult struct {
-	XMLName xml.Name    `json:"-" yaml:"-" xml:"Result"`
-	Ok      bool        `json:"ok,omitempty" yaml:"ok,omitempty"`
-	Err     error       `json:"err,omitempty" yaml:"err,omitempty"`
-	Result  interface{} `json:"result,omitempty" yaml:"result,omitempty"`
+	XMLName xml.Name
+	Ok      bool
+	Err     error
+	Result  interface{}
+}
+
+// Implement json.Marshaller interface for AppResult
+func (a AppResult) MarshalJSON() ([]byte, error) {
+	errMsg := ""
+	if a.Err != nil {
+		errMsg = a.Err.Error()
+	}
+	return json.Marshal(struct {
+		Ok     bool        `json:"ok,omitempty" yaml:"ok,omitempty"`
+		Err    string      `json:"err,omitempty" yaml:"err,omitempty"`
+		Result interface{} `json:"result,omitempty" yaml:"result,omitempty"`
+	}{
+		Ok:     a.Ok,
+		Err:    errMsg,
+		Result: a.Result,
+	})
 }
 
 // NewAppResultWithError creates a new AppResult indicating a failed operation and includes an error.
