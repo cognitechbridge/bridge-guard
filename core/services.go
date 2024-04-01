@@ -33,6 +33,7 @@ type KeyService interface {
 	Insert(key *KeyInfo) error
 	Share(keyId string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
+	GetEncodablePublicKey() (string, error)
 	CreateVault(parentId string) (*Vault, error)
 	GenerateKeyInVault(vaultId string) (*KeyInfo, error)
 	AddKeyToVault(vault *Vault, key KeyInfo) error
