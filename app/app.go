@@ -3,6 +3,7 @@ package app
 import (
 	"ctb-cli/config"
 	"ctb-cli/core"
+	"ctb-cli/fuse"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
@@ -22,6 +23,9 @@ type App struct {
 	fileSystem *filesyetem_service.FileSystem
 	// shareService is the share service used by the application
 	shareService *share_service.Service
+
+	// fuse is the fuse service used by the application
+	fuse *fuse.CtbFs
 
 	// Config is the configuration of the application
 	cfg *config.Config
