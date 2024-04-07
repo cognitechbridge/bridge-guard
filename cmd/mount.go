@@ -4,6 +4,9 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +18,7 @@ var mountCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		res := ctbApp.PrepareMount(encryptedPrivateKey)
 		MarshalOutput(res)
-		println("/**********************************")
+		fmt.Fprint(os.Stdout, "/**********************************\n")
 		ctbApp.Mount()
 	},
 }

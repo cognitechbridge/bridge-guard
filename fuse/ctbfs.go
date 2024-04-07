@@ -69,15 +69,7 @@ func (c *CtbFs) Mount() {
 		mount = "/mnt/ctbfs"
 	}
 	opts = append(opts, "-o", "volname=CTB-Secure-Drive")
-
-	originalStdout := os.Stdout
-
-	devNull, _ := os.Open(os.DevNull)
-	os.Stdout = devNull
-
 	host.Mount(mount, opts)
-
-	os.Stdout = originalStdout
 }
 
 // FindUnusedDrive finds the first unused drive letter in the system.
