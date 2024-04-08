@@ -29,6 +29,7 @@ type FileSystemService interface {
 type KeyService interface {
 	SetPrivateKey(privateKey []byte)
 	Join() error
+	JoinByUserId(userId string) error
 	Get(keyID string, startVaultId string) (*KeyInfo, error)
 	Insert(key *KeyInfo) error
 	Share(keyId string, startVaultId string, recipient []byte, recipientUserId string) error
