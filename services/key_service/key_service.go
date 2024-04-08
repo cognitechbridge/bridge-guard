@@ -328,23 +328,24 @@ func (ks *KeyStoreDefault) CheckPrivateKey() (bool, error) {
 	return true, nil
 }
 
-// Join adds the current user to the key store.
-// It first retrieves the user ID using the GetUserId method.
-// Then it checks if the user has already joined the key store.
-// If the user has already joined, it returns an error.
-// If any error occurs during the process, it returns the error.
-// If the user is successfully added, it returns nil.
+// Join joins the user to a group by retrieving the user ID and calling JoinByUserId.
+// It returns an error if there was an issue retrieving the user ID or joining the group.
 func (ks *KeyStoreDefault) Join() error {
 	userId, err := ks.GetUserId()
 	if err != nil {
 		return err
 	}
-	// Check if user already joined
+	return ks.JoinByUserId(userId)
+}
+
+// JoinByUserId joins a user by their user ID.
+// It checks if the user is already joined and returns an error if so.
+// Otherwise, it calls the key repository to join the user and returns any error that occurs.
+func (ks *KeyStoreDefault) JoinByUserId(userId string) error {
 	if ks.keyRepository.IsUserJoined(userId) {
 		return ErrUserAlreadyJoined
 	}
-	// Join user
-	err = ks.keyRepository.JoinUser(userId)
+	err := ks.keyRepository.JoinUser(userId)
 	if err != nil {
 		return err
 	}
