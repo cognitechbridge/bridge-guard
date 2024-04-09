@@ -83,3 +83,15 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 	}
 	return keyId, startVaultId, nil
 }
+
+// GetAccessList retrieves the access list for a given path.
+// It returns the key access list and an error if any.
+func (s *Service) GetAccessList(path string) (core.KeyAccessList, error) {
+	// Get the key ID and start vault ID associated with the path
+	keyId, startVaultId, err := s.GetKeyIdByPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.keyService.GetKeyAccessList(keyId, startVaultId)
+}

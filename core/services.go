@@ -43,4 +43,6 @@ type KeyService interface {
 	GenerateUserKey() (*UserKeyPair, error)
 	CheckPrivateKey() (bool, error)
 	IsUserJoined() bool
+	GetHasAccessToKey(keyId string, startVaultId string, userId string) (bool, bool)
+	GetKeyAccessList(keyId string, startVaultId string) (KeyAccessList, error)
 }
