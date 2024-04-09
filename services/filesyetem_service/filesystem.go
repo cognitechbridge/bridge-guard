@@ -294,10 +294,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	//If the oldPath and newPath are in different directories, move the file or directory to the new location
 	if filepath.Dir(oldPath) != filepath.Dir(newPath) {
 		//Check if the path is a directory
-		isDir, err := f.linkRepo.IsDir(oldPath)
-		if err != nil {
-			return err
-		}
+		isDir := f.linkRepo.IsDir(oldPath)
 		//Get the vault links for the oldPath and newPath
 		oldVault, err := f.linkRepo.GetVaultLinkByPath(filepath.Dir(oldPath))
 		if err != nil {

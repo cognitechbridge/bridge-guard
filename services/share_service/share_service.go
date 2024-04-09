@@ -51,10 +51,7 @@ func (s *Service) ShareByPublicKey(path string, publicKeyEncoded string) error {
 // If the path represents a file, it retrieves the key ID from the object service using the object ID associated with the path.
 // The retrieved key ID is returned along with any error encountered during the process.
 func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string, err error) {
-	isDir, err := s.linkRepository.IsDir(path)
-	if err != nil {
-		return "", "", err
-	}
+	isDir := s.linkRepository.IsDir(path)
 	if isDir {
 		link, err := s.linkRepository.GetVaultLinkByPath(path)
 		if err != nil {
