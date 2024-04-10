@@ -170,7 +170,7 @@ func (c *LinkRepository) CreateDir(path string) (err error) {
 // It takes a path string as input and returns a slice of os.FileInfo and an error.
 func (c *LinkRepository) GetSubFiles(path string) ([]os.FileInfo, error) {
 	// Make sure the path is a directory
-	if c.IsDir(path) {
+	if !c.IsDir(path) {
 		return nil, ErrPathIsNotDir
 	}
 	// Read the sub-files
