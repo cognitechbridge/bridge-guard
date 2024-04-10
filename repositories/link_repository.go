@@ -226,3 +226,10 @@ func (c *LinkRepository) GetFileVaultLink(path string) (core.VaultLink, error) {
 	vaultLink, err := c.GetVaultLinkByPath(dir)
 	return vaultLink, err
 }
+
+// IsValidPath checks if the given path is a valid path.
+func (c *LinkRepository) IsValidPath(path string) bool {
+	absPath := filepath.Join(c.rootPath, path)
+	_, err := os.Stat(absPath)
+	return err == nil
+}
