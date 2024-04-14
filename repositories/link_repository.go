@@ -233,3 +233,8 @@ func (c *LinkRepository) IsValidPath(path string) bool {
 	_, err := os.Stat(absPath)
 	return err == nil
 }
+
+// GetRootPath returns the root path of the LinkRepository.
+func (c *LinkRepository) GetRootPath() string {
+	return c.rootPath
+}

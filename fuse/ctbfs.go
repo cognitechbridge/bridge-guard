@@ -52,14 +52,6 @@ func New(fs core.FileSystemService) *CtbFs {
 }
 
 func (c *CtbFs) FindMountPoint() string {
-	c.mountPoint = c.FindUnusedDrive()
-	return c.mountPoint
-}
-
-func (c *CtbFs) Mount() {
-	host := fuse.NewFileSystemHost(c)
-	host.SetCapReaddirPlus(true)
-	opts := make([]string, 0)
 	mount := ""
 	if runtime.GOOS == "windows" {
 		mount = c.FindUnusedDrive()
@@ -68,6 +60,15 @@ func (c *CtbFs) Mount() {
 	} else if runtime.GOOS == "linux" {
 		mount = "/mnt/ctbfs"
 	}
+	c.mountPoint = mount
+	return c.mountPoint
+}
+
+func (c *CtbFs) Mount() {
+	host := fuse.NewFileSystemHost(c)
+	host.SetCapReaddirPlus(true)
+	opts := make([]string, 0)
+	mount := c.mountPoint
 	opts = append(opts, "-o", "volname=CTB-Secure-Drive")
 	host.Mount(mount, opts)
 }
@@ -369,11 +370,24 @@ func (c *CtbFs) Unlink(path string) (errc int) {
 	return 0
 }
 
+// Statfs returns file system statistics.
+// It populates the provided `stat` structure with information about the file system.
+// The `stat` structure contains fields such as block size, total blocks, free blocks, and maximum filename length.
+// If an error occurs while retrieving disk usage information, it returns -fuse.ENOENT.
 func (c *CtbFs) Statfs(_ string, stat *fuse.Statfs_t) (errc int) {
+	reserved := uint64(1 * 1024 * 1024 * 1024) // 1GB
 	stat.Frsize = 4096
 	stat.Bsize = stat.Frsize
-	stat.Blocks = uint64(2*1024*1024*1024) / stat.Frsize
-	stat.Bfree = uint64(2*1024*1024*1024) / stat.Frsize
+	totalBytes, freeBytesAvailable, err := c.fs.GetDiskUsage()
+	if err != nil {
+		return -fuse.ENOENT
+	}
+	stat.Blocks = totalBytes / stat.Frsize
+	if freeBytesAvailable < reserved {
+		stat.Bfree = 0
+	} else {
+		stat.Bfree = (freeBytesAvailable - 1*1024*1024*1024) / stat.Frsize
+	}
 	stat.Bavail = stat.Bfree
 	stat.Namemax = uint64(10 * 1024 * 1024)
 	return 0
