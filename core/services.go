@@ -24,6 +24,7 @@ type FileSystemService interface {
 	Commit(path string) error
 	OpenInWrite(path string) error
 	GetUserFileAccess(path string, isDir bool) fs.FileMode
+	GetDiskUsage() (totalBytes, freeBytes uint64, err error)
 }
 
 type KeyService interface {
