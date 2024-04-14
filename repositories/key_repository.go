@@ -20,6 +20,7 @@ type KeyRepository interface {
 	IsUserJoined(userId string) bool
 	JoinUser(userId string) error
 	ListUsers() ([]string, error)
+	DeleteDataKey(keyID string, userId string) error
 }
 
 type KeyRepositoryFile struct {
@@ -130,4 +131,20 @@ func (k *KeyRepositoryFile) ListUsers() ([]string, error) {
 		}
 	}
 	return users, nil
+}
+
+// DeleteDataKey deletes the data key associated with the given keyID and userId.
+// It removes the file corresponding to the keyID from the user's data path.
+// If an error occurs during the deletion process, it is returned.
+func (k *KeyRepositoryFile) DeleteDataKey(keyID string, userId string) error {
+	datapath, err := k.getDataPath(userId)
+	if err != nil {
+		return err
+	}
+	p := filepath.Join(datapath, keyID)
+	err = os.Remove(p)
+	if err != nil {
+		return err
+	}
+	return nil
 }
