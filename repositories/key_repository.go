@@ -19,6 +19,7 @@ type KeyRepository interface {
 	DataKeyExist(keyId string, userId string) bool
 	IsUserJoined(userId string) bool
 	JoinUser(userId string) error
+	ListUsers() ([]string, error)
 }
 
 type KeyRepositoryFile struct {
@@ -80,6 +81,8 @@ func (k *KeyRepositoryFile) getDataPath(recipient string) (string, error) {
 	return p, nil
 }
 
+// DataKeyExist checks if a data key with the given key ID exists for the specified user.
+// It returns true if the data key exists, and false otherwise.
 func (k *KeyRepositoryFile) DataKeyExist(keyId string, userId string) bool {
 	datapath, err := k.getDataPath(userId)
 	if err != nil {
@@ -111,4 +114,20 @@ func (k *KeyRepositoryFile) JoinUser(userId string) error {
 		return err
 	}
 	return nil
+}
+
+// ListUsers returns a list of users stored in the key repository.
+func (k *KeyRepositoryFile) ListUsers() ([]string, error) {
+	p := filepath.Join(k.rootPath, "data")
+	files, err := os.ReadDir(p)
+	if err != nil {
+		return nil, err
+	}
+	var users []string
+	for _, f := range files {
+		if f.IsDir() {
+			users = append(users, f.Name())
+		}
+	}
+	return users, nil
 }

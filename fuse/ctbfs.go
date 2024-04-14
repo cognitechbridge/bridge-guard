@@ -3,12 +3,15 @@ package fuse
 import (
 	"ctb-cli/core"
 	"fmt"
+	"os"
+	"runtime"
 	"sync"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
 
 type CtbFs struct {
+	mountPoint string
 	fuse.FileSystemBase
 
 	sync.Mutex
@@ -48,11 +51,38 @@ func New(fs core.FileSystemService) *CtbFs {
 	return &c
 }
 
+func (c *CtbFs) FindMountPoint() string {
+	c.mountPoint = c.FindUnusedDrive()
+	return c.mountPoint
+}
+
 func (c *CtbFs) Mount() {
 	host := fuse.NewFileSystemHost(c)
 	host.SetCapReaddirPlus(true)
 	opts := make([]string, 0)
-	host.Mount("", opts)
+	mount := ""
+	if runtime.GOOS == "windows" {
+		mount = c.FindUnusedDrive()
+	} else if runtime.GOOS == "darwin" {
+		mount = "/Volumes/ctbfs"
+	} else if runtime.GOOS == "linux" {
+		mount = "/mnt/ctbfs"
+	}
+	opts = append(opts, "-o", "volname=CTB-Secure-Drive")
+	host.Mount(mount, opts)
+}
+
+// FindUnusedDrive finds the first unused drive letter in the system.
+// It iterates through drive letters from 'Z' to 'A' and checks if each drive is accessible.
+// If an unused drive is found, it prints the drive letter and exits the loop.
+func (c *CtbFs) FindUnusedDrive() string {
+	for drive := 'Z'; drive >= 'A'; drive-- {
+		_, err := os.Open(string(drive) + ":\\")
+		if err != nil {
+			return string(drive) + ":"
+		}
+	}
+	return ""
 }
 
 func (c *CtbFs) lookupNode(path string, ancestor *Node) (prnt *Node, name string, node *Node) {

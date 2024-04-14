@@ -29,16 +29,20 @@ type FileSystemService interface {
 type KeyService interface {
 	SetPrivateKey(privateKey []byte)
 	Join() error
+	JoinByUserId(userId string) error
 	Get(keyID string, startVaultId string) (*KeyInfo, error)
 	Insert(key *KeyInfo) error
-	Share(keyId string, recipient []byte, recipientUserId string) error
+	Share(keyId string, startVaultId string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
+	GetEncodablePublicKey() (string, error)
 	CreateVault(parentId string) (*Vault, error)
 	GenerateKeyInVault(vaultId string) (*KeyInfo, error)
 	AddKeyToVault(vault *Vault, key KeyInfo) error
 	MoveVault(vaultId string, oldParentVaultId string, newParentVaultId string) error
 	MoveKey(keyId string, oldVaultId string, newVaultId string) error
-	GenerateUserKey() (string, error)
+	GenerateUserKey() (*UserKeyPair, error)
 	CheckPrivateKey() (bool, error)
 	IsUserJoined() bool
+	GetHasAccessToKey(keyId string, startVaultId string, userId string) (bool, bool)
+	GetKeyAccessList(keyId string, startVaultId string) (KeyAccessList, error)
 }

@@ -37,6 +37,7 @@ func formatContext(context []byte) (res []byte, err error) {
 	return res, nil
 }
 
+// ParseHeader reads the header from the reader
 func ParseHeader(reader io.Reader) (*Header, error) {
 	headerContext, err := readContext(reader)
 	if err != nil {
@@ -53,6 +54,10 @@ func ParseHeader(reader io.Reader) (*Header, error) {
 	return &fileHeader, nil
 }
 
+// readContext reads the context from the given reader and returns it as a byte slice.
+// It first reads the context size, then reads the context itself.
+// If any error occurs during reading, it returns nil and the error.
+// If the number of bytes read is not equal to the context size, it returns an error.
 func readContext(reader io.Reader) ([]byte, error) {
 	// Read context size
 	contextSize, err := readContextSize(reader)
@@ -72,6 +77,8 @@ func readContext(reader io.Reader) ([]byte, error) {
 	return bufferContext, nil
 }
 
+// readContextSize reads a 2-byte context size from the given reader and returns it.
+// It returns an error if there was a problem reading the context size.
 func readContextSize(reader io.Reader) (uint16, error) {
 	var buffer2 [2]byte
 	n, err := reader.Read(buffer2[:])

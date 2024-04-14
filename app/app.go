@@ -3,6 +3,7 @@ package app
 import (
 	"ctb-cli/config"
 	"ctb-cli/core"
+	"ctb-cli/fuse"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/repositories"
 	"ctb-cli/services/filesyetem_service"
@@ -22,6 +23,9 @@ type App struct {
 	fileSystem *filesyetem_service.FileSystem
 	// shareService is the share service used by the application
 	shareService *share_service.Service
+
+	// fuse is the fuse service used by the application
+	fuse *fuse.CtbFs
 
 	// Config is the configuration of the application
 	cfg *config.Config
@@ -82,7 +86,7 @@ func (a *App) initServices() core.AppResult {
 	// Create the services
 	a.keyStore = key_service.NewKeyStore(keyRepository, vaultRepository)
 	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
-	a.shareService = share_service.NewService(a.keyStore, linkRepository, &objectService)
+	a.shareService = share_service.NewService(a.keyStore, linkRepository, vaultRepository, &objectService)
 	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository)
 
 	return core.NewAppResult()
@@ -188,4 +192,15 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 		return core.NewAppResultWithError(err)
 	}
 	return core.NewAppResult()
+}
+
+// IsRootEmpty checks if the root folder is empty.
+// It returns true if the folder is empty, false otherwise.
+func (a *App) IsRootEmpty() bool {
+	root, _ := a.cfg.GetRepoCtbRoot()
+	rootFiles, err := os.ReadDir(root)
+	if err != nil {
+		return false
+	}
+	return len(rootFiles) == 0
 }

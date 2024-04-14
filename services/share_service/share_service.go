@@ -6,39 +6,94 @@ import (
 )
 
 type Service struct {
-	linkRepository *repositories.LinkRepository
-	objectService  core.ObjectService
-	keyStorer      core.KeyService
+	linkRepository  *repositories.LinkRepository
+	vaultRepository repositories.VaultRepository
+	objectService   core.ObjectService
+	keyService      core.KeyService
 }
 
 func NewService(
-	keyStorer core.KeyService,
+	keyService core.KeyService,
 	linkRepository *repositories.LinkRepository,
+	vaultRepository repositories.VaultRepository,
 	objectService core.ObjectService,
 ) *Service {
 	return &Service{
-		objectService:  objectService,
-		keyStorer:      keyStorer,
-		linkRepository: linkRepository,
+		objectService:   objectService,
+		keyService:      keyService,
+		linkRepository:  linkRepository,
+		vaultRepository: vaultRepository,
 	}
 }
 
-func (s *Service) ShareByPublicKey(regex string, publicKeyEncoded string) error {
+// ShareByPublicKey shares a file or directory located at the specified path with the given public key.
+// It retrieves the key ID associated with the path, decodes the provided public key, and then calls the Share method of the key service.
+// If any error occurs during the process, it is returned.
+func (s *Service) ShareByPublicKey(path string, publicKeyEncoded string) error {
+	keyId, startVaultId, err := s.GetKeyIdByPath(path)
+	if err != nil {
+		return err
+	}
 	publicKeyBytes, err := core.DecodePublic(publicKeyEncoded)
 	if err != nil {
 		return err
 	}
-	files, _ := s.linkRepository.ListIdsByRegex(regex)
-	for _, fileId := range files {
-		keyId, err := s.objectService.GetKeyIdByObjectId(fileId)
-		if err != nil {
-			return err
-		}
-		err = s.keyStorer.Share(keyId, publicKeyBytes, publicKeyEncoded)
-		if err != nil {
-			return err
-		}
-
+	err = s.keyService.Share(keyId, startVaultId, publicKeyBytes, publicKeyEncoded)
+	if err != nil {
+		return err
 	}
+
 	return nil
+}
+
+// GetKeyIdByPath retrieves the key ID associated with the given path.
+// If the path represents a directory, it retrieves the key ID from the vault link associated with the path.
+// If the path represents a file, it retrieves the key ID from the object service using the object ID associated with the path.
+// The retrieved key ID is returned along with any error encountered during the process.
+func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string, err error) {
+	isDir := s.linkRepository.IsDir(path)
+	if isDir {
+		link, err := s.linkRepository.GetVaultLinkByPath(path)
+		if err != nil {
+			return "", "", err
+		}
+		vault, err := s.vaultRepository.GetVault(link.VaultId)
+		if err != nil {
+			return "", "", err
+		}
+		keyId = link.KeyId
+		startVaultId = vault.ParentId
+	} else {
+		link, err := s.linkRepository.GetByPath(path)
+		if err != nil {
+			return "", "", err
+		}
+		keyId, err = s.objectService.GetKeyIdByObjectId(link.ObjectId)
+		if err != nil {
+			return "", "", err
+		}
+		vault, err := s.linkRepository.GetFileVaultLink(path)
+		if err != nil {
+			return "", "", err
+		}
+		startVaultId = vault.VaultId
+	}
+	return keyId, startVaultId, nil
+}
+
+// GetAccessList retrieves the access list for a given path.
+// It returns the key access list and an error if any.
+func (s *Service) GetAccessList(path string) (core.KeyAccessList, error) {
+	isValid := s.linkRepository.IsValidPath(path)
+	if !isValid {
+		return nil, core.ErrInvalidPath
+	}
+
+	// Get the key ID and start vault ID associated with the path
+	keyId, startVaultId, err := s.GetKeyIdByPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.keyService.GetKeyAccessList(keyId, startVaultId)
 }

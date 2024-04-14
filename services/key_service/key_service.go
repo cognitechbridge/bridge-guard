@@ -143,9 +143,40 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo
 	return &keyInfo, nil
 }
 
-func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId string) error {
-	//@Todo: Fix it
-	key, err := ks.Get(keyId, "")
+// GetHasAccessToKey checks if a user has access to a specific key.
+// It also checks if the access is inherited from a vault or directly from the user's data keys.
+// It first checks if the key directly exists in the user's data keys.
+// If the key exists, it returns true and false for `hasAccess` and `inherited` respectively.
+// If the key does not exist in the user's data keys, it checks if it exists in a vault.
+// If the key exists in a vault, it recursively calls `GetHasAccessToKey` to check if the user has access to the vault key.
+// It returns the result of the recursive call and true for `inherited`.
+func (ks *KeyStoreDefault) GetHasAccessToKey(keyId string, startVaultId string, userId string) (hasAccess bool, inherited bool) {
+	// Check if key directly exists in user's data keys
+	if ks.keyRepository.DataKeyExist(keyId, userId) {
+		// Get key from user's data keys
+		exc := ks.keyRepository.DataKeyExist(keyId, userId)
+		if exc == true {
+			return true, false
+		}
+	}
+	// If key does not exist in user's data keys, check if it exists in a vault
+	// If startVaultId is not provided, return false
+	if startVaultId == "" {
+		return false, false
+
+	}
+	// Get start vault
+	vault, err := ks.vaultRepository.GetVault(startVaultId)
+	if err != nil {
+		return false, false
+	}
+	// Get vault key using recursive call to GetHasAccessToKey
+	px, _ := ks.GetHasAccessToKey(vault.KeyId, vault.ParentId, userId)
+	return px, true
+}
+
+func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, recipient []byte, recipientUserId string) error {
+	key, err := ks.Get(keyId, startVaultId)
 	if err != nil {
 		return fmt.Errorf("cannot load key: %v", err)
 	}
@@ -164,6 +195,17 @@ func (ks *KeyStoreDefault) Share(keyId string, recipient []byte, recipientUserId
 // If any error occurs during the process, it returns the error.
 func (ks *KeyStoreDefault) GetPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
+}
+
+// GetEncodablePublicKey returns the public key as a string.
+// It encode the public key using base58 encoding and returns it.
+// If any error occurs during the process, it returns the error.
+func (ks *KeyStoreDefault) GetEncodablePublicKey() (string, error) {
+	publicKey, err := ks.GetPublicKey()
+	if err != nil {
+		return "", err
+	}
+	return core.EncodePublic(publicKey)
 }
 
 // CreateVault generates a new vault and inserts it into the vault repository.
@@ -318,23 +360,24 @@ func (ks *KeyStoreDefault) CheckPrivateKey() (bool, error) {
 	return true, nil
 }
 
-// Join adds the current user to the key store.
-// It first retrieves the user ID using the GetUserId method.
-// Then it checks if the user has already joined the key store.
-// If the user has already joined, it returns an error.
-// If any error occurs during the process, it returns the error.
-// If the user is successfully added, it returns nil.
+// Join joins the user to a group by retrieving the user ID and calling JoinByUserId.
+// It returns an error if there was an issue retrieving the user ID or joining the group.
 func (ks *KeyStoreDefault) Join() error {
 	userId, err := ks.GetUserId()
 	if err != nil {
 		return err
 	}
-	// Check if user already joined
+	return ks.JoinByUserId(userId)
+}
+
+// JoinByUserId joins a user by their user ID.
+// It checks if the user is already joined and returns an error if so.
+// Otherwise, it calls the key repository to join the user and returns any error that occurs.
+func (ks *KeyStoreDefault) JoinByUserId(userId string) error {
 	if ks.keyRepository.IsUserJoined(userId) {
 		return ErrUserAlreadyJoined
 	}
-	// Join user
-	err = ks.keyRepository.JoinUser(userId)
+	err := ks.keyRepository.JoinUser(userId)
 	if err != nil {
 		return err
 	}
@@ -343,10 +386,10 @@ func (ks *KeyStoreDefault) Join() error {
 
 // GenerateUserKey generates a new user key and returns it as a string.
 // If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) GenerateUserKey() (string, error) {
+func (ks *KeyStoreDefault) GenerateUserKey() (*core.UserKeyPair, error) {
 	key, err := core.GenerateUserKey()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return key, nil
 }
@@ -360,4 +403,25 @@ func (ks *KeyStoreDefault) IsUserJoined() bool {
 		return false
 	}
 	return ks.keyRepository.IsUserJoined(userId)
+}
+
+// GetKeyAccessList retrieves the key access list for a given key ID and starting vault ID.
+// It returns a list of KeyAccess objects representing the users who have access to the key,
+// along with a boolean value indicating whether the access is inherited from a parent vault.
+// If an error occurs during the retrieval process, it is returned as the second value.
+func (ks *KeyStoreDefault) GetKeyAccessList(keyId string, startVaultId string) (core.KeyAccessList, error) {
+	usersList, err := ks.keyRepository.ListUsers()
+	if err != nil {
+		return nil, err
+	}
+	accessList := make(core.KeyAccessList, 0)
+	for _, user := range usersList {
+		if hasAccess, inherited := ks.GetHasAccessToKey(keyId, startVaultId, user); hasAccess {
+			accessList = append(accessList, core.KeyAccess{
+				PublicKey: user,
+				Inherited: inherited,
+			})
+		}
+	}
+	return accessList, nil
 }
