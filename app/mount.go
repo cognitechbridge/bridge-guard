@@ -7,7 +7,13 @@ import (
 
 // Mount mounts the file system and returns the result.
 // It returns an AppResult containing the result of the operation.
-func (a *App) Mount(encryptedPrivateKey string) core.AppResult {
+func (a *App) Mount() core.AppResult {
+	a.fuse.Mount()
+	return core.NewAppResult()
+}
+
+// PrepareMount creates the fuse file system and returns the result.
+func (a *App) PrepareMount(encryptedPrivateKey string) core.AppResult {
 	// init the app
 	initRes := a.initServices()
 	if !initRes.Ok {
@@ -18,7 +24,8 @@ func (a *App) Mount(encryptedPrivateKey string) core.AppResult {
 	if !keySetRes.Ok {
 		return keySetRes
 	}
-	ctbFuse := fuse.New(a.fileSystem)
-	ctbFuse.Mount()
-	return core.NewAppResult()
+	// create the fuse
+	a.fuse = fuse.New(a.fileSystem)
+	res := a.fuse.FindMountPoint()
+	return core.NewAppResultWithValue(res)
 }

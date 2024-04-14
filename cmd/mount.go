@@ -4,6 +4,9 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +16,10 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `Mount the file system. This command mounts the file system and blocks the terminal.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ctbApp.Mount(encryptedPrivateKey)
+		res := ctbApp.PrepareMount(encryptedPrivateKey)
+		MarshalOutput(res)
+		fmt.Fprint(os.Stdout, "/**********************************\n")
+		ctbApp.Mount()
 	},
 }
 

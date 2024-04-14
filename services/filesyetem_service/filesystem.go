@@ -60,7 +60,7 @@ func (f *FileSystem) CreateVaultInPath(path string) error {
 	//If the path is not the root directory, get the parent vault id
 	if filepath.Clean(path) != string(filepath.Separator) {
 		parentPath := filepath.Dir(path)
-		vaultLink, err := f.getVaultLink(parentPath)
+		vaultLink, err := f.linkRepo.GetFileVaultLink(parentPath)
 		if err != nil {
 			return err
 		}
@@ -239,7 +239,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Get file vault link
-	vaultLink, err := f.getVaultLink(path)
+	vaultLink, err := f.linkRepo.GetFileVaultLink(path)
 	if err != nil {
 		return 0, err
 	}
@@ -294,10 +294,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	//If the oldPath and newPath are in different directories, move the file or directory to the new location
 	if filepath.Dir(oldPath) != filepath.Dir(newPath) {
 		//Check if the path is a directory
-		isDir, err := f.linkRepo.IsDir(oldPath)
-		if err != nil {
-			return err
-		}
+		isDir := f.linkRepo.IsDir(oldPath)
 		//Get the vault links for the oldPath and newPath
 		oldVault, err := f.linkRepo.GetVaultLinkByPath(filepath.Dir(oldPath))
 		if err != nil {
@@ -350,7 +347,7 @@ func (f *FileSystem) Commit(path string) error {
 		delete(f.openToWrite, path)
 		//Get vault link
 		link, _ := f.linkRepo.GetByPath(path)
-		vaultLink, err := f.getVaultLink(path)
+		vaultLink, err := f.linkRepo.GetFileVaultLink(path)
 		if err != nil {
 			return err
 		}
@@ -387,7 +384,7 @@ func (f *FileSystem) OpenInWrite(path string) error {
 // If there are, it returns 0555, otherwise it returns 0000.
 func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 	//Get vault link
-	vaultLink, err := f.getVaultLink(path)
+	vaultLink, err := f.linkRepo.GetFileVaultLink(path)
 	if err != nil {
 		return 0000
 	}
@@ -425,12 +422,4 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 		}
 	}
 	return 0000
-}
-
-// getVaultLink retrieves the vault link for the given path.
-// It takes a path string as input and returns a core.VaultLink and an error.
-func (f *FileSystem) getVaultLink(path string) (core.VaultLink, error) {
-	dir := filepath.Dir(path)
-	vaultLink, err := f.linkRepo.GetVaultLinkByPath(dir)
-	return vaultLink, err
 }
