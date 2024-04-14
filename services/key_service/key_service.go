@@ -425,3 +425,10 @@ func (ks *KeyStoreDefault) GetKeyAccessList(keyId string, startVaultId string) (
 	}
 	return accessList, nil
 }
+
+// Unshare removes the sharing of a data key with a recipient user.
+// It takes the key ID and the recipient user ID as parameters.
+// Returns an error if there was a problem deleting the data key.
+func (ks *KeyStoreDefault) Unshare(keyId string, recipientUserId string) error {
+	return ks.keyRepository.DeleteDataKey(keyId, recipientUserId)
+}

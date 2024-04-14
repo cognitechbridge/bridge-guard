@@ -45,4 +45,5 @@ type KeyService interface {
 	IsUserJoined() bool
 	GetHasAccessToKey(keyId string, startVaultId string, userId string) (bool, bool)
 	GetKeyAccessList(keyId string, startVaultId string) (KeyAccessList, error)
+	Unshare(keyId string, recipientUserId string) error
 }

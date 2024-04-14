@@ -97,3 +97,18 @@ func (s *Service) GetAccessList(path string) (core.KeyAccessList, error) {
 
 	return s.keyService.GetKeyAccessList(keyId, startVaultId)
 }
+
+// Unshare removes the sharing of a file or directory specified by the given path
+// with the public key provided. It returns an error if the operation fails.
+func (s *Service) Unshare(path string, publicKeyEncoded string) error {
+	keyId, _, err := s.GetKeyIdByPath(path)
+	if err != nil {
+		return err
+	}
+	err = s.keyService.Unshare(keyId, publicKeyEncoded)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
