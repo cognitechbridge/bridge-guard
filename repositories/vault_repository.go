@@ -9,12 +9,14 @@ import (
 
 // VaultRepository KeyStorePersist is an interface for persisting keys
 type VaultRepository interface {
-	GetVault(vaultId string) (core.Vault, error)
-	SaveVault(vault core.Vault) (err error)
-	InsertVault(vault core.Vault) error
-	AddKeyToVault(vault *core.Vault, keyIs string, serialized string) error
-	GetKey(keyId string, vaultId string) (string, bool)
-	RemoveKey(keyId string, vaultId string) error
+	GetVault(vaultId string, vaultPath string) (core.Vault, error)
+	SaveVault(vault core.Vault, vaultPath string) (err error)
+	InsertVault(vault core.Vault, vaultPath string) error
+	AddKeyToVault(vault *core.Vault, vaultPath string, keyId string, serialized string) error
+	GetKey(keyId string, vaultId string, vaultPath string) (string, bool)
+	RemoveKey(keyId string, vaultId string, vaultPath string) error
+	GetVaultParentPath(vaultPath string) string
+	MoveVault(oldVaultPath string, newVaultPath string) error
 }
 
 type VaultRepositoryFile struct {
@@ -29,8 +31,8 @@ func NewVaultRepositoryFile(rootPath string) *VaultRepositoryFile {
 	}
 }
 
-func (k *VaultRepositoryFile) GetVault(vaultId string) (core.Vault, error) {
-	p := filepath.Join(k.rootPath, vaultId)
+func (k *VaultRepositoryFile) GetVault(vaultId string, vaultPath string) (core.Vault, error) {
+	p := filepath.Join(k.rootPath, vaultPath, vaultId)
 	content, err := os.ReadFile(p)
 	if err != nil {
 		return core.Vault{}, err
@@ -38,12 +40,12 @@ func (k *VaultRepositoryFile) GetVault(vaultId string) (core.Vault, error) {
 	return core.UnmarshalVault(content)
 }
 
-func (k *VaultRepositoryFile) InsertVault(vault core.Vault) error {
-	err := k.SaveVault(vault)
+func (k *VaultRepositoryFile) InsertVault(vault core.Vault, vaultPath string) error {
+	err := k.SaveVault(vault, vaultPath)
 	if err != nil {
 		return err
 	}
-	insidePath := k.vaultKeyFolder(vault.Id)
+	insidePath := k.vaultKeyFolder(vault.Id, vaultPath)
 	err = os.MkdirAll(insidePath, os.ModePerm)
 	if err != nil {
 		return err
@@ -51,8 +53,12 @@ func (k *VaultRepositoryFile) InsertVault(vault core.Vault) error {
 	return nil
 }
 
-func (k *VaultRepositoryFile) SaveVault(vault core.Vault) (err error) {
-	p := filepath.Join(k.rootPath, vault.Id)
+func (k *VaultRepositoryFile) SaveVault(vault core.Vault, vaultPath string) (err error) {
+	p := filepath.Join(k.rootPath, vaultPath, vault.Id)
+	err = os.MkdirAll(filepath.Dir(p), os.ModePerm)
+	if err != nil {
+		return err
+	}
 	file, err := os.Create(p)
 	if err != nil {
 		return err
@@ -66,7 +72,7 @@ func (k *VaultRepositoryFile) SaveVault(vault core.Vault) (err error) {
 	if err != nil {
 		return err
 	}
-	insidePath := k.vaultKeyFolder(vault.Id)
+	insidePath := k.vaultKeyFolder(vault.Id, vaultPath)
 	err = os.MkdirAll(insidePath, os.ModePerm)
 	if err != nil {
 		return err
@@ -74,8 +80,8 @@ func (k *VaultRepositoryFile) SaveVault(vault core.Vault) (err error) {
 	return nil
 }
 
-func (k *VaultRepositoryFile) GetKey(keyId string, vaultId string) (string, bool) {
-	path := filepath.Join(k.vaultKeyFolder(vaultId), keyId)
+func (k *VaultRepositoryFile) GetKey(keyId string, vaultId string, vaultPath string) (string, bool) {
+	path := filepath.Join(k.vaultKeyFolder(vaultId, vaultPath), keyId)
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return "", false
@@ -83,8 +89,8 @@ func (k *VaultRepositoryFile) GetKey(keyId string, vaultId string) (string, bool
 	return string(b), true
 }
 
-func (k *VaultRepositoryFile) AddKeyToVault(vault *core.Vault, keyId string, serialized string) error {
-	path := filepath.Join(k.vaultKeyFolder(vault.Id), keyId)
+func (k *VaultRepositoryFile) AddKeyToVault(vault *core.Vault, vaultPath string, keyId string, serialized string) error {
+	path := filepath.Join(k.vaultKeyFolder(vault.Id, vaultPath), keyId)
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
@@ -97,11 +103,21 @@ func (k *VaultRepositoryFile) AddKeyToVault(vault *core.Vault, keyId string, ser
 	return nil
 }
 
-func (k *VaultRepositoryFile) RemoveKey(keyId string, vaultId string) error {
-	path := filepath.Join(k.vaultKeyFolder(vaultId), keyId)
+func (k *VaultRepositoryFile) RemoveKey(keyId string, vaultId string, vaultPath string) error {
+	path := filepath.Join(k.vaultKeyFolder(vaultId, vaultPath), keyId)
 	return os.Remove(path)
 }
 
-func (k *VaultRepositoryFile) vaultKeyFolder(vaultId string) string {
-	return filepath.Join(k.rootPath, "K_"+vaultId)
+func (k *VaultRepositoryFile) GetVaultParentPath(vaultPath string) string {
+	return filepath.Dir(vaultPath)
+}
+
+func (k *VaultRepositoryFile) MoveVault(oldVaultPath string, newVaultPath string) error {
+	oldPath := filepath.Join(k.rootPath, oldVaultPath)
+	newPath := filepath.Join(k.rootPath, newVaultPath)
+	return os.Rename(oldPath, newPath)
+}
+
+func (k *VaultRepositoryFile) vaultKeyFolder(vaultId string, vaultPath string) string {
+	return filepath.Join(k.rootPath, vaultPath, "K_"+vaultId)
 }

@@ -90,7 +90,7 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
 // If the key is found in the vault, it recursively calls the Get method to retrieve the vault key.
 // It then retrieves the encrypted data key from the vault and unseals it using the vault key.
 // Finally, it returns the key in KeyInfo format.
-func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo, error) {
+func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath string) (*core.KeyInfo, error) {
 	// Get user id
 	userId, err := ks.GetUserId()
 	if err != nil {
@@ -119,17 +119,18 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo
 
 	}
 	// Get start vault
-	vault, err := ks.vaultRepository.GetVault(startVaultId)
+	vault, err := ks.vaultRepository.GetVault(startVaultId, startVaultPath)
 	if err != nil {
 		return nil, err
 	}
 	//Get encrypted data key from vault
-	encKey, found := ks.vaultRepository.GetKey(keyId, vault.Id)
+	encKey, found := ks.vaultRepository.GetKey(keyId, vault.Id, startVaultPath)
 	if !found {
 		return nil, ErrDataKeyNotFound
 	}
 	// Get vault key using recursive call
-	vaultKey, err := ks.Get(vault.KeyId, vault.ParentId)
+	parentPath := ks.vaultRepository.GetVaultParentPath(startVaultPath)
+	vaultKey, err := ks.Get(vault.KeyId, vault.ParentId, parentPath)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +151,7 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string) (*core.KeyInfo
 // If the key does not exist in the user's data keys, it checks if it exists in a vault.
 // If the key exists in a vault, it recursively calls `GetHasAccessToKey` to check if the user has access to the vault key.
 // It returns the result of the recursive call and true for `inherited`.
-func (ks *KeyStoreDefault) GetHasAccessToKey(keyId string, startVaultId string, userId string) (hasAccess bool, inherited bool) {
+func (ks *KeyStoreDefault) GetHasAccessToKey(keyId string, startVaultId string, startVaultPath string, userId string) (hasAccess bool, inherited bool) {
 	// Check if key directly exists in user's data keys
 	if ks.keyRepository.DataKeyExist(keyId, userId) {
 		// Get key from user's data keys
@@ -166,17 +167,18 @@ func (ks *KeyStoreDefault) GetHasAccessToKey(keyId string, startVaultId string, 
 
 	}
 	// Get start vault
-	vault, err := ks.vaultRepository.GetVault(startVaultId)
+	vault, err := ks.vaultRepository.GetVault(startVaultId, startVaultPath)
 	if err != nil {
 		return false, false
 	}
 	// Get vault key using recursive call to GetHasAccessToKey
-	px, _ := ks.GetHasAccessToKey(vault.KeyId, vault.ParentId, userId)
+	parentPath := ks.vaultRepository.GetVaultParentPath(startVaultPath)
+	px, _ := ks.GetHasAccessToKey(vault.KeyId, vault.ParentId, parentPath, userId)
 	return px, true
 }
 
-func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, recipient []byte, recipientUserId string) error {
-	key, err := ks.Get(keyId, startVaultId)
+func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, startVaultPath string, recipient []byte, recipientUserId string) error {
+	key, err := ks.Get(keyId, startVaultId, startVaultPath)
 	if err != nil {
 		return fmt.Errorf("cannot load key: %v", err)
 	}
@@ -213,7 +215,7 @@ func (ks *KeyStoreDefault) GetEncodablePublicKey() (string, error) {
 // If parentId is not provided, it generates a key without a parent and inserts it into the keystore.
 // The generated vault and associated key are returned on success.
 // If any error occurs during the process, an error is returned.
-func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
+func (ks *KeyStoreDefault) CreateVault(parentId string, path string) (*core.Vault, error) {
 	// Generate vault id
 	id, err := core.NewUid()
 	if err != nil {
@@ -223,7 +225,8 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 	var key *core.KeyInfo
 	if parentId != "" {
 		// If parentId is not empty, generate key in parent vault
-		key, err = ks.GenerateKeyInVault(parentId)
+		parentPath := ks.vaultRepository.GetVaultParentPath(path)
+		key, err = ks.GenerateKeyInVault(parentId, parentPath)
 		if err != nil {
 			return nil, ErrGeneratingKey
 		}
@@ -245,7 +248,7 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 		KeyId:    key.Id,
 		ParentId: parentId,
 	}
-	err = ks.vaultRepository.InsertVault(vault)
+	err = ks.vaultRepository.InsertVault(vault, path)
 	if err != nil {
 		return nil, err
 	}
@@ -256,9 +259,10 @@ func (ks *KeyStoreDefault) CreateVault(parentId string) (*core.Vault, error) {
 // It retrieves the vault key, seals the provided key with the vault key,
 // and adds the sealed key to the vault.
 // If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) error {
+func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, vaultPath string, key core.KeyInfo) error {
 	// Get vault key
-	vKey, err := ks.Get(vault.KeyId, vault.ParentId)
+	parentPath := ks.vaultRepository.GetVaultParentPath(vaultPath)
+	vKey, err := ks.Get(vault.KeyId, vault.ParentId, parentPath)
 	if err != nil {
 		return err
 	}
@@ -268,7 +272,7 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) er
 		return err
 	}
 	// Add sealed key to vault
-	err = ks.vaultRepository.AddKeyToVault(vault, key.Id, sealedKey)
+	err = ks.vaultRepository.AddKeyToVault(vault, vaultPath, key.Id, sealedKey)
 	if err != nil {
 		return err
 	}
@@ -280,20 +284,25 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, key core.KeyInfo) er
 // Then, it moves the vault key to the new parent vault using the MoveKey function.
 // Finally, it updates the vault's parent and saves the changes using the vaultRepository.
 // If any error occurs during the process, it is returned.
-func (ks *KeyStoreDefault) MoveVault(vaultId string, oldParentVaultId string, newParentVaultId string) error {
+func (ks *KeyStoreDefault) MoveVault(vaultId string, oldVaultPath string, newVaultPath string, oldParentVaultId string, oldParentVaultPath string, newParentVaultId string, newParentVaultPath string) error {
 	// Get vault to find vault key id
-	vault, err := ks.vaultRepository.GetVault(vaultId)
+	vault, err := ks.vaultRepository.GetVault(vaultId, oldVaultPath)
 	if err != nil {
 		return err
 	}
 	// Move vault key to new parent
-	err = ks.MoveKey(vault.KeyId, oldParentVaultId, newParentVaultId)
+	err = ks.MoveKey(vault.KeyId, oldParentVaultId, oldParentVaultPath, newParentVaultId, newParentVaultPath)
 	if err != nil {
 		return err
 	}
 	// Update vault parent
 	vault.ParentId = newParentVaultId
-	err = ks.vaultRepository.SaveVault(vault)
+	err = ks.vaultRepository.SaveVault(vault, oldVaultPath)
+	if err != nil {
+		return err
+	}
+	// Move vault
+	err = ks.vaultRepository.MoveVault(oldVaultPath, newVaultPath)
 	if err != nil {
 		return err
 	}
@@ -303,24 +312,24 @@ func (ks *KeyStoreDefault) MoveVault(vaultId string, oldParentVaultId string, ne
 // MoveKey moves a key from one vault to another.
 // It retrieves the key from the old vault, adds it to the new vault, and removes it from the old vault.
 // If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) MoveKey(keyId string, oldVaultId string, newVaultId string) error {
-	key, err := ks.Get(keyId, oldVaultId)
+func (ks *KeyStoreDefault) MoveKey(keyId string, oldVaultId string, oldVaultPath string, newVaultId string, newVaultPath string) error {
+	key, err := ks.Get(keyId, oldVaultId, oldVaultPath)
 	if err != nil {
 		return err
 	}
 
 	// Add key to new vault
-	newVault, err := ks.vaultRepository.GetVault(newVaultId)
+	newVault, err := ks.vaultRepository.GetVault(newVaultId, newVaultPath)
 	if err != nil {
 		return err
 	}
-	err = ks.AddKeyToVault(&newVault, *key)
+	err = ks.AddKeyToVault(&newVault, newVaultPath, *key)
 	if err != nil {
 		return err
 	}
 
 	// Remove key from old vault
-	err = ks.vaultRepository.RemoveKey(keyId, oldVaultId)
+	err = ks.vaultRepository.RemoveKey(keyId, oldVaultId, oldVaultPath)
 	if err != nil {
 		return err
 	}
@@ -330,8 +339,8 @@ func (ks *KeyStoreDefault) MoveKey(keyId string, oldVaultId string, newVaultId s
 
 // GenerateKeyInVault generates a new key and adds it to the specified vault.
 // It returns the generated key information or an error if the operation fails.
-func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, error) {
-	vault, err := ks.vaultRepository.GetVault(vaultId)
+func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string, vaultPath string) (*core.KeyInfo, error) {
+	vault, err := ks.vaultRepository.GetVault(vaultId, vaultPath)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +348,7 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string) (*core.KeyInfo, er
 	if err != nil {
 		return nil, err
 	}
-	err = ks.AddKeyToVault(&vault, *key)
+	err = ks.AddKeyToVault(&vault, vaultPath, *key)
 	if err != nil {
 		return nil, err
 	}
@@ -409,14 +418,14 @@ func (ks *KeyStoreDefault) IsUserJoined() bool {
 // It returns a list of KeyAccess objects representing the users who have access to the key,
 // along with a boolean value indicating whether the access is inherited from a parent vault.
 // If an error occurs during the retrieval process, it is returned as the second value.
-func (ks *KeyStoreDefault) GetKeyAccessList(keyId string, startVaultId string) (core.KeyAccessList, error) {
+func (ks *KeyStoreDefault) GetKeyAccessList(keyId string, startVaultId string, startVaultPath string) (core.KeyAccessList, error) {
 	usersList, err := ks.keyRepository.ListUsers()
 	if err != nil {
 		return nil, err
 	}
 	accessList := make(core.KeyAccessList, 0)
 	for _, user := range usersList {
-		if hasAccess, inherited := ks.GetHasAccessToKey(keyId, startVaultId, user); hasAccess {
+		if hasAccess, inherited := ks.GetHasAccessToKey(keyId, startVaultId, startVaultPath, user); hasAccess {
 			accessList = append(accessList, core.KeyAccess{
 				PublicKey: user,
 				Inherited: inherited,
