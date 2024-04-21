@@ -50,7 +50,7 @@ func (c *Config) InitRepoConfig(repoId string) error {
 	// Set the default values for the configuration
 	c.repoConfig.SetConfigFile(filepath.Join(c.repoPath, "ctb.yaml"))
 	c.repoConfig.Set("id", repoId)
-	c.repoConfig.Set("version", "1.0")
+	c.repoConfig.Set("version", "V1.0")
 	err := c.repoConfig.WriteConfig()
 	if err != nil {
 		return err
