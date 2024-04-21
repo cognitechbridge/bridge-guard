@@ -221,10 +221,10 @@ func (c *LinkRepository) RemoveVaultLink(path string) error {
 
 // getVaultLink retrieves the vault link for the file located at the specified path.
 // It takes a path string as input and returns a core.VaultLink and an error.
-func (c *LinkRepository) GetFileVaultLink(path string) (core.VaultLink, error) {
+func (c *LinkRepository) GetFileVaultLink(path string) (core.VaultLink, string, error) {
 	dir := filepath.Dir(path)
 	vaultLink, err := c.GetVaultLinkByPath(dir)
-	return vaultLink, err
+	return vaultLink, dir, err
 }
 
 // IsValidPath checks if the given path is a valid path.
