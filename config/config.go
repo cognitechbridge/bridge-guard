@@ -50,6 +50,7 @@ func (c *Config) InitRepoConfig(repoId string) error {
 	// Set the default values for the configuration
 	c.repoConfig.SetConfigFile(filepath.Join(c.repoPath, "ctb.yaml"))
 	c.repoConfig.Set("id", repoId)
+	c.repoConfig.Set("version", "1.0")
 	err := c.repoConfig.WriteConfig()
 	if err != nil {
 		return err
@@ -66,4 +67,9 @@ func (c *Config) IsRepositoryConfigExists() bool {
 // GetRepoId returns the id of the repository.
 func (c *Config) GetRepoId() string {
 	return c.repoConfig.GetString("id")
+}
+
+// GetRepoVersion returns the version of the repository.
+func (c *Config) GetRepoVersion() string {
+	return c.repoConfig.GetString("version")
 }
