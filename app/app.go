@@ -56,7 +56,7 @@ func (a *App) initServices() core.AppResult {
 	tempRoot, _ := a.cfg.GetTempRoot()
 
 	// Create the repository paths
-	keysPath := filepath.Join(root, "keys")
+	keysPath := filepath.Join(root, "key-share")
 	objectPath := filepath.Join(root, "object")
 	filesystemPath := filepath.Join(root, "filesystem")
 	cachePath := filepath.Join(tempRoot, "cache")
@@ -155,7 +155,7 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 
 	// Create the repository folders
 	err = errors.Join(
-		os.MkdirAll(filepath.Join(root, "keys"), os.ModePerm),
+		os.MkdirAll(filepath.Join(root, "key-share"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "object"), os.ModePerm),
 		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
