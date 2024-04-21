@@ -74,14 +74,6 @@ func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, err
 	return string(content), err
 }
 
-func (k *KeyRepositoryFile) getDataPath(recipient string) (string, error) {
-	p := filepath.Join(k.rootPath, "data", recipient)
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		return "", ErrUserNotJoined
-	}
-	return p, nil
-}
-
 // DataKeyExist checks if a data key with the given key ID exists for the specified user.
 // It returns true if the data key exists, and false otherwise.
 func (k *KeyRepositoryFile) DataKeyExist(keyId string, userId string) bool {
@@ -98,7 +90,7 @@ func (k *KeyRepositoryFile) DataKeyExist(keyId string, userId string) bool {
 }
 
 func (k *KeyRepositoryFile) IsUserJoined(userId string) bool {
-	p := filepath.Join(k.rootPath, "data", userId)
+	p := filepath.Join(k.rootPath, userId)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		return false
 	} else {
@@ -109,7 +101,7 @@ func (k *KeyRepositoryFile) IsUserJoined(userId string) bool {
 // JoinUser creates a directory for the specified user ID in the key repository.
 // It takes the user ID as a parameter and returns an error if any.
 func (k *KeyRepositoryFile) JoinUser(userId string) error {
-	p := filepath.Join(k.rootPath, "data", userId)
+	p := filepath.Join(k.rootPath, userId)
 	err := os.MkdirAll(p, os.ModePerm)
 	if err != nil {
 		return err
@@ -119,8 +111,7 @@ func (k *KeyRepositoryFile) JoinUser(userId string) error {
 
 // ListUsers returns a list of users stored in the key repository.
 func (k *KeyRepositoryFile) ListUsers() ([]string, error) {
-	p := filepath.Join(k.rootPath, "data")
-	files, err := os.ReadDir(p)
+	files, err := os.ReadDir(k.rootPath)
 	if err != nil {
 		return nil, err
 	}
@@ -147,4 +138,12 @@ func (k *KeyRepositoryFile) DeleteDataKey(keyID string, userId string) error {
 		return err
 	}
 	return nil
+}
+
+func (k *KeyRepositoryFile) getDataPath(recipient string) (string, error) {
+	p := filepath.Join(k.rootPath, recipient)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return "", ErrUserNotJoined
+	}
+	return p, nil
 }
