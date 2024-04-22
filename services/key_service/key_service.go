@@ -285,7 +285,8 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, vaultPath string, ke
 // Finally, it updates the vault's parent and saves the changes using the vaultRepository.
 // If any error occurs during the process, it is returned.
 func (ks *KeyStoreDefault) MoveVault(vaultId string, oldVaultPath string, newVaultPath string, oldParentVaultId string, oldParentVaultPath string, newParentVaultId string, newParentVaultPath string) error {
-	if newVaultPath != oldVaultPath {
+	// Check if old and new parent vault paths are the same
+	if newParentVaultPath != oldParentVaultPath {
 		// Get vault to find vault key id
 		vault, err := ks.vaultRepository.GetVault(vaultId, oldVaultPath)
 		if err != nil {
