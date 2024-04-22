@@ -158,8 +158,21 @@ func (c *LinkRepository) Rename(oldPath string, newPath string) error {
 // If the directory already exists, it does nothing.
 // It returns an error if there was a problem creating the directory.
 func (c *LinkRepository) CreateDir(path string) (err error) {
+	// Create the directory
 	absPath := filepath.Join(c.rootPath, path)
 	err = os.MkdirAll(absPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	// Create the .object directory
+	objectPath := filepath.Join(absPath, ".object")
+	err = os.MkdirAll(objectPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	// Create the .vault directory
+	vaultPath := filepath.Join(absPath, ".vault")
+	err = os.MkdirAll(vaultPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
