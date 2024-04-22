@@ -103,8 +103,8 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 	var infos []fs.FileInfo
 	//Iterate through sub files
 	for _, subFile := range subFiles {
-		//Ignore .vault files
-		if subFile.Name() == ".vault" {
+		//Ignore .vault and .object folders
+		if subFile.Name() == ".vault" || subFile.Name() == ".object" {
 			continue
 		}
 		if subFile.IsDir() {
