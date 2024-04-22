@@ -45,8 +45,8 @@ func NewService(cache *repositories.ObjectCacheRepository, objectRepo *repositor
 // Read reads the object with the specified ID from the object service.
 // It populates the provided buffer with the object data starting from the specified offset.
 // Returns the number of bytes read and any error encountered.
-func (o *Service) Read(id string, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
-	err = o.availableInCache(id, key)
+func (o *Service) Read(id string, dir string, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
+	err = o.availableInCache(id, dir, key)
 	if err != nil {
 		return 0, err
 	}
@@ -76,6 +76,10 @@ func (o *Service) Move(oldId string, newId string) (err error) {
 	return o.objectCacheRepo.Move(oldId, newId)
 }
 
+func (o *Service) ChangeDir(id string, oldDir string, newDir string) (err error) {
+	return o.objectRepo.ChangeDir(id, oldDir, newDir)
+}
+
 // Truncate truncates the object with the specified ID to the given size.
 // It returns an error if the truncation operation fails.
 func (o *Service) Truncate(id string, size int64) (err error) {
@@ -88,21 +92,21 @@ func (o *Service) Truncate(id string, size int64) (err error) {
 // If the object is not in the repository, it downloads the object and stores it in the repository.
 // Finally, it decrypts the object and stores it in the cache.
 // It returns an error if any error occurs during the process.
-func (o *Service) availableInCache(id string, key *core.KeyInfo) error {
+func (o *Service) availableInCache(id string, dir string, key *core.KeyInfo) error {
 	//check if object is already in cache, if yes, return
 	if o.objectCacheRepo.IsInCache(id) {
 		return nil
 	}
 	//if not, check if object is in repo, if not, download it
-	if !o.objectRepo.IsInRepo(id) {
+	if !o.objectRepo.IsInRepo(id, dir) {
 		//download object
-		err := o.downloadToObject(id)
+		err := o.downloadToObject(id, dir)
 		if err != nil {
 			return err
 		}
 	}
 	//decrypt object to cache
-	err := o.decryptToCache(id, key)
+	err := o.decryptToCache(id, dir, key)
 	if err != nil {
 		return err
 	}
@@ -114,9 +118,9 @@ func (o *Service) availableInCache(id string, key *core.KeyInfo) error {
 // and writes the decrypted object to the cache using the created writer and reader.
 // The decrypted object is written to the cache using the object's ID as the cache key.
 // If any error occurs during the decryption or writing process, it is returned.
-func (o *Service) decryptToCache(id string, key *core.KeyInfo) error {
+func (o *Service) decryptToCache(id string, objectPath string, key *core.KeyInfo) error {
 	//open object from repo
-	openObject, _ := o.objectRepo.OpenObject(id)
+	openObject, _ := o.objectRepo.OpenObject(id, objectPath)
 	defer openObject.Close()
 	//Create an unencrypted reader from encrypted file (reader interface) and the key
 	decryptedReader, _ := o.decryptReader(openObject, key)
@@ -131,9 +135,9 @@ func (o *Service) decryptToCache(id string, key *core.KeyInfo) error {
 	return err
 }
 
-func (o *Service) downloadToObject(id string) error {
+func (o *Service) downloadToObject(id string, objectPath string) error {
 	//create the file in the repository
-	file, _ := o.objectRepo.CreateFile(id)
+	file, _ := o.objectRepo.CreateFile(id, objectPath)
 	//download the object and store it in the repository
 	err := o.downloader.Download(id, file)
 	defer file.Close()
@@ -167,9 +171,9 @@ func (o *Service) decryptReader(reader io.Reader, key *core.KeyInfo) (read io.Re
 // GetKeyIdByObjectId retrieves the key ID associated with the given object ID.
 // It opens the object from the repository, parses the encrypted file, and returns the key ID from the header.
 // If any error occurs during the process, it returns an empty string and the error.
-func (o *Service) GetKeyIdByObjectId(id string) (string, error) {
+func (o *Service) GetKeyIdByObjectId(id string, dir string) (string, error) {
 	//open object from repo
-	reader, err := o.objectRepo.OpenObject(id)
+	reader, err := o.objectRepo.OpenObject(id, dir)
 	if err != nil {
 		return "", err
 	}
@@ -185,8 +189,8 @@ func (o *Service) GetKeyIdByObjectId(id string) (string, error) {
 
 // Commit adds the object to the encrypt channel queue.
 // It takes a link and a key as parameters and returns an error if any.
-func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
+func (o *Service) Commit(link core.Link, dir string, key *core.KeyInfo) error {
 	// Add the object to the encrypt channel queue
-	o.encryptChan <- encryptChanItem{id: link.ObjectId, key: key}
+	o.encryptChan <- encryptChanItem{id: link.ObjectId, dir: dir, key: key}
 	return nil
 }

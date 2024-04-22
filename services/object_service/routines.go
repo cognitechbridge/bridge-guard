@@ -31,7 +31,7 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	}
 
 	//Create output file
-	file, err := o.objectRepo.CreateFile(e.id)
+	file, err := o.objectRepo.CreateFile(e.id, e.dir)
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
@@ -58,7 +58,7 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	fmt.Printf("File Encrypted: %s \n", e.id)
 
 	//Trigger upload
-	o.uploadChan <- uploadChanItem{id: e.id}
+	o.uploadChan <- uploadChanItem{id: e.id, dir: e.dir}
 
 	return nil
 }
@@ -69,7 +69,7 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 func (o *Service) StartUploadRoutine() {
 	for {
 		item := <-o.uploadChan
-		err := o.upload(item.id)
+		err := o.upload(item.id, item.dir)
 		if err != nil {
 			continue
 		}
@@ -77,12 +77,9 @@ func (o *Service) StartUploadRoutine() {
 }
 
 // upload uploads the file with the specified ID.
-func (o *Service) upload(id string) error {
-	// Get the path of the object using the object repository
-	path, err := o.objectRepo.GetPath(id)
-	if err != nil {
-		return err
-	}
+func (o *Service) upload(id string, objectPath string) error {
+	// Get the dir of the object using the object repository
+	path := o.objectRepo.GetPath(id, objectPath)
 	// Open the file
 	file, err := os.Open(path)
 	if err != nil {

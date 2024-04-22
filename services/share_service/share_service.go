@@ -3,6 +3,7 @@ package share_service
 import (
 	"ctb-cli/core"
 	"ctb-cli/repositories"
+	"path/filepath"
 )
 
 type Service struct {
@@ -69,7 +70,8 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 		if err != nil {
 			return "", "", "", err
 		}
-		keyId, err = s.objectService.GetKeyIdByObjectId(link.ObjectId)
+		dir := filepath.Dir(path)
+		keyId, err = s.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
 		if err != nil {
 			return "", "", "", err
 		}

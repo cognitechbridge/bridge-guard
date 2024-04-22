@@ -235,6 +235,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 // Read reads data from a file at the specified path into the provided buffer starting from the given offset.
 // It returns the number of bytes read and any error encountered.
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
+	dir := filepath.Dir(path)
 	//Get file link
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
@@ -246,7 +247,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Get file key id
-	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId)
+	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
 	if err != nil {
 		return 0, err
 	}
@@ -256,7 +257,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Read file
-	return f.objectService.Read(link.ObjectId, buff, ofst, key)
+	return f.objectService.Read(link.ObjectId, dir, buff, ofst, key)
 }
 
 // Resize resizes a file to the specified size.
@@ -322,7 +323,8 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		if err != nil {
 			return err
 		}
-		keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId)
+		oldDir := filepath.Dir(oldPath)
+		keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId, oldDir)
 		if err != nil {
 			return err
 		}
@@ -331,6 +333,16 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		if err != nil {
 			return err
 		}
+		//If the file moved to a different directory, change the directory of the file in the object service
+		newDir := filepath.Dir(newPath)
+		if newDir != oldDir {
+			//Change the directory of the file in the object service
+			err = f.objectService.ChangeDir(obj.ObjectId, oldDir, newDir)
+			if err != nil {
+				return err
+			}
+		}
+
 	}
 	return f.linkRepo.Rename(oldPath, newPath)
 }
@@ -358,7 +370,8 @@ func (f *FileSystem) Commit(path string) error {
 			return err
 		}
 		//Commit changes
-		return f.objectService.Commit(link, keyInfo)
+		dir := filepath.Dir(path)
+		return f.objectService.Commit(link, dir, keyInfo)
 	}
 	return nil
 }
@@ -400,7 +413,8 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 		if err != nil {
 			return 0000
 		}
-		keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId)
+		dir := filepath.Dir(path)
+		keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
 		if err != nil {
 			return 0000
 		}

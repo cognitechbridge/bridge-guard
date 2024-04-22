@@ -3,12 +3,12 @@ package core
 import "io/fs"
 
 type ObjectService interface {
-	Read(id string, buff []byte, ofst int64, key *KeyInfo) (int, error)
+	Read(id string, dir string, buff []byte, ofst int64, key *KeyInfo) (int, error)
 	Write(id string, buff []byte, ofst int64) (int, error)
 	Create(id string) error
 	Move(oldId string, newId string) error
 	Truncate(id string, size int64) error
-	GetKeyIdByObjectId(id string) (string, error)
+	GetKeyIdByObjectId(id string, dir string) (string, error)
 }
 
 type FileSystemService interface {
