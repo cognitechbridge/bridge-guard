@@ -57,7 +57,7 @@ func (a *App) initServices() core.AppResult {
 
 	// Create the repository paths
 	keysPath := filepath.Join(root, "key-share")
-	objectPath := filepath.Join(root, "object")
+	objectPath := filepath.Join(root, "filesystem")
 	filesystemPath := filepath.Join(root, "filesystem")
 	cachePath := filepath.Join(tempRoot, "cache")
 	vaultPath := filepath.Join(root, "vault")
