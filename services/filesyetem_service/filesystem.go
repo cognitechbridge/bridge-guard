@@ -58,18 +58,18 @@ func (f *FileSystem) CreateDir(path string) error {
 // It uses the key service to create the vault and inserts the vault link into the link repository.
 // Returns an error if any operation fails.
 func (f *FileSystem) CreateVaultInPath(path string) error {
-	parentKeyId := ""
+	parentVaultId := ""
 	//If the path is not the root directory, get the parent vault id
 	if filepath.Clean(path) != string(filepath.Separator) {
 		parentPath := filepath.Dir(path)
-		vaultLink, _, err := f.linkRepo.GetFileVaultLink(parentPath)
+		vaultLink, err := f.linkRepo.GetVaultLinkByPath(parentPath)
 		if err != nil {
 			return err
 		}
-		parentKeyId = vaultLink.VaultId
+		parentVaultId = vaultLink.VaultId
 	}
 	//Create vault in the parent vault using the key service
-	vault, err := f.keyService.CreateVault(parentKeyId, path)
+	vault, err := f.keyService.CreateVault(parentVaultId, path)
 	if err != nil {
 		return err
 	}
@@ -293,46 +293,43 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 // If the path is a file, the file key is moved to the new vault.
 // Returns an error if any operation fails.
 func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
-	//If the oldPath and newPath are in different directories, move the file or directory to the new location
-	if filepath.Dir(oldPath) != filepath.Dir(newPath) {
-		//Check if the path is a directory
-		isDir := f.linkRepo.IsDir(oldPath)
-		//Get the vault links for the oldPath and newPath
-		oldVaultPath := filepath.Dir(oldPath)
-		oldVault, err := f.linkRepo.GetVaultLinkByPath(oldVaultPath)
+	//Check if the path is a directory
+	isDir := f.linkRepo.IsDir(oldPath)
+	//Get the vault links for the oldPath and newPath
+	oldVaultPath := filepath.Dir(oldPath)
+	oldVault, err := f.linkRepo.GetVaultLinkByPath(oldVaultPath)
+	if err != nil {
+		return err
+	}
+	newVaultPath := filepath.Dir(newPath)
+	newVault, err := f.linkRepo.GetVaultLinkByPath(newVaultPath)
+	if err != nil {
+		return err
+	}
+	if isDir {
+		//If the path is a directory, move the vault to the new parent vault
+		vault, err := f.linkRepo.GetVaultLinkByPath(oldPath)
 		if err != nil {
 			return err
 		}
-		newVaultPath := filepath.Dir(newPath)
-		newVault, err := f.linkRepo.GetVaultLinkByPath(newVaultPath)
+		err = f.keyService.MoveVault(vault.VaultId, oldPath, newPath, oldVault.VaultId, oldVaultPath, newVault.VaultId, newVaultPath)
 		if err != nil {
 			return err
 		}
-		if isDir {
-			//If the path is a directory, move the vault to the new parent vault
-			vault, err := f.linkRepo.GetVaultLinkByPath(oldPath)
-			if err != nil {
-				return err
-			}
-			err = f.keyService.MoveVault(vault.VaultId, oldPath, newPath, oldVault.VaultId, oldVaultPath, newVault.VaultId, newVaultPath)
-			if err != nil {
-				return err
-			}
-		} else {
-			//If the path is a file, move the file key to the new vault
-			obj, err := f.linkRepo.GetByPath(oldPath)
-			if err != nil {
-				return err
-			}
-			keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId)
-			if err != nil {
-				return err
-			}
-			//Move the file key to the new vault
-			err = f.keyService.MoveKey(keyId, oldVault.VaultId, oldVaultPath, newVault.VaultId, newVaultPath)
-			if err != nil {
-				return err
-			}
+	} else {
+		//If the path is a file, move the file key to the new vault
+		obj, err := f.linkRepo.GetByPath(oldPath)
+		if err != nil {
+			return err
+		}
+		keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId)
+		if err != nil {
+			return err
+		}
+		//Move the file key to the new vault
+		err = f.keyService.MoveKey(keyId, oldVault.VaultId, oldVaultPath, newVault.VaultId, newVaultPath)
+		if err != nil {
+			return err
 		}
 	}
 	return f.linkRepo.Rename(oldPath, newPath)
