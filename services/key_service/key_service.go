@@ -285,24 +285,26 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, vaultPath string, ke
 // Finally, it updates the vault's parent and saves the changes using the vaultRepository.
 // If any error occurs during the process, it is returned.
 func (ks *KeyStoreDefault) MoveVault(vaultId string, oldVaultPath string, newVaultPath string, oldParentVaultId string, oldParentVaultPath string, newParentVaultId string, newParentVaultPath string) error {
-	// Get vault to find vault key id
-	vault, err := ks.vaultRepository.GetVault(vaultId, oldVaultPath)
-	if err != nil {
-		return err
-	}
-	// Move vault key to new parent
-	err = ks.MoveKey(vault.KeyId, oldParentVaultId, oldParentVaultPath, newParentVaultId, newParentVaultPath)
-	if err != nil {
-		return err
-	}
-	// Update vault parent
-	vault.ParentId = newParentVaultId
-	err = ks.vaultRepository.SaveVault(vault, oldVaultPath)
-	if err != nil {
-		return err
+	if newVaultPath != oldVaultPath {
+		// Get vault to find vault key id
+		vault, err := ks.vaultRepository.GetVault(vaultId, oldVaultPath)
+		if err != nil {
+			return err
+		}
+		// Move vault key to new parent
+		err = ks.MoveKey(vault.KeyId, oldParentVaultId, oldParentVaultPath, newParentVaultId, newParentVaultPath)
+		if err != nil {
+			return err
+		}
+		// Update vault parent
+		vault.ParentId = newParentVaultId
+		err = ks.vaultRepository.SaveVault(vault, oldVaultPath)
+		if err != nil {
+			return err
+		}
 	}
 	// Move vault
-	err = ks.vaultRepository.MoveVault(oldVaultPath, newVaultPath)
+	err := ks.vaultRepository.MoveVault(oldVaultPath, newVaultPath)
 	if err != nil {
 		return err
 	}
@@ -313,11 +315,15 @@ func (ks *KeyStoreDefault) MoveVault(vaultId string, oldVaultPath string, newVau
 // It retrieves the key from the old vault, adds it to the new vault, and removes it from the old vault.
 // If any error occurs during the process, it returns the error.
 func (ks *KeyStoreDefault) MoveKey(keyId string, oldVaultId string, oldVaultPath string, newVaultId string, newVaultPath string) error {
+	// Check if old and new vault paths are the same
+	if oldVaultPath == newVaultPath {
+		return nil
+	}
+	// Get key from old vault
 	key, err := ks.Get(keyId, oldVaultId, oldVaultPath)
 	if err != nil {
 		return err
 	}
-
 	// Add key to new vault
 	newVault, err := ks.vaultRepository.GetVault(newVaultId, newVaultPath)
 	if err != nil {

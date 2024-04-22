@@ -32,7 +32,7 @@ func NewVaultRepositoryFile(rootPath string) *VaultRepositoryFile {
 }
 
 func (k *VaultRepositoryFile) GetVault(vaultId string, vaultPath string) (core.Vault, error) {
-	p := filepath.Join(k.rootPath, vaultPath, vaultId)
+	p := k.vaultFile(vaultId, vaultPath)
 	content, err := os.ReadFile(p)
 	if err != nil {
 		return core.Vault{}, err
@@ -54,7 +54,7 @@ func (k *VaultRepositoryFile) InsertVault(vault core.Vault, vaultPath string) er
 }
 
 func (k *VaultRepositoryFile) SaveVault(vault core.Vault, vaultPath string) (err error) {
-	p := filepath.Join(k.rootPath, vaultPath, vault.Id)
+	p := k.vaultFile(vault.Id, vaultPath)
 	err = os.MkdirAll(filepath.Dir(p), os.ModePerm)
 	if err != nil {
 		return err
@@ -113,11 +113,24 @@ func (k *VaultRepositoryFile) GetVaultParentPath(vaultPath string) string {
 }
 
 func (k *VaultRepositoryFile) MoveVault(oldVaultPath string, newVaultPath string) error {
-	oldPath := filepath.Join(k.rootPath, oldVaultPath)
-	newPath := filepath.Join(k.rootPath, newVaultPath)
+	oldPath := k.vaultFolder(oldVaultPath)
+	newPath := k.vaultFolder(newVaultPath)
+	//@Todo: Remove since the new path is already created
+	err := os.MkdirAll(filepath.Dir(newPath), os.ModePerm)
+	if err != nil {
+		return err
+	}
 	return os.Rename(oldPath, newPath)
 }
 
+func (k *VaultRepositoryFile) vaultFolder(vaultPath string) string {
+	return filepath.Join(k.rootPath, vaultPath, ".vault")
+}
+
 func (k *VaultRepositoryFile) vaultKeyFolder(vaultId string, vaultPath string) string {
-	return filepath.Join(k.rootPath, vaultPath, "K_"+vaultId)
+	return filepath.Join(k.vaultFolder(vaultPath), "."+vaultId)
+}
+
+func (k *VaultRepositoryFile) vaultFile(vaultId string, vaultPath string) string {
+	return filepath.Join(k.vaultFolder(vaultPath), vaultId)
 }
