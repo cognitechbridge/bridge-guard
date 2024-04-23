@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"ctb-cli/core"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,6 +18,10 @@ type VaultRepository interface {
 	RemoveKey(keyId string, vaultId string, vaultPath string) error
 	GetVaultParentPath(vaultPath string) string
 	MoveVault(oldVaultPath string, newVaultPath string) error
+	GetVaultLinkByPath(path string) (core.VaultLink, error)
+	InsertVaultLink(path string, link core.VaultLink) error
+	RemoveVaultLink(path string) error
+	GetFileVaultLink(path string) (core.VaultLink, string, error)
 }
 
 type VaultRepositoryFile struct {
@@ -123,14 +128,79 @@ func (k *VaultRepositoryFile) MoveVault(oldVaultPath string, newVaultPath string
 	return os.Rename(oldPath, newPath)
 }
 
+// GetVaultLinkByPath retrieves the vault link by the given path.
+// It reads the vault link file located at the specified path and returns the corresponding VaultLink object.
+// If an error occurs during file reading or unmarshaling, it returns an empty VaultLink object and the error.
+func (k *VaultRepositoryFile) GetVaultLinkByPath(path string) (core.VaultLink, error) {
+	// Read the vault link file
+	p := k.getVaultLinkPath(path)
+	js, err := os.ReadFile(p)
+	if err != nil {
+		return core.VaultLink{}, fmt.Errorf("error reading vault link file: %v", err)
+	}
+	var link core.VaultLink
+	err = json.Unmarshal(js, &link)
+	if err != nil {
+		return core.VaultLink{}, fmt.Errorf("error unmarshalink vault link file: %v", err)
+	}
+	return link, nil
+}
+
+// RemoveVaultLink removes the vault link file for the specified path.
+// It takes the path of the link file as input and returns an error if any.
+func (k *VaultRepositoryFile) RemoveVaultLink(path string) error {
+	absPath := k.getVaultLinkPath(path)
+	err := os.Remove(absPath)
+	if err != nil {
+		return ErrRemovingVaultLinkFile
+	}
+	return nil
+}
+
+// getVaultLink retrieves the vault link for the file located at the specified path.
+// It takes a path string as input and returns a core.VaultLink and an error.
+func (k *VaultRepositoryFile) GetFileVaultLink(path string) (core.VaultLink, string, error) {
+	dir := filepath.Dir(path)
+	vaultLink, err := k.GetVaultLinkByPath(dir)
+	return vaultLink, dir, err
+}
+
+// InsertVaultLink inserts a VaultLink into the specified path.
+// It creates the necessary directories and writes the link data to a file.
+// The link data is serialized as JSON before writing to the file.
+// If any error occurs during the process, it is returned.
+func (k *VaultRepositoryFile) InsertVaultLink(path string, link core.VaultLink) error {
+	absPath := k.getVaultLinkPath(path)
+	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	file, err := os.OpenFile(absPath, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	js, _ := json.Marshal(link)
+	_, _ = file.Write(js)
+	return nil
+}
+
+// vaultFolder returns the path to the vault folder for the specified path.
 func (k *VaultRepositoryFile) vaultFolder(vaultPath string) string {
 	return filepath.Join(k.rootPath, vaultPath, ".vault")
 }
 
+// getVaultLinkPath returns the path to the vault link file for the specified path.
+func (k *VaultRepositoryFile) getVaultLinkPath(path string) string {
+	return filepath.Join(k.vaultFolder(path), ".link")
+}
+
+// vaultKeyFolder returns the path to the key folder for the specified vault ID and path.
 func (k *VaultRepositoryFile) vaultKeyFolder(vaultId string, vaultPath string) string {
 	return filepath.Join(k.vaultFolder(vaultPath), "."+vaultId)
 }
 
+// vaultFile returns the path to the vault file for the specified vault ID and path.
 func (k *VaultRepositoryFile) vaultFile(vaultId string, vaultPath string) string {
 	return filepath.Join(k.vaultFolder(vaultPath), vaultId)
 }

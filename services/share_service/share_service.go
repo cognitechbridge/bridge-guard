@@ -54,7 +54,7 @@ func (s *Service) ShareByPublicKey(path string, publicKeyEncoded string) error {
 func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string, startVaultPath string, err error) {
 	isDir := s.linkRepository.IsDir(path)
 	if isDir {
-		link, err := s.linkRepository.GetVaultLinkByPath(path)
+		link, err := s.vaultRepository.GetVaultLinkByPath(path)
 		if err != nil {
 			return "", "", "", err
 		}
@@ -75,7 +75,7 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 		if err != nil {
 			return "", "", "", err
 		}
-		vault, vaultPath, err := s.linkRepository.GetFileVaultLink(path)
+		vault, vaultPath, err := s.vaultRepository.GetFileVaultLink(path)
 		if err != nil {
 			return "", "", "", err
 		}
