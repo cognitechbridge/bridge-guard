@@ -309,11 +309,7 @@ func (ks *KeyStoreDefault) MoveVault(vaultId string, oldVaultPath string, newVau
 			return err
 		}
 	}
-	// Move vault
-	err := ks.vaultRepository.MoveVault(oldVaultPath, newVaultPath)
-	if err != nil {
-		return err
-	}
+	// If old and new parent vault paths are the same, nothing needs to be done and the function returns nil
 	return nil
 }
 
