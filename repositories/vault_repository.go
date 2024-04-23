@@ -16,7 +16,7 @@ type VaultRepository interface {
 	AddKeyToVault(vault *core.Vault, vaultPath string, keyId string, serialized string) error
 	GetKey(keyId string, vaultId string, vaultPath string) (string, bool)
 	RemoveKey(keyId string, vaultId string, vaultPath string) error
-	GetVaultParentPath(vaultPath string) string
+	GetVaultParent(vaultPath string) (string, core.VaultLink, error)
 	MoveVault(oldVaultPath string, newVaultPath string) error
 	GetVaultLinkByPath(path string) (core.VaultLink, error)
 	InsertVaultLink(path string, link core.VaultLink) error
@@ -113,8 +113,16 @@ func (k *VaultRepositoryFile) RemoveKey(keyId string, vaultId string, vaultPath 
 	return os.Remove(path)
 }
 
-func (k *VaultRepositoryFile) GetVaultParentPath(vaultPath string) string {
-	return filepath.Dir(vaultPath)
+func (k *VaultRepositoryFile) GetVaultParent(vaultPath string) (string, core.VaultLink, error) {
+	if filepath.Clean(vaultPath) == string(filepath.Separator) {
+		return "", core.VaultLink{}, nil
+	}
+	parentPath := filepath.Dir(vaultPath)
+	parentLink, err := k.GetVaultLinkByPath(parentPath)
+	if err != nil {
+		return "", core.VaultLink{}, err
+	}
+	return parentPath, parentLink, nil
 }
 
 func (k *VaultRepositoryFile) MoveVault(oldVaultPath string, newVaultPath string) error {
