@@ -15,6 +15,7 @@ import (
 type FileSystem struct {
 	objectService object_service.Service
 	linkRepo      *repositories.LinkRepository
+	vaultRepo     repositories.VaultRepository
 	keyService    core.KeyService
 
 	openToWrite map[string]openToWrite
@@ -29,10 +30,11 @@ type openToWrite struct {
 var _ core.FileSystemService = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(keyService core.KeyService, objectSerivce object_service.Service, linkRepository *repositories.LinkRepository) *FileSystem {
+func NewFileSystem(keyService core.KeyService, objectSerivce object_service.Service, linkRepository *repositories.LinkRepository, vaultRepo repositories.VaultRepository) *FileSystem {
 	fileSys := FileSystem{
 		objectService: objectSerivce,
 		linkRepo:      linkRepository,
+		vaultRepo:     vaultRepo,
 		keyService:    keyService,
 		openToWrite:   make(map[string]openToWrite),
 	}
@@ -65,7 +67,7 @@ func (f *FileSystem) CreateVaultInPath(path string) error {
 	//If the path is not the root directory, get the parent vault id
 	if filepath.Clean(path) != string(filepath.Separator) {
 		parentPath := filepath.Dir(path)
-		vaultLink, err := f.linkRepo.GetVaultLinkByPath(parentPath)
+		vaultLink, err := f.vaultRepo.GetVaultLinkByPath(parentPath)
 		if err != nil {
 			return err
 		}
@@ -78,7 +80,7 @@ func (f *FileSystem) CreateVaultInPath(path string) error {
 	}
 	//Create vault link
 	link := core.NewVaultLink(vault.Id, vault.KeyId)
-	err = f.linkRepo.InsertVaultLink(path, link)
+	err = f.vaultRepo.InsertVaultLink(path, link)
 	if err != nil {
 		return err
 	}
@@ -150,7 +152,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 // If any error occurs during the removal process, it is returned.
 func (f *FileSystem) RemoveDir(path string) error {
 	//Remove vault link
-	err := f.linkRepo.RemoveVaultLink(path)
+	err := f.vaultRepo.RemoveVaultLink(path)
 	if err != nil {
 		return err
 	}
@@ -245,7 +247,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Get file vault link
-	vaultLink, vaultPath, err := f.linkRepo.GetFileVaultLink(path)
+	vaultLink, vaultPath, err := f.vaultRepo.GetFileVaultLink(path)
 	if err != nil {
 		return 0, err
 	}
@@ -301,18 +303,18 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	isDir := f.linkRepo.IsDir(oldPath)
 	//Get the vault links for the oldPath and newPath
 	oldVaultPath := filepath.Dir(oldPath)
-	oldVault, err := f.linkRepo.GetVaultLinkByPath(oldVaultPath)
+	oldVault, err := f.vaultRepo.GetVaultLinkByPath(oldVaultPath)
 	if err != nil {
 		return err
 	}
 	newVaultPath := filepath.Dir(newPath)
-	newVault, err := f.linkRepo.GetVaultLinkByPath(newVaultPath)
+	newVault, err := f.vaultRepo.GetVaultLinkByPath(newVaultPath)
 	if err != nil {
 		return err
 	}
 	if isDir {
 		//If the path is a directory, move the vault to the new parent vault
-		vault, err := f.linkRepo.GetVaultLinkByPath(oldPath)
+		vault, err := f.vaultRepo.GetVaultLinkByPath(oldPath)
 		if err != nil {
 			return err
 		}
@@ -363,7 +365,7 @@ func (f *FileSystem) Commit(path string) error {
 		delete(f.openToWrite, path)
 		//Get vault link
 		link, _ := f.linkRepo.GetByPath(path)
-		vaultLink, vaultPath, err := f.linkRepo.GetFileVaultLink(path)
+		vaultLink, vaultPath, err := f.vaultRepo.GetFileVaultLink(path)
 		if err != nil {
 			return err
 		}
@@ -401,7 +403,7 @@ func (f *FileSystem) OpenInWrite(path string) error {
 // If there are, it returns 0555, otherwise it returns 0000.
 func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 	//Get vault link
-	vaultLink, vaultPath, err := f.linkRepo.GetFileVaultLink(path)
+	vaultLink, vaultPath, err := f.vaultRepo.GetFileVaultLink(path)
 	if err != nil {
 		return 0000
 	}
