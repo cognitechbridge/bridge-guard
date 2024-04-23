@@ -10,9 +10,8 @@ var (
 )
 
 type Vault struct {
-	Id       string `json:"id"`
-	KeyId    string `json:"keyId"`
-	ParentId string `json:"parentId"`
+	Id    string `json:"id"`
+	KeyId string `json:"keyId"`
 }
 
 func (v *Vault) Marshal() ([]byte, error) {

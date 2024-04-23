@@ -58,13 +58,13 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 		if err != nil {
 			return "", "", "", err
 		}
-		vault, err := s.vaultRepository.GetVault(link.VaultId, path)
+		keyId = link.KeyId
+		parentVaultPath, parentVaultLink, err := s.vaultRepository.GetVaultParent(path)
 		if err != nil {
 			return "", "", "", err
 		}
-		keyId = link.KeyId
-		startVaultId = vault.ParentId
-		startVaultPath = path
+		startVaultId = parentVaultLink.VaultId
+		startVaultPath = parentVaultPath
 	} else {
 		link, err := s.linkRepository.GetByPath(path)
 		if err != nil {
