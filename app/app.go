@@ -59,8 +59,8 @@ func (a *App) initServices() core.AppResult {
 	keysPath := filepath.Join(root, "key-share")
 	objectPath := filepath.Join(root, "filesystem")
 	filesystemPath := filepath.Join(root, "filesystem")
+	vaultPath := filepath.Join(root, "filesystem")
 	cachePath := filepath.Join(tempRoot, "cache")
-	vaultPath := filepath.Join(root, "vault")
 
 	// Check if the paths exist
 	err := errors.Join(
@@ -158,7 +158,6 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 		os.MkdirAll(filepath.Join(root, "key-share"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
 		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
-		os.MkdirAll(filepath.Join(root, "vault"), os.ModePerm),
 	)
 	if err != nil {
 		return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
