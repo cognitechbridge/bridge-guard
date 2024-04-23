@@ -157,7 +157,6 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	err = errors.Join(
 		os.MkdirAll(filepath.Join(root, "key-share"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
-		os.MkdirAll(filepath.Join(root, "object"), os.ModePerm),
 		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "vault"), os.ModePerm),
 	)
