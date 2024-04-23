@@ -17,7 +17,6 @@ type VaultRepository interface {
 	GetKey(keyId string, vaultId string, vaultPath string) (string, bool)
 	RemoveKey(keyId string, vaultId string, vaultPath string) error
 	GetVaultParent(vaultPath string) (string, core.VaultLink, error)
-	MoveVault(oldVaultPath string, newVaultPath string) error
 	GetVaultLinkByPath(path string) (core.VaultLink, error)
 	InsertVaultLink(path string, link core.VaultLink) error
 	RemoveVaultLink(path string) error
@@ -60,10 +59,6 @@ func (k *VaultRepositoryFile) InsertVault(vault core.Vault, vaultPath string) er
 
 func (k *VaultRepositoryFile) SaveVault(vault core.Vault, vaultPath string) (err error) {
 	p := k.vaultFile(vault.Id, vaultPath)
-	err = os.MkdirAll(filepath.Dir(p), os.ModePerm)
-	if err != nil {
-		return err
-	}
 	file, err := os.Create(p)
 	if err != nil {
 		return err
@@ -123,17 +118,6 @@ func (k *VaultRepositoryFile) GetVaultParent(vaultPath string) (string, core.Vau
 		return "", core.VaultLink{}, err
 	}
 	return parentPath, parentLink, nil
-}
-
-func (k *VaultRepositoryFile) MoveVault(oldVaultPath string, newVaultPath string) error {
-	oldPath := k.vaultFolder(oldVaultPath)
-	newPath := k.vaultFolder(newVaultPath)
-	//@Todo: Remove since the new path is already created
-	err := os.MkdirAll(filepath.Dir(newPath), os.ModePerm)
-	if err != nil {
-		return err
-	}
-	return os.Rename(oldPath, newPath)
 }
 
 // GetVaultLinkByPath retrieves the vault link by the given path.
