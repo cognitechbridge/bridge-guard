@@ -51,7 +51,7 @@ func (c *LinkRepository) Create(path string, link core.Link) error {
 // The link data is serialized as JSON before writing to the file.
 // If any error occurs during the process, it is returned.
 func (c *LinkRepository) InsertVaultLink(path string, link core.VaultLink) error {
-	absPath := filepath.Join(c.rootPath, path, ".vault")
+	absPath := c.getVaultPath(path)
 	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (c *LinkRepository) GetVaultLinkByPath(path string) (core.VaultLink, error)
 		return core.VaultLink{}, ErrPathIsNotDir
 	}
 	// Read the vault link file
-	p := filepath.Join(c.rootPath, path, ".vault")
+	p := c.getVaultPath(path)
 	js, err := os.ReadFile(p)
 	if err != nil {
 		return core.VaultLink{}, fmt.Errorf("error reading vault link file: %v", err)
@@ -87,6 +87,11 @@ func (c *LinkRepository) GetVaultLinkByPath(path string) (core.VaultLink, error)
 		return core.VaultLink{}, fmt.Errorf("error unmarshalink vault link file: %v", err)
 	}
 	return link, nil
+}
+
+// getVaultPath returns the path to the vault link file for the specified path.
+func (c *LinkRepository) getVaultPath(path string) string {
+	return filepath.Join(c.rootPath, path, ".vault", ".link")
 }
 
 // Update updates the link file at the specified path with the provided link data.
@@ -224,7 +229,7 @@ func (c *LinkRepository) IsFile(path string) bool {
 // RemoveVaultLink removes the vault link file for the specified path.
 // It takes the path of the link file as input and returns an error if any.
 func (c *LinkRepository) RemoveVaultLink(path string) error {
-	absPath := filepath.Join(c.rootPath, path, ".vault")
+	absPath := c.getVaultPath(path)
 	err := os.Remove(absPath)
 	if err != nil {
 		return ErrRemovingVaultLinkFile

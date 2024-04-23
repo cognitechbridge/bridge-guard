@@ -41,16 +41,19 @@ func NewFileSystem(keyService core.KeyService, objectSerivce object_service.Serv
 }
 
 // CreateDir creates a directory at the specified path.
-// It first creates a vault in the specified path and then creates the directory in the link repository.
-// If any error occurs during the process, it returns the error.
+// It creates the directory in the link repository and creates a vault in the specified path.
+// Returns an error if any operation fails.
 func (f *FileSystem) CreateDir(path string) error {
-	//Create vault in the specified path
-	err := f.CreateVaultInPath(path)
+	err := f.linkRepo.CreateDir(path)
 	if err != nil {
 		return err
 	}
-	//Create directory in link repo
-	return f.linkRepo.CreateDir(path)
+	//Create vault in the specified path
+	err = f.CreateVaultInPath(path)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateVaultInPath creates a new vault in the specified path.
