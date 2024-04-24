@@ -363,20 +363,6 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string, vaultPath string) 
 	return key, nil
 }
 
-// CheckPrivateKey checks if the private key is valid and if the user has joined the repository.
-// It returns a boolean indicating whether the private key is valid or not,
-// and an error if any occurred during the check.
-func (ks *KeyStoreDefault) CheckPrivateKey() (bool, error) {
-	userId, err := ks.GetUserId()
-	if err != nil {
-		return false, err
-	}
-	if !ks.keyRepository.IsUserJoined(userId) {
-		return false, ErrInvalidPrivateKeyOrUserNotJoined
-	}
-	return true, nil
-}
-
 // Join joins the user to a group by retrieving the user ID and calling JoinByUserId.
 // It returns an error if there was an issue retrieving the user ID or joining the group.
 func (ks *KeyStoreDefault) Join() error {
