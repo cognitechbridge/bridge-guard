@@ -128,7 +128,7 @@ func (a *App) SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 		return setResult
 	}
 	// Check the private key
-	res, _ := a.keyStore.CheckPrivateKey()
+	res := a.keyStore.IsUserJoined()
 	if !res {
 		return core.NewAppResultWithError(ErrPrivateKeyCheckFailed)
 	}
@@ -157,6 +157,7 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	err = errors.Join(
 		os.MkdirAll(filepath.Join(root, "key-share"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
+		os.MkdirAll(filepath.Join(root, "filesystem", ".object"), os.ModePerm),
 		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
 	)
 	if err != nil {

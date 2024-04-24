@@ -42,7 +42,6 @@ type KeyService interface {
 	MoveVault(vaultId string, oldVaultPath string, newVaultPath string, oldParentVaultId string, oldParentVaultPath, newParentVaultId string, newParentVaultPath string) error
 	MoveKey(keyId string, oldVaultId string, oldVaultPath string, newVaultId string, newVaultPath string) error
 	GenerateUserKey() (*UserKeyPair, error)
-	CheckPrivateKey() (bool, error)
 	IsUserJoined() bool
 	GetHasAccessToKey(keyId string, startVaultId string, startVaultPath string, userId string) (bool, bool)
 	GetKeyAccessList(keyId string, startVaultId string, startVaultPath string) (KeyAccessList, error)
