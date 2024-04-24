@@ -29,10 +29,8 @@ type FileSystemService interface {
 
 type KeyService interface {
 	SetPrivateKey(privateKey []byte)
-	Join() error
-	JoinByUserId(userId string) error
 	Get(keyID string, startVaultId string, startVaultPath string) (*KeyInfo, error)
-	Insert(key *KeyInfo) error
+	Insert(key *KeyInfo, path string) error
 	Share(keyId string, startVaultId string, startVaultPath string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
 	GetEncodablePublicKey() (string, error)
@@ -45,5 +43,5 @@ type KeyService interface {
 	IsUserJoined() bool
 	GetHasAccessToKey(keyId string, startVaultId string, startVaultPath string, userId string) (bool, bool)
 	GetKeyAccessList(keyId string, startVaultId string, startVaultPath string) (KeyAccessList, error)
-	Unshare(keyId string, recipientUserId string) error
+	Unshare(keyId string, recipientUserId string, path string) error
 }

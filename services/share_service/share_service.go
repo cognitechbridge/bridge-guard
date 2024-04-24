@@ -109,7 +109,7 @@ func (s *Service) Unshare(path string, publicKeyEncoded string) error {
 	if err != nil {
 		return err
 	}
-	err = s.keyService.Unshare(keyId, publicKeyEncoded)
+	err = s.keyService.Unshare(keyId, publicKeyEncoded, path)
 	if err != nil {
 		return err
 	}

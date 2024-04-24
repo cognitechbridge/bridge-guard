@@ -1,7 +1,9 @@
 package repositories
 
 import (
+	"ctb-cli/core"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,13 +16,12 @@ var (
 
 // KeyRepository KeyStorePersist is an interface for persisting keys
 type KeyRepository interface {
-	SaveDataKey(keyId, key, recipient string) error
-	GetDataKey(keyID string, userId string) (string, error)
-	DataKeyExist(keyId string, userId string) bool
+	SaveDataKey(keyId, key, recipient string, path string) error
+	GetDataKey(keyID string, userId string, path string) (string, error)
+	DataKeyExist(keyId string, userId string, path string) bool
 	IsUserJoined(userId string) bool
-	JoinUser(userId string) error
 	ListUsers() ([]string, error)
-	DeleteDataKey(keyID string, userId string) error
+	DeleteDataKey(keyID string, userId string, path string) error
 }
 
 type KeyRepositoryFile struct {
@@ -35,8 +36,9 @@ func NewKeyRepositoryFile(rootPath string) *KeyRepositoryFile {
 	}
 }
 
-func (k *KeyRepositoryFile) SaveDataKey(keyId, key, recipient string) error {
-	datapath, err := k.getDataPath(recipient)
+func (k *KeyRepositoryFile) SaveDataKey(keyId, key, recipient string, path string) error {
+	datapath := k.getDataPath(recipient, path)
+	err := os.MkdirAll(datapath, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -53,9 +55,9 @@ func (k *KeyRepositoryFile) SaveDataKey(keyId, key, recipient string) error {
 	return nil
 }
 
-func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, error) {
-	datapath, err := k.getDataPath(userId)
-	if err != nil {
+func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string, path string) (string, error) {
+	datapath := k.getDataPath(userId, path)
+	if _, err := os.Stat(datapath); err != nil {
 		return "", err
 	}
 	p := filepath.Join(datapath, keyID)
@@ -76,9 +78,9 @@ func (k *KeyRepositoryFile) GetDataKey(keyID string, userId string) (string, err
 
 // DataKeyExist checks if a data key with the given key ID exists for the specified user.
 // It returns true if the data key exists, and false otherwise.
-func (k *KeyRepositoryFile) DataKeyExist(keyId string, userId string) bool {
-	datapath, err := k.getDataPath(userId)
-	if err != nil {
+func (k *KeyRepositoryFile) DataKeyExist(keyId string, userId string, path string) bool {
+	datapath := k.getDataPath(userId, path)
+	if _, err := os.Stat(datapath); err != nil {
 		return false
 	}
 	p := filepath.Join(datapath, keyId)
@@ -90,36 +92,27 @@ func (k *KeyRepositoryFile) DataKeyExist(keyId string, userId string) bool {
 }
 
 func (k *KeyRepositoryFile) IsUserJoined(userId string) bool {
-	p := filepath.Join(k.rootPath, userId)
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		return false
-	} else {
-		return true
-	}
-}
-
-// JoinUser creates a directory for the specified user ID in the key repository.
-// It takes the user ID as a parameter and returns an error if any.
-func (k *KeyRepositoryFile) JoinUser(userId string) error {
-	p := filepath.Join(k.rootPath, userId)
-	err := os.MkdirAll(p, os.ModePerm)
+	users, err := k.GetJoinedUsers()
 	if err != nil {
-		return err
+		return false
 	}
-	return nil
+	for _, user := range users {
+		if user.Recipient == userId {
+			return true
+		}
+	}
+	return false
 }
 
 // ListUsers returns a list of users stored in the key repository.
 func (k *KeyRepositoryFile) ListUsers() ([]string, error) {
-	files, err := os.ReadDir(k.rootPath)
+	joinedUser, err := k.GetJoinedUsers()
 	if err != nil {
 		return nil, err
 	}
-	var users []string
-	for _, f := range files {
-		if f.IsDir() {
-			users = append(users, f.Name())
-		}
+	users := make([]string, 0)
+	for _, user := range joinedUser {
+		users = append(users, user.Recipient)
 	}
 	return users, nil
 }
@@ -127,23 +120,80 @@ func (k *KeyRepositoryFile) ListUsers() ([]string, error) {
 // DeleteDataKey deletes the data key associated with the given keyID and userId.
 // It removes the file corresponding to the keyID from the user's data path.
 // If an error occurs during the deletion process, it is returned.
-func (k *KeyRepositoryFile) DeleteDataKey(keyID string, userId string) error {
-	datapath, err := k.getDataPath(userId)
-	if err != nil {
+func (k *KeyRepositoryFile) DeleteDataKey(keyID string, userId string, path string) error {
+	datapath := k.getDataPath(userId, path)
+	if _, err := os.Stat(datapath); err != nil {
 		return err
 	}
 	p := filepath.Join(datapath, keyID)
-	err = os.Remove(p)
+	err := os.Remove(p)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (k *KeyRepositoryFile) getDataPath(recipient string) (string, error) {
-	p := filepath.Join(k.rootPath, recipient)
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		return "", ErrUserNotJoined
+func (k *KeyRepositoryFile) GetJoinedUsers() ([]core.JoinedUser, error) {
+	return k.getJoinedUsersInPath("")
+}
+
+func (k *KeyRepositoryFile) getJoinedUsersInPath(path string) ([]core.JoinedUser, error) {
+	list := make([]core.JoinedUser, 0)
+
+	entries, err := os.ReadDir(k.getKeysPath(path))
+	if err != nil {
+		fmt.Println("Error reading directory:", err)
+		return list, err
 	}
-	return p, nil
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			list = append(list, core.JoinedUser{
+				Recipient: entry.Name(),
+				Path:      path,
+			})
+		}
+	}
+
+	subs, err := k.getSubFolders(path)
+	if err != nil {
+		return list, err
+	}
+	for _, sub := range subs {
+		users, err := k.getJoinedUsersInPath(sub)
+		if err != nil {
+			return list, err
+		}
+		list = append(list, users...)
+	}
+
+	return list, nil
+}
+
+func (k *KeyRepositoryFile) getSubFolders(path string) ([]string, error) {
+	list := make([]string, 0)
+
+	entries, err := os.ReadDir(filepath.Join(k.rootPath, path))
+	if err != nil {
+		fmt.Println("Error reading directory:", err)
+		return list, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() && entry.Name() != ".key-share" && entry.Name() != ".vault" && entry.Name() != ".object" {
+			list = append(list, path, entry.Name())
+		}
+	}
+
+	return list, nil
+}
+
+func (k *KeyRepositoryFile) getDataPath(recipient string, path string) string {
+	p := filepath.Join(k.getKeysPath(path), recipient)
+	return p
+}
+
+func (k *KeyRepositoryFile) getKeysPath(path string) string {
+	dir := filepath.Join(k.rootPath, path, ".key-share")
+	return dir
 }
