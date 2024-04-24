@@ -63,7 +63,7 @@ func (ks *KeyStoreDefault) GetUserId() (string, error) {
 // Next, it retrieves the user's ID using the GetUserId method.
 // Finally, it saves the key in the user's data keys using the SaveDataKey method.
 // If any error occurs during the process, it is returned.
-func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
+func (ks *KeyStoreDefault) Insert(key *core.KeyInfo, path string) error {
 	// Get user public key
 	pk, err := ks.GetPublicKey()
 	if err != nil {
@@ -80,7 +80,7 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo) error {
 		return err
 	}
 	// Save key in user's data keys
-	return ks.keyRepository.SaveDataKey(key.Id, keyHashed, userId)
+	return ks.keyRepository.SaveDataKey(key.Id, keyHashed, userId, path)
 }
 
 // Get retrieves a key from the KeyStoreDefault.
@@ -97,9 +97,9 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath
 		return nil, err
 	}
 	// Check if key directly exists in user's data keys
-	if ks.keyRepository.DataKeyExist(keyId, userId) {
+	if ks.keyRepository.DataKeyExist(keyId, userId, startVaultPath) {
 		// Get key from user's data keys
-		sk, err := ks.keyRepository.GetDataKey(keyId, userId)
+		sk, err := ks.keyRepository.GetDataKey(keyId, userId, startVaultPath)
 		if err != nil {
 			return nil, err
 		}
@@ -156,9 +156,9 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath
 // It returns the result of the recursive call and true for `inherited`.
 func (ks *KeyStoreDefault) GetHasAccessToKey(keyId string, startVaultId string, startVaultPath string, userId string) (hasAccess bool, inherited bool) {
 	// Check if key directly exists in user's data keys
-	if ks.keyRepository.DataKeyExist(keyId, userId) {
+	if ks.keyRepository.DataKeyExist(keyId, userId, startVaultPath) {
 		// Get key from user's data keys
-		exc := ks.keyRepository.DataKeyExist(keyId, userId)
+		exc := ks.keyRepository.DataKeyExist(keyId, userId, startVaultPath)
 		if exc == true {
 			return true, false
 		}
@@ -194,7 +194,7 @@ func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, startVaultPa
 		return err
 	}
 
-	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientUserId)
+	return ks.keyRepository.SaveDataKey(keyId, keyHashed, recipientUserId, startVaultPath)
 }
 
 // GetPublicKey returns the public key corresponding to the private key stored in the KeyStore.
@@ -246,7 +246,7 @@ func (ks *KeyStoreDefault) CreateVault(parentId string, path string) (*core.Vaul
 			return nil, ErrGeneratingKey
 		}
 		// Insert key into keystore
-		err = ks.Insert(key)
+		err = ks.Insert(key, "")
 		if err != nil {
 			return nil, err
 		}
@@ -363,30 +363,6 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string, vaultPath string) 
 	return key, nil
 }
 
-// Join joins the user to a group by retrieving the user ID and calling JoinByUserId.
-// It returns an error if there was an issue retrieving the user ID or joining the group.
-func (ks *KeyStoreDefault) Join() error {
-	userId, err := ks.GetUserId()
-	if err != nil {
-		return err
-	}
-	return ks.JoinByUserId(userId)
-}
-
-// JoinByUserId joins a user by their user ID.
-// It checks if the user is already joined and returns an error if so.
-// Otherwise, it calls the key repository to join the user and returns any error that occurs.
-func (ks *KeyStoreDefault) JoinByUserId(userId string) error {
-	if ks.keyRepository.IsUserJoined(userId) {
-		return ErrUserAlreadyJoined
-	}
-	err := ks.keyRepository.JoinUser(userId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // GenerateUserKey generates a new user key and returns it as a string.
 // If any error occurs during the process, it returns the error.
 func (ks *KeyStoreDefault) GenerateUserKey() (*core.UserKeyPair, error) {
@@ -432,6 +408,6 @@ func (ks *KeyStoreDefault) GetKeyAccessList(keyId string, startVaultId string, s
 // Unshare removes the sharing of a data key with a recipient user.
 // It takes the key ID and the recipient user ID as parameters.
 // Returns an error if there was a problem deleting the data key.
-func (ks *KeyStoreDefault) Unshare(keyId string, recipientUserId string) error {
-	return ks.keyRepository.DeleteDataKey(keyId, recipientUserId)
+func (ks *KeyStoreDefault) Unshare(keyId string, recipientUserId string, path string) error {
+	return ks.keyRepository.DeleteDataKey(keyId, recipientUserId, path)
 }

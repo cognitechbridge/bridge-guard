@@ -56,7 +56,7 @@ func (a *App) initServices() core.AppResult {
 	tempRoot, _ := a.cfg.GetTempRoot()
 
 	// Create the repository paths
-	keysPath := filepath.Join(root, "key-share")
+	keysPath := filepath.Join(root, "filesystem")
 	objectPath := filepath.Join(root, "filesystem")
 	filesystemPath := filepath.Join(root, "filesystem")
 	vaultPath := filepath.Join(root, "filesystem")
@@ -155,9 +155,10 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 
 	// Create the repository folders
 	err = errors.Join(
-		os.MkdirAll(filepath.Join(root, "key-share"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
 		os.MkdirAll(filepath.Join(root, "filesystem", ".object"), os.ModePerm),
+		os.MkdirAll(filepath.Join(root, "filesystem", ".key-share"), os.ModePerm),
+		os.MkdirAll(filepath.Join(root, "filesystem", ".vault"), os.ModePerm),
 		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
 	)
 	if err != nil {
@@ -180,10 +181,10 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 		return core.NewAppResultWithError(ErrCreatingRepositoryConfig)
 	}
 
-	// Join the user
-	joinResult := a.Join(encryptedPrivateKey)
-	if !joinResult.Ok {
-		return joinResult
+	// Set the private key
+	setResult := a.SetPrivateKey(encryptedPrivateKey)
+	if !setResult.Ok {
+		return setResult
 	}
 
 	// Create a vault in the root path

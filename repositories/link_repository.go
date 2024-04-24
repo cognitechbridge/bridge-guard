@@ -133,6 +133,12 @@ func (c *LinkRepository) CreateDir(path string) (err error) {
 	if err != nil {
 		return err
 	}
+	// Create the .key-share directory
+	keySharePath := filepath.Join(absPath, ".key-share")
+	err = os.MkdirAll(keySharePath, os.ModePerm)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
