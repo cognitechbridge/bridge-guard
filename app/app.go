@@ -55,20 +55,12 @@ func (a *App) initServices() core.AppResult {
 	tempRoot, _ := a.cfg.GetTempRoot()
 
 	// Create the repository paths
-	keysPath := filepath.Join(root, "filesystem")
-	objectPath := filepath.Join(root, "filesystem")
-	filesystemPath := filepath.Join(root, "filesystem")
-	vaultPath := filepath.Join(root, "filesystem")
-	configPath := filepath.Join(root, "filesystem")
 	cachePath := filepath.Join(tempRoot, "cache")
 
 	// Check if the paths exist
 	err := errors.Join(
-		checkFolderPath(keysPath),
-		checkFolderPath(objectPath),
-		checkFolderPath(filesystemPath),
+		checkFolderPath(root),
 		checkFolderPath(cachePath),
-		checkFolderPath(vaultPath),
 	)
 
 	// If at least one path doesn't exist, panic
@@ -77,17 +69,17 @@ func (a *App) initServices() core.AppResult {
 	}
 
 	// Create the repositories
-	keyRepository := repositories.NewKeyRepositoryFile(keysPath)
+	keyRepository := repositories.NewKeyRepositoryFile(root)
 	objectCacheRepository := repositories.NewObjectCacheRepository(cachePath)
-	objectRepository := repositories.NewObjectRepository(objectPath)
-	linkRepository := repositories.NewLinkRepository(filesystemPath)
-	vaultRepository := repositories.NewVaultRepositoryFile(vaultPath)
+	objectRepository := repositories.NewObjectRepository(root)
+	linkRepository := repositories.NewLinkRepository(root)
+	vaultRepository := repositories.NewVaultRepositoryFile(root)
 
 	// Create the services
 	a.keyStore = key_service.NewKeyStore(keyRepository, vaultRepository)
 	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
 	a.shareService = share_service.NewService(a.keyStore, linkRepository, vaultRepository, &objectService)
-	a.configService = config_service.New(configPath)
+	a.configService = config_service.New(root)
 	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository, vaultRepository, *a.configService)
 
 	return core.NewAppResult()
@@ -154,18 +146,16 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 		return core.NewAppResultWithError(ErrRootFolderNotEmpty)
 	}
 
-	// Create the repository folders
-	err = errors.Join(
-		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
-		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
-	)
+	// Create cache folder in the temp path
+	err = os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm)
 	if err != nil {
 		return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
 	}
 
+	// Create the system folders
 	systemFolders := core.GetRepoSystemFolderNames()
 	for _, folder := range systemFolders {
-		err := os.MkdirAll(filepath.Join(root, "filesystem", folder), os.ModePerm)
+		err := os.MkdirAll(filepath.Join(root, folder), os.ModePerm)
 		if err != nil {
 			return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
 		}
