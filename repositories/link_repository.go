@@ -121,23 +121,12 @@ func (c *LinkRepository) CreateDir(path string) (err error) {
 	if err != nil {
 		return err
 	}
-	// Create the .object directory
-	objectPath := filepath.Join(absPath, ".object")
-	err = os.MkdirAll(objectPath, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	// Create the .vault directory
-	vaultPath := filepath.Join(absPath, ".vault")
-	err = os.MkdirAll(vaultPath, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	// Create the .key-share directory
-	keySharePath := filepath.Join(absPath, ".key-share")
-	err = os.MkdirAll(keySharePath, os.ModePerm)
-	if err != nil {
-		return err
+	systemFolderNames := core.GetRepoSystemFolderNames()
+	for _, folder := range systemFolderNames {
+		err = os.MkdirAll(filepath.Join(absPath, folder), os.ModePerm)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

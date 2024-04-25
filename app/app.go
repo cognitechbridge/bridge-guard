@@ -156,13 +156,18 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	// Create the repository folders
 	err = errors.Join(
 		os.MkdirAll(filepath.Join(root, "filesystem"), os.ModePerm),
-		os.MkdirAll(filepath.Join(root, "filesystem", ".object"), os.ModePerm),
-		os.MkdirAll(filepath.Join(root, "filesystem", ".key-share"), os.ModePerm),
-		os.MkdirAll(filepath.Join(root, "filesystem", ".vault"), os.ModePerm),
 		os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm),
 	)
 	if err != nil {
 		return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
+	}
+
+	systemFolders := core.GetRepoSystemFolderNames()
+	for _, folder := range systemFolders {
+		err := os.MkdirAll(filepath.Join(root, "filesystem", folder), os.ModePerm)
+		if err != nil {
+			return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
+		}
 	}
 
 	// init the app

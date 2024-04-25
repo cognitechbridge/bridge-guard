@@ -180,12 +180,24 @@ func (k *KeyRepositoryFile) getSubFolders(path string) ([]string, error) {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() && entry.Name() != ".key-share" && entry.Name() != ".vault" && entry.Name() != ".object" {
-			list = append(list, path, entry.Name())
+		if entry.IsDir() {
+			folderNames := core.GetRepoSystemFolderNames()
+			if !contains(folderNames, entry.Name()) {
+				list = append(list, filepath.Join(path, entry.Name()))
+			}
 		}
 	}
 
 	return list, nil
+}
+
+func contains(folderNames []string, s string) bool {
+	for _, folderName := range folderNames {
+		if folderName == s {
+			return true
+		}
+	}
+	return false
 }
 
 func (k *KeyRepositoryFile) getDataPath(recipient string, path string) string {
