@@ -1,6 +1,9 @@
 package app
 
-import "ctb-cli/core"
+import (
+	"ctb-cli/core"
+	"ctb-cli/services/config_service"
+)
 
 // GetStatus returns the status of the repository.
 // It checks if the repository is valid and if the user has joined.
@@ -13,7 +16,8 @@ func (a *App) GetStatus(encryptedPrivateKey string) core.AppResult {
 	}
 
 	// check if the repository is valid
-	valid := a.configService.IsRepositoryConfigExists("")
+	rootPath, _ := a.cfg.GetRepoCtbRoot()
+	valid := config_service.New(rootPath).IsRepositoryConfigExists("")
 
 	if !valid {
 		// return the repository status with IsValid = false if the repository config does not exist
