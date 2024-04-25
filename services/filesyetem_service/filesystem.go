@@ -3,6 +3,7 @@ package filesyetem_service
 import (
 	"ctb-cli/core"
 	"ctb-cli/repositories"
+	"ctb-cli/services/config_service"
 	"ctb-cli/services/object_service"
 	"fmt"
 	"io/fs"
@@ -17,6 +18,7 @@ type FileSystem struct {
 	linkRepo      *repositories.LinkRepository
 	vaultRepo     repositories.VaultRepository
 	keyService    core.KeyService
+	configService config_service.ConfigService
 
 	openToWrite map[string]openToWrite
 }
@@ -30,12 +32,19 @@ type openToWrite struct {
 var _ core.FileSystemService = &FileSystem{}
 
 // NewFileSystem creates a new instance of PersistFileSystem
-func NewFileSystem(keyService core.KeyService, objectSerivce object_service.Service, linkRepository *repositories.LinkRepository, vaultRepo repositories.VaultRepository) *FileSystem {
+func NewFileSystem(
+	keyService core.KeyService,
+	objectSerivce object_service.Service,
+	linkRepository *repositories.LinkRepository,
+	vaultRepo repositories.VaultRepository,
+	configService config_service.ConfigService,
+) *FileSystem {
 	fileSys := FileSystem{
 		objectService: objectSerivce,
 		linkRepo:      linkRepository,
 		vaultRepo:     vaultRepo,
 		keyService:    keyService,
+		configService: configService,
 		openToWrite:   make(map[string]openToWrite),
 	}
 
@@ -55,6 +64,7 @@ func (f *FileSystem) CreateDir(path string) error {
 	if err != nil {
 		return err
 	}
+	err = f.configService.InitConfig(path)
 	return nil
 }
 
