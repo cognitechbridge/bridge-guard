@@ -13,15 +13,12 @@ func (a *App) GetStatus(encryptedPrivateKey string) core.AppResult {
 	}
 
 	// check if the repository is valid
-	valid := a.cfg.IsRepositoryConfigExists()
+	valid := a.configService.IsRepositoryConfigExists("")
 
 	if !valid {
 		// return the repository status with IsValid = false if the repository config does not exist
 		return core.NewAppResultWithValue(core.NewInvalidRepositoyStatus(false))
 	}
-
-	// get the repository id if it is valid
-	repoId := a.cfg.GetRepoId()
 
 	// init the app
 	initRes := a.initServices()
@@ -47,7 +44,7 @@ func (a *App) GetStatus(encryptedPrivateKey string) core.AppResult {
 	return core.NewAppResultWithValue(core.RepositoryStatus{
 		IsValid:   valid,
 		IsJoined:  isJoined,
-		RepoId:    repoId,
+		RepoId:    "",
 		PublicKey: publicKey,
 	})
 }

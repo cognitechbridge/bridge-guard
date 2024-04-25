@@ -6,6 +6,7 @@ import (
 	"ctb-cli/fuse"
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/repositories"
+	"ctb-cli/services/config_service"
 	"ctb-cli/services/filesyetem_service"
 	"ctb-cli/services/key_service"
 	"ctb-cli/services/object_service"
@@ -17,12 +18,10 @@ import (
 
 // App represents the main application struct.
 type App struct {
-	// keyStore is the key service used by the application
-	keyStore core.KeyService
-	// fileSystem is the file system service used by the application
-	fileSystem *filesyetem_service.FileSystem
-	// shareService is the share service used by the application
-	shareService *share_service.Service
+	keyStore      core.KeyService
+	fileSystem    *filesyetem_service.FileSystem
+	shareService  *share_service.Service
+	configService *config_service.ConfigService
 
 	// fuse is the fuse service used by the application
 	fuse *fuse.CtbFs
@@ -60,6 +59,7 @@ func (a *App) initServices() core.AppResult {
 	objectPath := filepath.Join(root, "filesystem")
 	filesystemPath := filepath.Join(root, "filesystem")
 	vaultPath := filepath.Join(root, "filesystem")
+	configPath := filepath.Join(root, "filesystem")
 	cachePath := filepath.Join(tempRoot, "cache")
 
 	// Check if the paths exist
@@ -87,7 +87,8 @@ func (a *App) initServices() core.AppResult {
 	a.keyStore = key_service.NewKeyStore(keyRepository, vaultRepository)
 	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
 	a.shareService = share_service.NewService(a.keyStore, linkRepository, vaultRepository, &objectService)
-	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository, vaultRepository)
+	a.configService = config_service.New(configPath)
+	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository, vaultRepository, *a.configService)
 
 	return core.NewAppResult()
 }
@@ -176,12 +177,8 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 		return initRes
 	}
 
-	// Init the repository configuration
-	repoId, err := core.NewUid()
-	if err != nil {
-		return core.NewAppResultWithError(err)
-	}
-	err = a.cfg.InitRepoConfig(repoId)
+	// Initialize the configuration
+	err = a.configService.InitConfig("")
 	if err != nil {
 		return core.NewAppResultWithError(ErrCreatingRepositoryConfig)
 	}
