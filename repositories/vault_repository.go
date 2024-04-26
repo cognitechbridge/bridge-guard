@@ -18,6 +18,7 @@ type VaultRepository interface {
 	RemoveKey(keyId string, vaultId string, vaultPath string) error
 	GetVaultParent(vaultPath string) (string, core.VaultLink, error)
 	GetVaultLinkByPath(path string) (core.VaultLink, error)
+	GetVaultByPath(path string) (core.Vault, error)
 	InsertVaultLink(path string, link core.VaultLink) error
 	RemoveVaultLink(path string) error
 	GetFileVaultLink(path string) (core.VaultLink, string, error)
@@ -118,6 +119,23 @@ func (k *VaultRepositoryFile) GetVaultParent(vaultPath string) (string, core.Vau
 		return "", core.VaultLink{}, err
 	}
 	return parentPath, parentLink, nil
+}
+
+// GetVaultByPath retrieves the vault by the given path.
+// It reads the vault link file located at the specified path and returns the corresponding Vault object.
+// If an error occurs during file reading or unmarshaling, it returns an empty Vault object and the error.
+func (k *VaultRepositoryFile) GetVaultByPath(path string) (core.Vault, error) {
+	// Read vault link file
+	link, err := k.getVaultLinkByPath(path)
+	if err != nil {
+		return core.Vault{}, err
+	}
+	// Read vault file
+	vault, err := k.GetVault(link.VaultId, path)
+	if err != nil {
+		return core.Vault{}, err
+	}
+	return vault, nil
 }
 
 // GetVaultLinkByPath retrieves the vault link by the given path.
