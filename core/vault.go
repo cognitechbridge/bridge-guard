@@ -26,3 +26,13 @@ func UnmarshalVault(data []byte) (Vault, error) {
 	}
 	return vault, nil
 }
+
+type VaultLink struct {
+	VaultId string `json:"vaultId"`
+}
+
+func NewVaultLink(vaultId string, keyId string) VaultLink {
+	return VaultLink{
+		VaultId: vaultId,
+	}
+}
