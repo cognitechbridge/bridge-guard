@@ -417,8 +417,13 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 	if err != nil {
 		return 0000
 	}
+	//Get vault
+	vault, err := f.vaultRepo.GetVault(vaultLink.VaultId, path)
+	if err != nil {
+		return 0000
+	}
 	//If user has access to vault, he has access to the file
-	if _, err := f.keyService.Get(vaultLink.KeyId, vaultLink.VaultId, vaultPath); err == nil {
+	if _, err := f.keyService.Get(vault.KeyId, vault.Id, vaultPath); err == nil {
 		return 0777
 	}
 	//If the path is a file
