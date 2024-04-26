@@ -55,12 +55,7 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 	isDir := s.linkRepository.IsDir(path)
 	if isDir {
 		// Get vault link
-		link, err := s.vaultRepository.GetVaultLinkByPath(path)
-		if err != nil {
-			return "", "", "", err
-		}
-		// Get vault
-		vault, err := s.vaultRepository.GetVault(link.VaultId, path)
+		vault, err := s.vaultRepository.GetVaultByPath(path)
 		if err != nil {
 			return "", "", "", err
 		}
