@@ -123,7 +123,7 @@ func (c *LinkRepository) CreateDir(path string) (err error) {
 	}
 	systemFolderNames := core.GetRepoSystemFolderNames()
 	for _, folder := range systemFolderNames {
-		err = os.MkdirAll(filepath.Join(absPath, folder), os.ModePerm)
+		err = os.MkdirAll(filepath.Join(absPath, ".meta", folder), os.ModePerm)
 		if err != nil {
 			return err
 		}

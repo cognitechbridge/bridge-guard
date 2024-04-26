@@ -179,7 +179,7 @@ func (k *VaultRepositoryFile) InsertVaultLink(path string, link core.VaultLink) 
 
 // vaultFolder returns the path to the vault folder for the specified path.
 func (k *VaultRepositoryFile) vaultFolder(vaultPath string) string {
-	return filepath.Join(k.rootPath, vaultPath, ".vault")
+	return filepath.Join(k.rootPath, vaultPath, ".meta", ".vault")
 }
 
 // getVaultLinkPath returns the path to the vault link file for the specified path.

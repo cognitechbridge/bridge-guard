@@ -119,7 +119,7 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 	//Iterate through sub files
 	for _, subFile := range subFiles {
 		//Ignore .vault, .key-share, and .object folders
-		if contains(core.GetRepoSystemFolderNames(), subFile.Name()) {
+		if subFile.Name() == ".meta" {
 			continue
 		}
 		if subFile.IsDir() {
@@ -154,15 +154,6 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 
 	}
 	return infos, nil
-}
-
-func contains(folderNames []string, s string) bool {
-	for _, folderName := range folderNames {
-		if folderName == s {
-			return true
-		}
-	}
-	return false
 }
 
 // RemoveDir removes a directory at the specified path.

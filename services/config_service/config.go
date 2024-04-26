@@ -23,7 +23,7 @@ func (c *ConfigService) InitConfig(path string) error {
 	configPath := c.getConfigPath(path)
 	cfg := viper.New()
 	// Set the default values for the configuration
-	cfg.SetConfigFile(filepath.Join(configPath, "ctb.yaml"))
+	cfg.SetConfigFile(filepath.Join(configPath, "config.yaml"))
 	cfg.Set("version", 1)
 	err := cfg.WriteConfig()
 	if err != nil {
@@ -47,7 +47,7 @@ func (c *ConfigService) GetRepoVersion(path string) string {
 func (c *ConfigService) getConfig(path string) *viper.Viper {
 	configPath := c.getConfigPath(path)
 	cfg := viper.New()
-	cfg.SetConfigName("ctb")
+	cfg.SetConfigName("config")
 	cfg.SetConfigType("yaml")
 	cfg.AddConfigPath(configPath)
 
@@ -57,5 +57,5 @@ func (c *ConfigService) getConfig(path string) *viper.Viper {
 }
 
 func (c *ConfigService) getConfigPath(path string) string {
-	return filepath.Join(c.rootPath, path, ".metadata")
+	return filepath.Join(c.rootPath, path, ".meta")
 }
