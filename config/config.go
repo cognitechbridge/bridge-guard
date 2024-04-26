@@ -14,11 +14,6 @@ func New(repoPath string, tempPath string, cfgFile string) (*Config, error) {
 	}, nil
 }
 
-// GetRepoRoot returns the root path of the repository.
-func (c *Config) GetRepoRoot() (string, error) {
-	return c.repoPath, nil
-}
-
 // GetTempRoot returns the root path of the temporary folder.
 func (c *Config) GetTempRoot() (string, error) {
 	return c.tempPath, nil
