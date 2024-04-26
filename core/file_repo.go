@@ -1,5 +1,5 @@
 package core
 
 func GetRepoSystemFolderNames() []string {
-	return []string{".key-share", ".metadata", ".object", ".vault"}
+	return []string{".key-share", ".object", ".vault"}
 }

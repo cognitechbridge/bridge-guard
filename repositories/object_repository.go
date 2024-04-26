@@ -43,6 +43,6 @@ func (o *ObjectRepository) ChangeDir(id string, oldDir string, newDir string) er
 }
 
 func (o *ObjectRepository) GetPath(id string, dir string) string {
-	path := filepath.Join(o.rootPath, dir, ".object", id)
+	path := filepath.Join(o.rootPath, dir, ".meta", ".object", id)
 	return path
 }

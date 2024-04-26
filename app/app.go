@@ -155,7 +155,7 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	// Create the system folders
 	systemFolders := core.GetRepoSystemFolderNames()
 	for _, folder := range systemFolders {
-		err := os.MkdirAll(filepath.Join(root, folder), os.ModePerm)
+		err := os.MkdirAll(filepath.Join(root, ".meta", folder), os.ModePerm)
 		if err != nil {
 			return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
 		}
