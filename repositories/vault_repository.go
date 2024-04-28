@@ -126,7 +126,7 @@ func (k *VaultRepositoryFile) GetVaultParent(vaultPath string) (string, core.Vau
 // If an error occurs during file reading or unmarshaling, it returns an empty Vault object and the error.
 func (k *VaultRepositoryFile) GetVaultByPath(path string) (core.Vault, error) {
 	// Read vault link file
-	link, err := k.getVaultLinkByPath(path)
+	link, err := k.GetVaultLinkByPath(path)
 	if err != nil {
 		return core.Vault{}, err
 	}
