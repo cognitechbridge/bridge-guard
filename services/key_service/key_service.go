@@ -366,12 +366,12 @@ func (ks *KeyStoreDefault) GenerateKeyInVault(vaultId string, vaultPath string) 
 
 // GenerateUserKey generates a new user key and returns it as a string.
 // If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) GenerateUserKey() (*core.UserKeyPair, error) {
-	key, err := core.GenerateUserKey()
+func (ks *KeyStoreDefault) GenerateUserKey() (*core.PrivateKey, error) {
+	key, err := core.NewPrivateKeyFromRand()
 	if err != nil {
 		return nil, err
 	}
-	return key, nil
+	return &key, nil
 }
 
 // IsUserJoined checks if the user with the specified user ID has joined the key store.
