@@ -16,5 +16,13 @@ func (a *App) GenerateUserKey() core.AppResult {
 	if err != nil {
 		return core.NewAppResultWithError(err)
 	}
-	return core.NewAppResultWithValue(*key)
+	return core.NewAppResultWithValue(GenerateUserKeyResult{
+		PrivateKey: key.PrivateKey.Unsafe().String(),
+		PublicKey:  key.PublicKey.String(),
+	})
+}
+
+type GenerateUserKeyResult struct {
+	PrivateKey string `json:"private_key"`
+	PublicKey  string `json:"public_key"`
 }
