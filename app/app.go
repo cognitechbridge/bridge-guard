@@ -99,13 +99,9 @@ func checkFolderPath(path string) error {
 // Otherwise, an error result is returned.
 func (a *App) SetPrivateKey(encodedPrivateKey string) core.AppResult {
 	// Decode the private key
-	privateKey, err := core.DecodePrivateKey(encodedPrivateKey)
+	privateKey, err := core.NewPrivateKeyFromEncoded(encodedPrivateKey)
 	if err != nil {
 		return core.NewAppResultWithError(err)
-	}
-	// Check the size of the private key
-	if len(privateKey) != 32 {
-		return core.NewAppResultWithError(ErrInvalidPrivateKeySize)
 	}
 	// Set the private key in the keyStore
 	a.keyStore.SetPrivateKey(privateKey)

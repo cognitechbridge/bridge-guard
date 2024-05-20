@@ -6,19 +6,29 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
-type PublicKey []byte
+type PublicKey struct {
+	value []byte
+}
+
+func EmptyPublicKey() PublicKey {
+	return PublicKey{}
+}
 
 // NewPublicKeyFromEncoded creates a PublicKey from an encoded base58 string.
 func NewPublicKeyFromEncoded(encoded string) (PublicKey, error) {
 	if len(encoded) != 44 {
-		return nil, ErrInvalidPublicKey
+		return EmptyPublicKey(), ErrInvalidPublicKey
 	}
-	return DecodePublic(encoded)
+	return PublicKey{
+		value: DecodePublic(encoded),
+	}, nil
 }
 
 // NewPublicKeyFromBytes creates a PublicKey from a byte slice.
 func NewPublicKeyFromBytes(bytes []byte) PublicKey {
-	return PublicKey(bytes)
+	return PublicKey{
+		value: bytes,
+	}
 }
 
 // String returns the base58 encoded string representation of the PublicKey.
@@ -26,14 +36,19 @@ func (key PublicKey) String() string {
 	return key.Encode()
 }
 
+// MarshalJSON returns the JSON encoding of the PublicKey.
+func (key PublicKey) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + key.Encode() + `"`), nil
+}
+
 // Encode returns the base58 encoded string representation of the PublicKey.
 func (key PublicKey) Encode() string {
-	return EncodePublic(key)
+	return EncodePublic(key.value)
 }
 
 // Bytes returns the byte slice representation of the PublicKey.
 func (key PublicKey) Bytes() []byte {
-	return []byte(key)
+	return key.value
 }
 
 // Equals returns true if the PublicKey is equal to the other PublicKey.
@@ -41,36 +56,44 @@ func (key PublicKey) Equals(other PublicKey) bool {
 	return key.String() == other.String()
 }
 
-type PrivateKey []byte
+type PrivateKey struct {
+	value []byte
+}
+
+func EmptyPrivateKey() PrivateKey {
+	return PrivateKey{}
+}
 
 // NewPrivateKeyFromEncoded creates a PrivateKey from an encoded base58 string.
 func NewPrivateKeyFromEncoded(encoded string) (PrivateKey, error) {
-	return DecodePrivateKey(encoded)
+	if len(encoded) != 44 {
+		return EmptyPrivateKey(), ErrInvalidPublicKey
+	}
+	return PrivateKey{
+		value: DecodePrivateKey(encoded),
+	}, nil
 }
 
 // NewPrivateKeyFromBytes creates a PrivateKey from a byte slice.
 func NewPrivateKeyFromBytes(bytes []byte) PrivateKey {
-	return PrivateKey(bytes)
-}
-
-// String returns the base58 encoded string representation of the PrivateKey.
-func (key PrivateKey) String() string {
-	return key.Encode()
-}
-
-// Encode returns the base58 encoded string representation of the PrivateKey.
-func (key PrivateKey) Encode() string {
-	return encodedPrivateKey(key)
+	return PrivateKey{
+		value: bytes,
+	}
 }
 
 // Bytes returns the byte slice representation of the PrivateKey.
 func (key PrivateKey) Bytes() []byte {
-	return []byte(key)
+	return key.value
 }
 
 // Equals returns true if the PrivateKey is equal to the other PrivateKey.
 func (key PrivateKey) Equals(other PrivateKey) bool {
-	return key.String() == other.String()
+	for i := range key.value {
+		if key.value[i] != other.value[i] {
+			return false
+		}
+	}
+	return true
 }
 
 type UserKeyPair struct {
