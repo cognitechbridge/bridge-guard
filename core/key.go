@@ -81,6 +81,18 @@ func NewPrivateKeyFromEncoded(encoded string) (PrivateKey, error) {
 	}, nil
 }
 
+// NewPrivateKeyFromRand creates a PrivateKey from a random byte slice.
+func NewPrivateKeyFromRand() (PrivateKey, error) {
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	if err != nil {
+		return EmptyPrivateKey(), err
+	}
+	return PrivateKey{
+		value: key,
+	}, nil
+}
+
 // NewPrivateKeyFromBytes creates a PrivateKey from a byte slice.
 func NewPrivateKeyFromBytes(bytes []byte) PrivateKey {
 	return PrivateKey{
@@ -148,11 +160,6 @@ func (key UnsafePrivateKey) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + key.Encode() + `"`), nil
 }
 
-type UserKeyPair struct {
-	PublicKey  PublicKey
-	PrivateKey PrivateKey
-}
-
 func GenerateKey() (*KeyInfo, error) {
 	key := NewKeyFromRand()
 	keyId, err := NewUid()
@@ -161,21 +168,4 @@ func GenerateKey() (*KeyInfo, error) {
 	}
 	keyInfo := NewKeyInfo(keyId, key[:])
 	return &keyInfo, nil
-}
-
-func GenerateUserKey() (*UserKeyPair, error) {
-	key := make([]byte, 32)
-	_, err := rand.Read(key)
-	if err != nil {
-		return nil, err
-	}
-	privateKey := NewPrivateKeyFromBytes(key)
-	publicKey, err := privateKey.ToPublicKey()
-	if err != nil {
-		return nil, err
-	}
-	return &UserKeyPair{
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-	}, nil
 }

@@ -39,7 +39,7 @@ type KeyService interface {
 	AddKeyToVault(vault *Vault, vaultPath string, key KeyInfo) error
 	MoveVault(vaultId string, oldVaultPath string, newVaultPath string, oldParentVaultId string, oldParentVaultPath, newParentVaultId string, newParentVaultPath string) error
 	MoveKey(keyId string, oldVaultId string, oldVaultPath string, newVaultId string, newVaultPath string) error
-	GenerateUserKey() (*UserKeyPair, error)
+	GenerateUserKey() (*PrivateKey, error)
 	IsUserJoined() bool
 	GetHasAccessToKey(keyId string, startVaultId string, startVaultPath string, userId string) (bool, bool)
 	GetKeyAccessList(keyId string, startVaultId string, startVaultPath string) (KeyAccessList, error)
