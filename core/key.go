@@ -2,8 +2,14 @@ package core
 
 import (
 	"crypto/rand"
+	"errors"
 
+	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/curve25519"
+)
+
+var (
+	ErrInvalidPublicKey = errors.New("invalid public key")
 )
 
 type PublicKey struct {
@@ -20,7 +26,7 @@ func NewPublicKeyFromEncoded(encoded string) (PublicKey, error) {
 		return EmptyPublicKey(), ErrInvalidPublicKey
 	}
 	return PublicKey{
-		value: DecodePublic(encoded),
+		value: base58.Decode(encoded),
 	}, nil
 }
 
@@ -43,7 +49,7 @@ func (key PublicKey) MarshalJSON() ([]byte, error) {
 
 // Encode returns the base58 encoded string representation of the PublicKey.
 func (key PublicKey) Encode() string {
-	return EncodePublic(key.value)
+	return base58.Encode(key.value)
 }
 
 // Bytes returns the byte slice representation of the PublicKey.
@@ -56,6 +62,7 @@ func (key PublicKey) Equals(other PublicKey) bool {
 	return key.String() == other.String()
 }
 
+// PrivateKey represents a private key used for cryptographic operations.
 type PrivateKey struct {
 	value []byte
 }
@@ -70,7 +77,7 @@ func NewPrivateKeyFromEncoded(encoded string) (PrivateKey, error) {
 		return EmptyPrivateKey(), ErrInvalidPublicKey
 	}
 	return PrivateKey{
-		value: DecodePrivateKey(encoded),
+		value: base58.Decode(encoded),
 	}, nil
 }
 
@@ -96,6 +103,31 @@ func (key PrivateKey) Equals(other PrivateKey) bool {
 	return true
 }
 
+// Unsafe returns an UnsafePrivateKey for unsafe operations.
+func (key PrivateKey) Unsafe() UnsafePrivateKey {
+	return UnsafePrivateKey{key}
+}
+
+// UnsafePrivateKey is used for unsafe operations on a private key.
+type UnsafePrivateKey struct {
+	PrivateKey
+}
+
+// Encode returns the base58 encoded string representation of the PrivateKey (Unsafe).
+func (key UnsafePrivateKey) Encode() string {
+	return base58.Encode(key.Bytes())
+}
+
+// String returns the base58 encoded string representation of the PrivateKey (Unsafe).
+func (key UnsafePrivateKey) String() string {
+	return key.Encode()
+}
+
+// MarshalJSON returns the JSON encoding of the PrivateKey (Unsafe).
+func (key UnsafePrivateKey) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + key.Encode() + `"`), nil
+}
+
 type UserKeyPair struct {
 	PublicKey  string
 	PrivateKey string
@@ -117,14 +149,13 @@ func GenerateUserKey() (*UserKeyPair, error) {
 	if err != nil {
 		return nil, err
 	}
-	encodedPrivateKey := encodedPrivateKey(key)
 	publicKey, err := curve25519.X25519(key, curve25519.Basepoint)
 	if err != nil {
 		return nil, err
 	}
-	encodedPublicKey := EncodePublic(publicKey)
+	encodedPublicKey := NewPublicKeyFromBytes(publicKey).Encode()
 	return &UserKeyPair{
 		PublicKey:  encodedPublicKey,
-		PrivateKey: encodedPrivateKey,
+		PrivateKey: NewPrivateKeyFromBytes(key).Unsafe().Encode(),
 	}, nil
 }
