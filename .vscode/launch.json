@@ -68,6 +68,19 @@
       "env": {
         "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
       }
+    },
+    {
+      "name": "pubkey",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}\\main.go",
+      "cwd": "D:\\Repo",
+      "args": ["pubkey", "-k", "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ", "-o", "json"],
+      "console": "integratedTerminal",
+      "env": {
+        "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
+      }
     }
   ]
 }
