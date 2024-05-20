@@ -50,10 +50,7 @@ func (ks *KeyStoreDefault) GetUserId() (string, error) {
 		return "", err
 	}
 	// Encode public key to get user id
-	userId, err := core.EncodePublic(publicKey)
-	if err != nil {
-		return "", err
-	}
+	userId := core.EncodePublic(publicKey)
 	return userId, nil
 }
 
@@ -217,7 +214,7 @@ func (ks *KeyStoreDefault) GetEncodablePublicKeyByEncodedPrivateKey(privateKey s
 	if err != nil {
 		return "", err
 	}
-	return core.EncodePublic(publicKey)
+	return core.EncodePublic(publicKey), nil
 }
 
 // GetEncodablePublicKey returns the public key as a string.
@@ -228,7 +225,7 @@ func (ks *KeyStoreDefault) GetEncodablePublicKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return core.EncodePublic(publicKey)
+	return core.EncodePublic(publicKey), nil
 }
 
 // CreateVault generates a new vault and inserts it into the vault repository.

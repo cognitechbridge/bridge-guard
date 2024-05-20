@@ -13,13 +13,13 @@ var (
 )
 
 // KeyService represents the service used to manage keys
-func encodedPrivateKey(privateKey []byte) (string, error) {
-	return base58.Encode(privateKey), nil
+func encodedPrivateKey(privateKey []byte) string {
+	return base58.Encode(privateKey)
 }
 
 // NewKeyFromRand returns a new key generated from random bytes
-func EncodePublic(byte []byte) (string, error) {
-	return base58.Encode(byte), nil
+func EncodePublic(byte []byte) string {
+	return base58.Encode(byte)
 }
 
 // DecodePublic decodes a public key from a string using base58 encoding
