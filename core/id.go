@@ -2,36 +2,10 @@ package core
 
 import (
 	"crypto/rand"
-	"errors"
 	"io"
 
 	"github.com/btcsuite/btcutil/base58"
 )
-
-var (
-	ErrInvalidPublicKey = errors.New("invalid public key")
-)
-
-// KeyService represents the service used to manage keys
-func encodedPrivateKey(privateKey []byte) string {
-	return base58.Encode(privateKey)
-}
-
-// NewKeyFromRand returns a new key generated from random bytes
-func EncodePublic(byte []byte) string {
-	return base58.Encode(byte)
-}
-
-// DecodePublic decodes a public key from a string using base58 encoding
-func DecodePublic(str string) []byte {
-	pub := base58.Decode(str)
-	return pub
-}
-
-// DecodePrivateKey decodes a private key from a string using base58 encoding
-func DecodePrivateKey(str string) []byte {
-	return base58.Decode(str)
-}
 
 // NewUid returns a new uid as a string
 func NewUid() (string, error) {
