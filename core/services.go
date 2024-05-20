@@ -34,6 +34,7 @@ type KeyService interface {
 	Share(keyId string, startVaultId string, startVaultPath string, recipient []byte, recipientUserId string) error
 	GetPublicKey() ([]byte, error)
 	GetEncodablePublicKey() (string, error)
+	GetEncodablePublicKeyByEncodedPrivateKey(privateKey string) (string, error)
 	CreateVault(parentId string, path string) (*Vault, error)
 	GenerateKeyInVault(vaultId string, vaultPath string) (*KeyInfo, error)
 	AddKeyToVault(vault *Vault, vaultPath string, key KeyInfo) error

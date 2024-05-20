@@ -205,6 +205,21 @@ func (ks *KeyStoreDefault) GetPublicKey() ([]byte, error) {
 	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
 }
 
+// GetEncodablePublicKeyByPrivateKey returns the public key as a string.
+// It takes a private key as a parameter and encodes the public key using base58 encoding.
+// If any error occurs during the process, it returns the error.
+func (ks *KeyStoreDefault) GetEncodablePublicKeyByEncodedPrivateKey(privateKey string) (string, error) {
+	decodedPrivateKey, err := core.DecodePrivateKey(privateKey)
+	if err != nil {
+		return "", err
+	}
+	publicKey, err := curve25519.X25519(decodedPrivateKey, curve25519.Basepoint)
+	if err != nil {
+		return "", err
+	}
+	return core.EncodePublic(publicKey)
+}
+
 // GetEncodablePublicKey returns the public key as a string.
 // It encode the public key using base58 encoding and returns it.
 // If any error occurs during the process, it returns the error.
