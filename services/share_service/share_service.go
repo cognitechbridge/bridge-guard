@@ -35,11 +35,11 @@ func (s *Service) ShareByPublicKey(path string, publicKeyEncoded string) error {
 	if err != nil {
 		return err
 	}
-	publicKeyBytes, err := core.DecodePublic(publicKeyEncoded)
+	publicKeyBytes, err := core.NewPublicKeyFromEncoded(publicKeyEncoded)
 	if err != nil {
 		return err
 	}
-	err = s.keyService.Share(keyId, startVaultId, startVaultPath, publicKeyBytes, publicKeyEncoded)
+	err = s.keyService.Share(keyId, startVaultId, startVaultPath, publicKeyBytes.Bytes(), publicKeyEncoded)
 	if err != nil {
 		return err
 	}

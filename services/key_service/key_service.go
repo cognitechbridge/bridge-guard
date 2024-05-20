@@ -20,7 +20,7 @@ var (
 
 // KeyStoreDefault represents a key store
 type KeyStoreDefault struct {
-	privateKey      []byte
+	privateKey      core.PrivateKey
 	keyRepository   repositories.KeyRepository
 	vaultRepository repositories.VaultRepository
 }
@@ -37,7 +37,7 @@ func NewKeyStore(keyRepository repositories.KeyRepository, vaultRepository repos
 }
 
 // SetPrivateKey sets the private key in the KeyStoreDefault instance.
-func (ks *KeyStoreDefault) SetPrivateKey(privateKey []byte) {
+func (ks *KeyStoreDefault) SetPrivateKey(privateKey core.PrivateKey) {
 	ks.privateKey = privateKey
 }
 
@@ -50,7 +50,7 @@ func (ks *KeyStoreDefault) GetUserId() (string, error) {
 		return "", err
 	}
 	// Encode public key to get user id
-	userId := core.EncodePublic(publicKey)
+	userId := publicKey.String()
 	return userId, nil
 }
 
@@ -67,7 +67,7 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo, path string) error {
 		return err
 	}
 	// Seal key with user public key
-	keyHashed, err := key_crypto.SealDataKey(key.Key[:], pk)
+	keyHashed, err := key_crypto.SealDataKey(key.Key[:], pk.Bytes())
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath
 			return nil, err
 		}
 		// Unseal key
-		key, err := key_crypto.OpenDataKey(sk, ks.privateKey)
+		key, err := key_crypto.OpenDataKey(sk, ks.privateKey.Bytes())
 		if err != nil {
 			return nil, err
 		}
@@ -198,34 +198,23 @@ func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, startVaultPa
 // It uses the X25519 function from the curve25519 package to perform the scalar multiplication
 // of the private key with the base point, resulting in the public key.
 // If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) GetPublicKey() ([]byte, error) {
-	return curve25519.X25519(ks.privateKey, curve25519.Basepoint)
+func (ks *KeyStoreDefault) GetPublicKey() (core.PublicKey, error) {
+	res, err := curve25519.X25519(ks.privateKey.Bytes(), curve25519.Basepoint)
+	if err != nil {
+		return core.EmptyPublicKey(), err
+	}
+	return core.NewPublicKeyFromBytes(res), nil
 }
 
-// GetEncodablePublicKeyByPrivateKey returns the public key as a string.
-// It takes a private key as a parameter and encodes the public key using base58 encoding.
-// If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) GetEncodablePublicKeyByEncodedPrivateKey(privateKey string) (string, error) {
-	decodedPrivateKey, err := core.DecodePrivateKey(privateKey)
+// GetPublicKeyByPrivateKey returns the public key as a string.
+// It uses the X25519 function from the curve25519 package to perform the scalar multiplication
+// of the private key with the base point, resulting in the public key.
+func (ks *KeyStoreDefault) GetPublicKeyByPrivateKey(privateKey core.PrivateKey) (core.PublicKey, error) {
+	publicKey, err := curve25519.X25519(privateKey.Bytes(), curve25519.Basepoint)
 	if err != nil {
-		return "", err
+		return core.EmptyPublicKey(), err
 	}
-	publicKey, err := curve25519.X25519(decodedPrivateKey, curve25519.Basepoint)
-	if err != nil {
-		return "", err
-	}
-	return core.EncodePublic(publicKey), nil
-}
-
-// GetEncodablePublicKey returns the public key as a string.
-// It encode the public key using base58 encoding and returns it.
-// If any error occurs during the process, it returns the error.
-func (ks *KeyStoreDefault) GetEncodablePublicKey() (string, error) {
-	publicKey, err := ks.GetPublicKey()
-	if err != nil {
-		return "", err
-	}
-	return core.EncodePublic(publicKey), nil
+	return core.NewPublicKeyFromBytes(publicKey), nil
 }
 
 // CreateVault generates a new vault and inserts it into the vault repository.

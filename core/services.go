@@ -28,13 +28,12 @@ type FileSystemService interface {
 }
 
 type KeyService interface {
-	SetPrivateKey(privateKey []byte)
+	SetPrivateKey(privateKey PrivateKey)
 	Get(keyID string, startVaultId string, startVaultPath string) (*KeyInfo, error)
 	Insert(key *KeyInfo, path string) error
 	Share(keyId string, startVaultId string, startVaultPath string, recipient []byte, recipientUserId string) error
-	GetPublicKey() ([]byte, error)
-	GetEncodablePublicKey() (string, error)
-	GetEncodablePublicKeyByEncodedPrivateKey(privateKey string) (string, error)
+	GetPublicKey() (PublicKey, error)
+	GetPublicKeyByPrivateKey(PrivateKey PrivateKey) (PublicKey, error)
 	CreateVault(parentId string, path string) (*Vault, error)
 	GenerateKeyInVault(vaultId string, vaultPath string) (*KeyInfo, error)
 	AddKeyToVault(vault *Vault, vaultPath string, key KeyInfo) error

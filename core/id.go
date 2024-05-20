@@ -23,14 +23,14 @@ func EncodePublic(byte []byte) string {
 }
 
 // DecodePublic decodes a public key from a string using base58 encoding
-func DecodePublic(str string) ([]byte, error) {
+func DecodePublic(str string) []byte {
 	pub := base58.Decode(str)
-	return pub, nil
+	return pub
 }
 
 // DecodePrivateKey decodes a private key from a string using base58 encoding
-func DecodePrivateKey(str string) ([]byte, error) {
-	return base58.Decode(str), nil
+func DecodePrivateKey(str string) []byte {
+	return base58.Decode(str)
 }
 
 // NewUid returns a new uid as a string
