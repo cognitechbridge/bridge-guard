@@ -5,6 +5,11 @@
             "label": "Build Go",
             "type": "shell",
             "command": "go build -o ../storage-ui/src-tauri/binaries/storage-x86_64-pc-windows-msvc.exe",
+            "options": {
+                "env": {
+                    "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
+                },
+            },      
             "group": {
                 "kind": "build",
                 "isDefault": true
