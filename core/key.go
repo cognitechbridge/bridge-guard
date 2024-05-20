@@ -108,6 +108,26 @@ func (key PrivateKey) Unsafe() UnsafePrivateKey {
 	return UnsafePrivateKey{key}
 }
 
+// ToPublicKey returns the PublicKey representation of the PrivateKey.
+func (key PrivateKey) ToPublicKey() (PublicKey, error) {
+	publicKey, err := curve25519.X25519(key.Bytes(), curve25519.Basepoint)
+	if err != nil {
+		return EmptyPublicKey(), err
+	}
+	return NewPublicKeyFromBytes(publicKey), nil
+}
+
+// MarshalJSON makes sure that the PrivateKey is not marshaled to JSON. This is to prevent leaking the private key.
+// To marshal the private key, use the Unsafe method.
+func (key PrivateKey) MarshalJSON() ([]byte, error) {
+	return []byte(``), nil
+}
+
+// String makes sure that the PrivateKey is not converted to a string. This is to prevent leaking the private key.
+func (key PrivateKey) String() string {
+	return ""
+}
+
 // UnsafePrivateKey is used for unsafe operations on a private key.
 type UnsafePrivateKey struct {
 	PrivateKey
@@ -129,8 +149,8 @@ func (key UnsafePrivateKey) MarshalJSON() ([]byte, error) {
 }
 
 type UserKeyPair struct {
-	PublicKey  string
-	PrivateKey string
+	PublicKey  PublicKey
+	PrivateKey PrivateKey
 }
 
 func GenerateKey() (*KeyInfo, error) {
@@ -149,13 +169,13 @@ func GenerateUserKey() (*UserKeyPair, error) {
 	if err != nil {
 		return nil, err
 	}
-	publicKey, err := curve25519.X25519(key, curve25519.Basepoint)
+	privateKey := NewPrivateKeyFromBytes(key)
+	publicKey, err := privateKey.ToPublicKey()
 	if err != nil {
 		return nil, err
 	}
-	encodedPublicKey := NewPublicKeyFromBytes(publicKey).Encode()
 	return &UserKeyPair{
-		PublicKey:  encodedPublicKey,
-		PrivateKey: NewPrivateKeyFromBytes(key).Unsafe().Encode(),
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
 	}, nil
 }
