@@ -77,11 +77,11 @@ func (f *FileSystem) CreateVaultInPath(path string) error {
 	//If the path is not the root directory, get the parent vault id
 	if filepath.Clean(path) != string(filepath.Separator) {
 		parentPath := filepath.Dir(path)
-		vaultLink, err := f.vaultRepo.GetVaultLinkByPath(parentPath)
+		vaultLink, err := f.vaultRepo.GetVaultByPath(parentPath)
 		if err != nil {
 			return err
 		}
-		parentVaultId = vaultLink.VaultId
+		parentVaultId = vaultLink.Id
 	}
 	//Create vault in the parent vault using the key service
 	vault, err := f.keyService.CreateVault(parentVaultId, path)
@@ -257,7 +257,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Get file vault link
-	vaultLink, vaultPath, err := f.vaultRepo.GetFileVaultLink(path)
+	vaultLink, vaultPath, err := f.vaultRepo.GetFileVault(path)
 	if err != nil {
 		return 0, err
 	}
@@ -267,7 +267,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Get file key
-	key, err := f.keyService.Get(keyId, vaultLink.VaultId, vaultPath)
+	key, err := f.keyService.Get(keyId, vaultLink.Id, vaultPath)
 	if err != nil {
 		return 0, err
 	}
@@ -313,22 +313,22 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 	isDir := f.linkRepo.IsDir(oldPath)
 	//Get the vault links for the oldPath and newPath
 	oldVaultPath := filepath.Dir(oldPath)
-	oldVault, err := f.vaultRepo.GetVaultLinkByPath(oldVaultPath)
+	oldVault, err := f.vaultRepo.GetVaultByPath(oldVaultPath)
 	if err != nil {
 		return err
 	}
 	newVaultPath := filepath.Dir(newPath)
-	newVault, err := f.vaultRepo.GetVaultLinkByPath(newVaultPath)
+	newVault, err := f.vaultRepo.GetVaultByPath(newVaultPath)
 	if err != nil {
 		return err
 	}
 	if isDir {
 		//If the path is a directory, move the vault to the new parent vault
-		vault, err := f.vaultRepo.GetVaultLinkByPath(oldPath)
+		vault, err := f.vaultRepo.GetVaultByPath(oldPath)
 		if err != nil {
 			return err
 		}
-		err = f.keyService.MoveVault(vault.VaultId, oldPath, newPath, oldVault.VaultId, oldVaultPath, newVault.VaultId, newVaultPath)
+		err = f.keyService.MoveVault(vault.Id, oldPath, newPath, oldVault.Id, oldVaultPath, newVault.Id, newVaultPath)
 		if err != nil {
 			return err
 		}
@@ -344,7 +344,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 			return err
 		}
 		//Move the file key to the new vault
-		err = f.keyService.MoveKey(keyId, oldVault.VaultId, oldVaultPath, newVault.VaultId, newVaultPath)
+		err = f.keyService.MoveKey(keyId, oldVault.Id, oldVaultPath, newVault.Id, newVaultPath)
 		if err != nil {
 			return err
 		}
@@ -375,12 +375,12 @@ func (f *FileSystem) Commit(path string) error {
 		delete(f.openToWrite, path)
 		//Get vault link
 		link, _ := f.linkRepo.GetByPath(path)
-		vaultLink, vaultPath, err := f.vaultRepo.GetFileVaultLink(path)
+		vaultLink, vaultPath, err := f.vaultRepo.GetFileVault(path)
 		if err != nil {
 			return err
 		}
 		//Generate key in vault
-		keyInfo, err := f.keyService.GenerateKeyInVault(vaultLink.VaultId, vaultPath)
+		keyInfo, err := f.keyService.GenerateKeyInVault(vaultLink.Id, vaultPath)
 		if err != nil {
 			return err
 		}
@@ -413,12 +413,12 @@ func (f *FileSystem) OpenInWrite(path string) error {
 // If there are, it returns 0555, otherwise it returns 0000.
 func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 	//Get vault link
-	vaultLink, vaultPath, err := f.vaultRepo.GetFileVaultLink(path)
+	vaultLink, vaultPath, err := f.vaultRepo.GetFileVault(path)
 	if err != nil {
 		return 0000
 	}
 	//Get vault
-	vault, err := f.vaultRepo.GetVault(vaultLink.VaultId, path)
+	vault, err := f.vaultRepo.GetVault(vaultLink.Id, path)
 	if err != nil {
 		return 0000
 	}
@@ -439,7 +439,7 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 			return 0000
 		}
 		//If user has access to file key, he has access to the file
-		if _, err := f.keyService.Get(keyId, vaultLink.VaultId, vaultPath); err == nil {
+		if _, err := f.keyService.Get(keyId, vaultLink.Id, vaultPath); err == nil {
 			return 0777
 		}
 		//If user does not have access to file key, he does not have access to the file

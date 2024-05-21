@@ -65,7 +65,7 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 		if err != nil {
 			return "", "", "", err
 		}
-		startVaultId = parentVaultLink.VaultId
+		startVaultId = parentVaultLink.Id
 		startVaultPath = parentVaultPath
 	} else {
 		link, err := s.linkRepository.GetByPath(path)
@@ -77,11 +77,11 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 		if err != nil {
 			return "", "", "", err
 		}
-		vault, vaultPath, err := s.vaultRepository.GetFileVaultLink(path)
+		vault, vaultPath, err := s.vaultRepository.GetFileVault(path)
 		if err != nil {
 			return "", "", "", err
 		}
-		startVaultId = vault.VaultId
+		startVaultId = vault.Id
 		startVaultPath = vaultPath
 	}
 	return keyId, startVaultId, startVaultPath, nil
