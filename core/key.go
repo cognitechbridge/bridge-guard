@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"crypto/rand"
 	"errors"
 
@@ -59,7 +60,7 @@ func (key PublicKey) Bytes() []byte {
 
 // Equals returns true if the PublicKey is equal to the other PublicKey.
 func (key PublicKey) Equals(other PublicKey) bool {
-	return key.String() == other.String()
+	return bytes.Equal(key.value, other.value)
 }
 
 // PrivateKey represents a private key used for cryptographic operations.
