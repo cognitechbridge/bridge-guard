@@ -32,12 +32,15 @@ var (
 
 // deriveKey derives a key from the root key, salt, and info using HKDF and SHA-256.
 // It returns the derived key and any error encountered during the derivation process.
-func deriveKey(rootKey []byte, salt []byte, info string) (core.Key, error) {
+func deriveKey(rootKey core.Key, salt []byte, info string) (core.Key, error) {
 	// Derive a key from the root key, salt, and info using HKDF and SHA-256
-	hk := hkdf.New(sha256.New, rootKey[:], salt, []byte(info))
-	derivedKey := core.Key{}
-	_, err := io.ReadFull(hk, derivedKey[:])
-	return derivedKey, err
+	hk := hkdf.New(sha256.New, rootKey.Bytes(), salt, []byte(info))
+	derivedKey := make([]byte, chacha20poly1305.KeySize)
+	_, err := io.ReadFull(hk, derivedKey)
+	if err != nil {
+		return core.Key{}, err
+	}
+	return core.KeyFromBytes(derivedKey)
 }
 
 // SealVaultDataKey encrypts the given data key using a vault key and returns the encrypted result.
@@ -46,7 +49,7 @@ func deriveKey(rootKey []byte, salt []byte, info string) (core.Key, error) {
 // and serializes the salt and ciphered data key.
 // The result is returned as a string in the format "salt:cipheredDataKey".
 // If any error occurs during the process, an error is returned.
-func SealVaultDataKey(dataKey []byte, vaultKey []byte) (string, error) {
+func SealVaultDataKey(dataKey core.Key, vaultKey core.Key) (string, error) {
 	// Generate a random 32-byte salt
 	salt := make([]byte, 32)
 	_, err := rand.Read(salt)
@@ -59,14 +62,14 @@ func SealVaultDataKey(dataKey []byte, vaultKey []byte) (string, error) {
 		return "", ErrGeneratingDerivedKey
 	}
 	// Create a new AEAD cipher using the derived key
-	aead, err := chacha20poly1305.New(derivedKey[:])
+	aead, err := chacha20poly1305.New(derivedKey.Bytes())
 	if err != nil {
 		return "", ErrFaliledToCreateCipher
 	}
 	// Create a all-zero nonce
 	nonce := make([]byte, chacha20poly1305.NonceSize)
 	// Encrypt the data key using the AEAD cipher
-	ciphered := aead.Seal(nil, nonce, dataKey, nil)
+	ciphered := aead.Seal(nil, nonce, dataKey.Bytes(), nil)
 	// Serialize the salt and ciphered data key
 	res := fmt.Sprintf("%s:%s",
 		base64.RawStdEncoding.EncodeToString(salt),
@@ -91,7 +94,7 @@ func SealVaultDataKey(dataKey []byte, vaultKey []byte) (string, error) {
 // Returns:
 //   - *core.Key: The decrypted data key.
 //   - error: An error if decryption fails or the serialized key is invalid.
-func OpenVaultDataKey(serialized string, vaultKey []byte) (*core.Key, error) {
+func OpenVaultDataKey(serialized string, vaultKey core.Key) (*core.Key, error) {
 	// Split the serialized key into the salt and ciphered data key by the colon separator
 	parts := strings.Split(serialized, ":")
 	if len(parts) != 2 {
@@ -109,7 +112,7 @@ func OpenVaultDataKey(serialized string, vaultKey []byte) (*core.Key, error) {
 		return nil, ErrGeneratingDerivedKey
 	}
 	// Create AEAD cipher using the derived key
-	aead, err := chacha20poly1305.New(derivedKey[:])
+	aead, err := chacha20poly1305.New(derivedKey.Bytes())
 	if err != nil {
 		return nil, ErrFaliledToCreateCipher
 	}
@@ -121,8 +124,10 @@ func OpenVaultDataKey(serialized string, vaultKey []byte) (*core.Key, error) {
 		return nil, ErrInvalidKey
 	}
 	// Convert the deciphered data key to a core.Key format
-	key := core.Key{}
-	copy(key[:], deciphered)
+	key, err := core.KeyFromBytes(deciphered)
+	if err != nil {
+		return nil, ErrInvalidKey
+	}
 	return &key, nil
 }
 
@@ -133,7 +138,7 @@ func OpenVaultDataKey(serialized string, vaultKey []byte) (*core.Key, error) {
 // derives the wrap key from the shared secret, salt, and info using HKDF and SHA-256, creates a new AEAD cipher using the wrap key,
 // encrypts the data key using the AEAD cipher, and serializes the ephemeral share and ciphered data key.
 // The function returns the serialized result as a string in the format "ephemeralShare \n cipheredDataKey" and any error encountered during the encryption process.
-func SealDataKey(key []byte, publicKey core.PublicKey) (string, error) {
+func SealDataKey(key core.Key, publicKey core.PublicKey) (string, error) {
 	// Generate a random 32-byte ephemeral secret
 	ephemeralSecret := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, ephemeralSecret[:])
@@ -154,20 +159,24 @@ func SealDataKey(key []byte, publicKey core.PublicKey) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error encrypting data key: %v", err)
 	}
+	sharedSecretKey, err := core.KeyFromBytes(sharedSecret)
+	if err != nil {
+		return "", fmt.Errorf("error encrypting data key: %v", err)
+	}
 	// Derive the wrap key from the shared secret, salt, and info using HKDF and SHA-256
-	wrapKey, err := deriveKey(sharedSecret, []byte(salt), X25519V1Info)
+	wrapKey, err := deriveKey(sharedSecretKey, []byte(salt), X25519V1Info)
 	if err != nil {
 		return "", fmt.Errorf("error generating wrap key: %v", err)
 	}
 	// Create a new AEAD cipher using the wrap key
-	aead, err := chacha20poly1305.New(wrapKey[:])
+	aead, err := chacha20poly1305.New(wrapKey.Bytes())
 	if err != nil {
 		return "", ErrFaliledToCreateCipher
 	}
 	// Create a all-zero nonce
 	nonce := make([]byte, chacha20poly1305.NonceSize)
 	// Encrypt the data key using the AEAD cipher
-	ciphered := aead.Seal(nil, nonce, key, nil)
+	ciphered := aead.Seal(nil, nonce, key.Bytes(), nil)
 	// Serialize the ephemeral share and ciphered data key
 	res := fmt.Sprintf("%s\n%s",
 		ephemeralShareString,
@@ -213,13 +222,17 @@ func OpenDataKey(serialized string, privateKey core.PrivateKey) (*core.Key, erro
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}
+	sharedSecretKey, err := core.KeyFromBytes(sharedSecret)
+	if err != nil {
+		return nil, fmt.Errorf("error decrypting data key: %v", err)
+	}
 	// Derive the wrap key from the shared secret, salt, and info using HKDF and SHA-256
-	wrapKey, err := deriveKey(sharedSecret, []byte(salt), X25519V1Info)
+	wrapKey, err := deriveKey(sharedSecretKey, []byte(salt), X25519V1Info)
 	if err != nil {
 		return nil, ErrErrorDerivingWrapKey
 	}
 	// Create a new AEAD cipher using the wrap key
-	aead, err := chacha20poly1305.New(wrapKey[:])
+	aead, err := chacha20poly1305.New(wrapKey.Bytes())
 	if err != nil {
 		return nil, ErrFaliledToCreateCipher
 	}
@@ -231,8 +244,9 @@ func OpenDataKey(serialized string, privateKey core.PrivateKey) (*core.Key, erro
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}
 	// Convert the deciphered data key to a core.Key format
-	key := core.Key{}
-	copy(key[:], deciphered)
-
+	key, err := core.KeyFromBytes(deciphered)
+	if err != nil {
+		return nil, fmt.Errorf("error decrypting data key: %v", err)
+	}
 	return &key, nil
 }

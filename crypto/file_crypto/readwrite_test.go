@@ -17,11 +17,9 @@ func testRoundTrip(t *testing.T, length int) {
 	}
 
 	// Create a key
-	key := make([]byte, 32)
-	_, _ = rand.Read(key)
 	keyInfo := core.KeyInfo{
 		Id:  "ID",
-		Key: key,
+		Key: core.NewKeyFromRand(),
 	}
 
 	// Create an in-memory read-write buffer

@@ -67,7 +67,7 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo, path string) error {
 		return err
 	}
 	// Seal key with user public key
-	keyHashed, err := key_crypto.SealDataKey(key.Key[:], pk)
+	keyHashed, err := key_crypto.SealDataKey(key.Key, pk)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath
 			return nil, err
 		}
 		// Return key in KeyInfo format
-		keyInfo := core.NewKeyInfo(keyId, key[:])
+		keyInfo := core.NewKeyInfo(keyId, *key)
 		return &keyInfo, nil
 	}
 	// If key does not exist in user's data keys, check if it exists in a vault
@@ -135,12 +135,12 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath
 		return nil, err
 	}
 	// Unseal key using vault key
-	key, err := key_crypto.OpenVaultDataKey(encKey, vaultKey.Key[:])
+	key, err := key_crypto.OpenVaultDataKey(encKey, vaultKey.Key)
 	if err != nil {
 		return nil, err
 	}
 	// Return key in KeyInfo format
-	keyInfo := core.NewKeyInfo(keyId, key[:])
+	keyInfo := core.NewKeyInfo(keyId, *key)
 	return &keyInfo, nil
 }
 
@@ -186,7 +186,7 @@ func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, startVaultPa
 		return fmt.Errorf("cannot load key: %v", err)
 	}
 
-	keyHashed, err := key_crypto.SealDataKey(key.Key[:], recipient)
+	keyHashed, err := key_crypto.SealDataKey(key.Key, recipient)
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, vaultPath string, ke
 		return err
 	}
 	// Seal key with vault key
-	sealedKey, err := key_crypto.SealVaultDataKey(key.Key, vKey.Key[:])
+	sealedKey, err := key_crypto.SealVaultDataKey(key.Key, vKey.Key)
 	if err != nil {
 		return err
 	}

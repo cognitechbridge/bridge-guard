@@ -166,6 +166,6 @@ func GenerateKey() (*KeyInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	keyInfo := NewKeyInfo(keyId, key[:])
+	keyInfo := NewKeyInfo(keyId, key)
 	return &keyInfo, nil
 }
