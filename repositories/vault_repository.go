@@ -18,13 +18,22 @@ type VaultRepository interface {
 	RemoveKey(keyId string, vaultId string, vaultPath string) error
 	GetVaultParent(vaultPath string) (string, core.Vault, error)
 	GetVaultByPath(path string) (core.Vault, error)
-	InsertVaultLink(path string, link core.VaultLink) error
 	RemoveVaultLink(path string) error
 	GetFileVault(path string) (core.Vault, string, error)
 }
 
 type VaultRepositoryFile struct {
 	rootPath string
+}
+
+type vaultLink struct {
+	VaultId string `json:"vaultId"`
+}
+
+func NewVaultLink(vaultId string, keyId string) vaultLink {
+	return vaultLink{
+		VaultId: vaultId,
+	}
 }
 
 var _ VaultRepository = &VaultRepositoryFile{}
@@ -51,6 +60,14 @@ func (k *VaultRepositoryFile) InsertVault(vault core.Vault, vaultPath string) er
 	}
 	insidePath := k.vaultKeyFolder(vault.Id, vaultPath)
 	err = os.MkdirAll(insidePath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	// Insert Vault Link
+	link := vaultLink{
+		VaultId: vault.Id,
+	}
+	err = k.insertVaultLink(vaultPath, link)
 	if err != nil {
 		return err
 	}
@@ -140,17 +157,17 @@ func (k *VaultRepositoryFile) GetVaultByPath(path string) (core.Vault, error) {
 // GetVaultLinkByPath retrieves the vault link by the given path.
 // It reads the vault link file located at the specified path and returns the corresponding VaultLink object.
 // If an error occurs during file reading or unmarshaling, it returns an empty VaultLink object and the error.
-func (k *VaultRepositoryFile) getVaultLinkByPath(path string) (core.VaultLink, error) {
+func (k *VaultRepositoryFile) getVaultLinkByPath(path string) (vaultLink, error) {
 	// Read the vault link file
 	p := k.getVaultLinkPath(path)
 	js, err := os.ReadFile(p)
 	if err != nil {
-		return core.VaultLink{}, fmt.Errorf("error reading vault link file: %v", err)
+		return vaultLink{}, fmt.Errorf("error reading vault link file: %v", err)
 	}
-	var link core.VaultLink
+	var link vaultLink
 	err = json.Unmarshal(js, &link)
 	if err != nil {
-		return core.VaultLink{}, fmt.Errorf("error unmarshalink vault link file: %v", err)
+		return vaultLink{}, fmt.Errorf("error unmarshalink vault link file: %v", err)
 	}
 	return link, nil
 }
@@ -178,7 +195,7 @@ func (k *VaultRepositoryFile) GetFileVault(path string) (core.Vault, string, err
 // It creates the necessary directories and writes the link data to a file.
 // The link data is serialized as JSON before writing to the file.
 // If any error occurs during the process, it is returned.
-func (k *VaultRepositoryFile) InsertVaultLink(path string, link core.VaultLink) error {
+func (k *VaultRepositoryFile) insertVaultLink(path string, link vaultLink) error {
 	absPath := k.getVaultLinkPath(path)
 	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
