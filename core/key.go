@@ -105,16 +105,6 @@ func (key PrivateKey) Bytes() []byte {
 	return key.value
 }
 
-// Equals returns true if the PrivateKey is equal to the other PrivateKey.
-func (key PrivateKey) Equals(other PrivateKey) bool {
-	for i := range key.value {
-		if key.value[i] != other.value[i] {
-			return false
-		}
-	}
-	return true
-}
-
 // Unsafe returns an UnsafePrivateKey for unsafe operations.
 func (key PrivateKey) Unsafe() UnsafePrivateKey {
 	return UnsafePrivateKey{key}
