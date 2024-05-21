@@ -130,7 +130,7 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath
 	if err != nil {
 		return nil, err
 	}
-	vaultKey, err := ks.Get(vault.KeyId, parentLink.VaultId, parentPath)
+	vaultKey, err := ks.Get(vault.KeyId, parentLink.Id, parentPath)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (ks *KeyStoreDefault) GetHasAccessToKey(keyId string, startVaultId string, 
 	if err != nil {
 		return false, false
 	}
-	px, _ := ks.GetHasAccessToKey(vault.KeyId, parentLink.VaultId, parentPath, userId)
+	px, _ := ks.GetHasAccessToKey(vault.KeyId, parentLink.Id, parentPath, userId)
 	return px, true
 }
 
@@ -274,7 +274,7 @@ func (ks *KeyStoreDefault) AddKeyToVault(vault *core.Vault, vaultPath string, ke
 	if err != nil {
 		return err
 	}
-	vKey, err := ks.Get(vault.KeyId, parentLink.VaultId, parentPath)
+	vKey, err := ks.Get(vault.KeyId, parentLink.Id, parentPath)
 	if err != nil {
 		return err
 	}
