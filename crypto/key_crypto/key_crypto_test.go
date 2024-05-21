@@ -3,10 +3,9 @@ package key_crypto_test
 import (
 	"bytes"
 	"crypto/rand"
+	"ctb-cli/core"
 	"ctb-cli/crypto/key_crypto"
 	"testing"
-
-	"golang.org/x/crypto/curve25519"
 )
 
 func TestSealAndOpenVaultDataKey(t *testing.T) {
@@ -43,17 +42,16 @@ func TestSealAndOpenVaultDataKey(t *testing.T) {
 func TestSealAndOpenDataKey(t *testing.T) {
 	// Generate a random data key and private key
 	dataKey := make([]byte, 32)
-	privateKey := make([]byte, 32)
 	_, err := rand.Read(dataKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = rand.Read(privateKey)
+	privateKey, err := core.NewPrivateKeyFromRand()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	publicKey, _ := curve25519.X25519(privateKey, curve25519.Basepoint)
+	publicKey, _ := privateKey.ToPublicKey()
 
 	// Seal the data key
 	sealedKey, err := key_crypto.SealDataKey(dataKey, publicKey)

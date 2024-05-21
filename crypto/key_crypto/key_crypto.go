@@ -134,7 +134,7 @@ func OpenVaultDataKey(serialized string, vaultKey []byte) (*core.Key, error) {
 // derives the wrap key from the shared secret, salt, and info using HKDF and SHA-256, creates a new AEAD cipher using the wrap key,
 // encrypts the data key using the AEAD cipher, and serializes the ephemeral share and ciphered data key.
 // The function returns the serialized result as a string in the format "ephemeralShare \n cipheredDataKey" and any error encountered during the encryption process.
-func SealDataKey(key []byte, publicKey []byte) (string, error) {
+func SealDataKey(key []byte, publicKey core.PublicKey) (string, error) {
 	// Generate a random 32-byte ephemeral secret
 	ephemeralSecret := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, ephemeralSecret[:])
@@ -148,11 +148,10 @@ func SealDataKey(key []byte, publicKey []byte) (string, error) {
 	}
 	// Encode the ephemeral share and public key to raw base64
 	ephemeralShareString := base64.RawStdEncoding.EncodeToString(ephemeralShare)
-	publicKeyString := base64.RawStdEncoding.EncodeToString(publicKey)
 	// Generate the salt from the ephemeral share and encoded public key
-	salt := ephemeralShareString + publicKeyString
+	salt := ephemeralShareString + publicKey.Encode()
 	// Derive the shared secret from the ephemeral secret and the public key using X25519
-	sharedSecret, err := curve25519.X25519(ephemeralSecret, publicKey)
+	sharedSecret, err := curve25519.X25519(ephemeralSecret, publicKey.Bytes())
 	if err != nil {
 		return "", fmt.Errorf("error encrypting data key: %v", err)
 	}
@@ -190,7 +189,7 @@ func SealDataKey(key []byte, publicKey []byte) (string, error) {
 // Returns:
 //   - *core.Key: The decrypted data key.
 //   - error: An error if decryption fails.
-func OpenDataKey(serialized string, privateKey []byte) (*core.Key, error) {
+func OpenDataKey(serialized string, privateKey core.PrivateKey) (*core.Key, error) {
 	// Split the serialized key into the ephemeral share and ciphered data key by the newline separator
 	parts := strings.Split(serialized, "\n")
 	if len(parts) != 2 {
@@ -204,14 +203,14 @@ func OpenDataKey(serialized string, privateKey []byte) (*core.Key, error) {
 		return nil, ErrInvalidSerializedKey
 	}
 	// Derive the public key from the private key using X25519
-	publicKey, err := curve25519.X25519(privateKey, curve25519.Basepoint)
+	publicKey, err := privateKey.ToPublicKey()
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}
 	// Regenerate the salt from the ephemeral share and encoded public key
-	salt := ephemeralShareString + base64.RawStdEncoding.EncodeToString(publicKey)
+	salt := ephemeralShareString + publicKey.Encode()
 	// Derive the shared secret from the ephemeral share and the private key using X25519
-	sharedSecret, err := curve25519.X25519(privateKey, ephemeralShare)
+	sharedSecret, err := curve25519.X25519(privateKey.Bytes(), ephemeralShare)
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting data key: %v", err)
 	}

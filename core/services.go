@@ -31,7 +31,7 @@ type KeyService interface {
 	SetPrivateKey(privateKey PrivateKey)
 	Get(keyID string, startVaultId string, startVaultPath string) (*KeyInfo, error)
 	Insert(key *KeyInfo, path string) error
-	Share(keyId string, startVaultId string, startVaultPath string, recipient []byte, recipientUserId string) error
+	Share(keyId string, startVaultId string, startVaultPath string, recipient PublicKey, recipientUserId string) error
 	GetPublicKey() (PublicKey, error)
 	GetPublicKeyByPrivateKey(PrivateKey PrivateKey) (PublicKey, error)
 	CreateVault(parentId string, path string) (*Vault, error)
