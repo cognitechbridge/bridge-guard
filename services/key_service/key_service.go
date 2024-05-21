@@ -67,7 +67,7 @@ func (ks *KeyStoreDefault) Insert(key *core.KeyInfo, path string) error {
 		return err
 	}
 	// Seal key with user public key
-	keyHashed, err := key_crypto.SealDataKey(key.Key[:], pk.Bytes())
+	keyHashed, err := key_crypto.SealDataKey(key.Key[:], pk)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (ks *KeyStoreDefault) Get(keyId string, startVaultId string, startVaultPath
 			return nil, err
 		}
 		// Unseal key
-		key, err := key_crypto.OpenDataKey(sk, ks.privateKey.Bytes())
+		key, err := key_crypto.OpenDataKey(sk, ks.privateKey)
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +180,7 @@ func (ks *KeyStoreDefault) GetHasAccessToKey(keyId string, startVaultId string, 
 	return px, true
 }
 
-func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, startVaultPath string, recipient []byte, recipientUserId string) error {
+func (ks *KeyStoreDefault) Share(keyId string, startVaultId string, startVaultPath string, recipient core.PublicKey, recipientUserId string) error {
 	key, err := ks.Get(keyId, startVaultId, startVaultPath)
 	if err != nil {
 		return fmt.Errorf("cannot load key: %v", err)
