@@ -24,7 +24,7 @@ var (
 // The function returns a pointer to the writer object and an error if any occurred during the creation process.
 func NewWriter(dst io.Writer, keyInfo *core.KeyInfo, fileId string) (*writer, error) {
 	// Create a new stream writer with the key and the destination writer.
-	streamWriter, err := stream.NewWriter(keyInfo.Key[:], dst)
+	streamWriter, err := stream.NewWriter(keyInfo.Key.Bytes(), dst)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func Parse(source io.Reader) (*Header, *EncryptedStream, error) {
 // It returns an io.Reader that can be used to read the decrypted data.
 // If an error occurs during decryption, it is returned along with nil reader.
 func (e EncryptedStream) Decrypt(key *core.KeyInfo) (io.Reader, error) {
-	return stream.NewReader(key.Key[:], e.source)
+	return stream.NewReader(key.Key.Bytes(), e.source)
 }
 
 // readFileVersionAndHeader reads the file version and header from the given source.
