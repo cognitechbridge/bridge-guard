@@ -10,7 +10,6 @@ import (
 	"io"
 	"strings"
 
-	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
@@ -236,13 +235,4 @@ func OpenDataKey(serialized string, privateKey core.PrivateKey) (*core.Key, erro
 	copy(key[:], deciphered)
 
 	return &key, nil
-}
-
-// DeriveKeyFromSecret derives a key from the given secret and salt using Argon2.
-// It returns the derived key and any error encountered during the derivation process.
-func DeriveKeyFromSecret(secret string, salt []byte) (*core.Key, error) {
-	// Derive a key from the secret and salt using Argon2
-	keyB := argon2.IDKey([]byte(secret), salt, 4, 64*1024, 2, 32)
-	key, err := core.KeyFromBytes(keyB)
-	return &key, err
 }
