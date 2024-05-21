@@ -84,17 +84,10 @@ func (f *FileSystem) CreateVaultInPath(path string) error {
 		parentVaultId = vaultLink.Id
 	}
 	//Create vault in the parent vault using the key service
-	vault, err := f.keyService.CreateVault(parentVaultId, path)
+	_, err := f.keyService.CreateVault(parentVaultId, path)
 	if err != nil {
 		return err
 	}
-	//Create vault link
-	link := core.NewVaultLink(vault.Id, vault.KeyId)
-	err = f.vaultRepo.InsertVaultLink(path, link)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
