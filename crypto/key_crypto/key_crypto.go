@@ -28,17 +28,22 @@ var (
 	ErrGeneratingRandomEphemeralSecret = errors.New("error generating random ephemeral secret")
 	ErrFaliledToCreateCipher           = errors.New("failed to create cipher")
 	ErrErrorDerivingWrapKey            = errors.New("error deriving wrap key")
+	ErrCannotDeriveKeyFromEmptyKey     = errors.New("cannot derive key from empty key")
 )
 
 // deriveKey derives a key from the root key, salt, and info using HKDF and SHA-256.
 // It returns the derived key and any error encountered during the derivation process.
 func deriveKey(rootKey core.Key, salt []byte, info string) (core.Key, error) {
+	// Check if the root key is empty
+	if rootKey.IsEmpty() {
+		return core.EmptyKey(), ErrCannotDeriveKeyFromEmptyKey
+	}
 	// Derive a key from the root key, salt, and info using HKDF and SHA-256
 	hk := hkdf.New(sha256.New, rootKey.Bytes(), salt, []byte(info))
 	derivedKey := make([]byte, chacha20poly1305.KeySize)
 	_, err := io.ReadFull(hk, derivedKey)
 	if err != nil {
-		return core.Key{}, err
+		return core.EmptyKey(), err
 	}
 	return core.KeyFromBytes(derivedKey)
 }
