@@ -11,7 +11,9 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var cfgFile string
@@ -73,6 +75,13 @@ func initConfig() {
 	if err != nil {
 		panic(err)
 	}
+	//Log path
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	logPath := filepath.Join(homedir, ".ctb", "logs", ".log")
+	prepareLogger(logPath)
 	// Create the config
 	cfg, err := config.New(
 		repoRootPath,
@@ -84,4 +93,15 @@ func initConfig() {
 	}
 	// Create the app
 	ctbApp = app.New(*cfg)
+}
+
+func prepareLogger(logpath string) {
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   logpath, // File to log to
+		MaxSize:    10,      // Size in MB before the file is rotated
+		MaxBackups: 30,      // Max number of old log files to keep
+		MaxAge:     7,       // Max age in days to keep a log file
+		Compress:   true,    // Compress old log files
+	})
+	log.Info("Log file created")
 }
