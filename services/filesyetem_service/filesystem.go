@@ -406,12 +406,7 @@ func (f *FileSystem) OpenInWrite(path string) error {
 // If there are, it returns 0555, otherwise it returns 0000.
 func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 	//Get vault link
-	vaultLink, vaultPath, err := f.vaultRepo.GetFileVault(path)
-	if err != nil {
-		return 0000
-	}
-	//Get vault
-	vault, err := f.vaultRepo.GetVault(vaultLink.Id, path)
+	vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
 	if err != nil {
 		return 0000
 	}
@@ -432,7 +427,7 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 			return 0000
 		}
 		//If user has access to file key, he has access to the file
-		if _, err := f.keyService.Get(keyId, vaultLink.Id, vaultPath); err == nil {
+		if _, err := f.keyService.Get(keyId, vault.Id, vaultPath); err == nil {
 			return 0777
 		}
 		//If user does not have access to file key, he does not have access to the file
