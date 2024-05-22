@@ -141,3 +141,15 @@ func (o *ObjectCacheRepository) resolverFile(id string) (err error) {
 	err = o.resolver(id, file)
 	return
 }
+
+// RemoveFromCache removes the object with the specified ID from the cache.
+// It returns an error if the removal operation fails.
+// If the object is not in the cache, it returns nil (no error).
+func (o *ObjectCacheRepository) RemoveFromCache(id string) error {
+	p := filepath.Join(o.readPath, id)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return nil
+	}
+	err := os.Remove(p)
+	return err
+}

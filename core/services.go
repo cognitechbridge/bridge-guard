@@ -9,6 +9,7 @@ type ObjectService interface {
 	Move(oldId string, newId string) error
 	Truncate(id string, size int64) error
 	GetKeyIdByObjectId(id string, dir string) (string, error)
+	RemoveFromCache(id string) error
 }
 
 type FileSystemService interface {

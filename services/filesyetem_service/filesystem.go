@@ -361,12 +361,14 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 // and commits the changes using the object service.
 // Returns an error if there was an issue retrieving the vault link or generating the key.
 // Returns nil if the file is not open for writing.
+// If the file is not open for writing, it removes the file from the object cache.
 func (f *FileSystem) Commit(path string) error {
 	_, ex := f.openToWrite[path]
+	// If the file is open for writing
 	if ex {
 		//Remove file from open to write
 		delete(f.openToWrite, path)
-		//Get vault link
+		//Get vault
 		link, _ := f.linkRepo.GetByPath(path)
 		vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
 		if err != nil {
@@ -380,6 +382,15 @@ func (f *FileSystem) Commit(path string) error {
 		//Commit changes
 		dir := filepath.Dir(path)
 		return f.objectService.Commit(link, dir, keyInfo)
+	}
+	//Remove file from object cache if it is not open for writing
+	link, err := f.linkRepo.GetByPath(path)
+	if err != nil {
+		return err
+	}
+	err = f.objectService.RemoveFromCache(link.ObjectId)
+	if err != nil {
+		return err
 	}
 	return nil
 }

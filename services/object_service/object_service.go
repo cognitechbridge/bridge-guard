@@ -194,3 +194,10 @@ func (o *Service) Commit(link core.Link, dir string, key *core.KeyInfo) error {
 	o.encryptChan <- encryptChanItem{id: link.ObjectId, dir: dir, key: key}
 	return nil
 }
+
+// RemoveFromCache removes the object with the specified ID from the cache.
+// It returns an error if the removal operation fails.
+// If the object is not in the cache, it returns nil (no error).
+func (o *Service) RemoveFromCache(id string) error {
+	return o.objectCacheRepo.RemoveFromCache(id)
+}
