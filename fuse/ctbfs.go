@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/winfsp/cgofuse/fuse"
 )
 
@@ -126,12 +127,15 @@ func (c *CtbFs) getNode(path string, fh uint64) *Node {
 func (c *CtbFs) openNode(path string, dir bool) (errc int, fh uint64) {
 	_, _, node := c.lookupNode(path, nil)
 	if nil == node {
+		log.Error("Error opening node: ", path, " does not exist.")
 		return -fuse.ENOENT, ^uint64(0)
 	}
 	if !dir && fuse.S_IFDIR == node.stat.Mode&fuse.S_IFMT {
+		log.Error("Error opening node: ", path, " is a directory and requested as a file.")
 		return -fuse.EISDIR, ^uint64(0)
 	}
 	if dir && fuse.S_IFDIR != node.stat.Mode&fuse.S_IFMT {
+		log.Error("Error opening node: ", path, " is not a directory and requested as a directory.")
 		return -fuse.ENOTDIR, ^uint64(0)
 	}
 	node.opencnt++
