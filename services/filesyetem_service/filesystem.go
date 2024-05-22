@@ -77,11 +77,11 @@ func (f *FileSystem) CreateVaultInPath(path string) error {
 	//If the path is not the root directory, get the parent vault id
 	if filepath.Clean(path) != string(filepath.Separator) {
 		parentPath := filepath.Dir(path)
-		vaultLink, err := f.vaultRepo.GetVaultByPath(parentPath)
+		vault, err := f.vaultRepo.GetVaultByPath(parentPath)
 		if err != nil {
 			return err
 		}
-		parentVaultId = vaultLink.Id
+		parentVaultId = vault.Id
 	}
 	//Create vault in the parent vault using the key service
 	_, err := f.keyService.CreateVault(parentVaultId, path)
@@ -249,8 +249,8 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	if err != nil {
 		return 0, err
 	}
-	//Get file vault link
-	vaultLink, vaultPath, err := f.vaultRepo.GetFileVault(path)
+	//Get file vault
+	vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
 	if err != nil {
 		return 0, err
 	}
@@ -260,7 +260,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Get file key
-	key, err := f.keyService.Get(keyId, vaultLink.Id, vaultPath)
+	key, err := f.keyService.Get(keyId, vault.Id, vaultPath)
 	if err != nil {
 		return 0, err
 	}
@@ -368,12 +368,12 @@ func (f *FileSystem) Commit(path string) error {
 		delete(f.openToWrite, path)
 		//Get vault link
 		link, _ := f.linkRepo.GetByPath(path)
-		vaultLink, vaultPath, err := f.vaultRepo.GetFileVault(path)
+		vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
 		if err != nil {
 			return err
 		}
 		//Generate key in vault
-		keyInfo, err := f.keyService.GenerateKeyInVault(vaultLink.Id, vaultPath)
+		keyInfo, err := f.keyService.GenerateKeyInVault(vault.Id, vaultPath)
 		if err != nil {
 			return err
 		}
