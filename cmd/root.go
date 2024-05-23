@@ -76,11 +76,11 @@ func initConfig() {
 		panic(err)
 	}
 	//Log path
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
+	appData := os.Getenv("APPDATA")
+	if appData == "" {
+		panic("APPDATA environment variable not set")
 	}
-	logPath := filepath.Join(homedir, ".ctb", "logs", ".log")
+	logPath := filepath.Join(appData, "com.cognitechbridge.app", "logs", "client.log")
 	prepareLogger(logPath)
 	// Create the config
 	cfg, err := config.New(
@@ -103,5 +103,5 @@ func prepareLogger(logpath string) {
 		MaxAge:     7,       // Max age in days to keep a log file
 		Compress:   true,    // Compress old log files
 	})
-	log.Info("Log file created")
+	log.Info("App Started")
 }
