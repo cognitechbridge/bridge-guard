@@ -23,8 +23,8 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}\\main.go",
-      "cwd": "D:\\Repo2",
-      "args": ["init", "-k", "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ"],
+      "cwd": "D:\\Repo",
+      "args": ["init", "-k", "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ", "-p", "D:\\Repo"],
       "console": "integratedTerminal",
       "env": {
         "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
@@ -50,7 +50,7 @@
       "mode": "auto",
       "program": "${workspaceFolder}\\main.go",
       "cwd": "D:\\Repo",
-      "args": ["generate-key"],
+      "args": ["generate-key", "-o", "json"],
       "console": "integratedTerminal",
       "env": {
         "CPATH": "C:\\Program Files (x86)\\WinFsp\\inc\\fuse"
