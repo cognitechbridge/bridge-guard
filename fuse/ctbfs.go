@@ -126,7 +126,7 @@ func (c *CtbFs) getNode(path string, fh uint64) *Node {
 
 func (c *CtbFs) openNode(path string, dir bool) (errc int, fh uint64) {
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
 		log.Error("Error opening node: ", path, " does not exist.")
 		return -fuse.ENOENT, ^uint64(0)
 	}
@@ -181,10 +181,12 @@ func (c *CtbFs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 	defer trace(path, mode, dev)(&errc)
 	defer c.synchronize()()
 	prnt, name, node := c.lookupNode(path, nil)
-	if nil == prnt {
+	if prnt == nil {
+		log.Error("Error creating node: ", path, ". Parent does not exist.")
 		return -fuse.ENOENT
 	}
-	if nil != node {
+	if node != nil {
+		log.Error("Error creating node: ", path, ". Node already exists.")
 		return -fuse.EEXIST
 	}
 	_ = c.fs.CreateFile(path)
@@ -197,10 +199,12 @@ func (c *CtbFs) Mkdir(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer c.synchronize()()
 	prnt, name, node := c.lookupNode(path, nil)
-	if nil == prnt {
+	if prnt == nil {
+		log.Error("Error creating directory: ", path, ". Parent does not exist.")
 		return -fuse.ENOENT
 	}
-	if nil != node {
+	if node != nil {
+		log.Error("Error creating directory: ", path, ". Directory already exists.")
 		return -fuse.EEXIST
 	}
 	node = c.newNode(0, true, path, 0777)
@@ -213,9 +217,11 @@ func (c *CtbFs) Rmdir(path string) (errc int) {
 	defer trace(path)(&errc)
 	defer c.synchronize()()
 	if err := c.removeNode(path, true); err != 0 {
+		log.Error("Error removing node while removing directory: ", path, ". error: ", err)
 		return err
 	}
 	if err := c.fs.RemoveDir(path); err != nil {
+		log.Error("Error removing directory: ", path, ". error: ", err)
 		return errno(err)
 	}
 	return 0
@@ -223,16 +229,20 @@ func (c *CtbFs) Rmdir(path string) (errc int) {
 
 func (c *CtbFs) removeNode(path string, dir bool) int {
 	prnt, name, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error removing node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	if !dir && fuse.S_IFDIR == node.stat.Mode&fuse.S_IFMT {
+		log.Error("Error removing node: ", path, ". Node is a directory and requested as a file.")
 		return -fuse.EISDIR
 	}
 	if dir && fuse.S_IFDIR != node.stat.Mode&fuse.S_IFMT {
+		log.Error("Error removing node: ", path, ". Node is not a directory and requested as a directory.")
 		return -fuse.ENOTDIR
 	}
 	if 0 < len(node.chld) {
+		log.Error("Error removing node: ", path, ". Directory is not empty.")
 		return -fuse.ENOTEMPTY
 	}
 	node.stat.Nlink--
@@ -244,7 +254,8 @@ func (c *CtbFs) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	defer trace(path, buff, ofst, fh)(&n)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
-	if nil == node {
+	if node == nil {
+		log.Error("Error writing to node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	n, _ = c.fs.Write(path, buff, ofst)
@@ -255,7 +266,8 @@ func (c *CtbFs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	defer trace(path, buff, ofst, fh)(&n)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
-	if nil == node {
+	if node == nil {
+		log.Error("Error reading from node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	n, _ = c.fs.Read(path, buff, ofst)
@@ -321,10 +333,12 @@ func (c *CtbFs) Truncate(path string, size int64, fh uint64) (errc int) {
 	defer trace(path, size, fh)(&errc)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
-	if nil == node {
+	if node == nil {
+		log.Error("Error truncating node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	if err := c.fs.Resize(path, size); err != nil {
+		log.Error("Error resizing file while truncating node: ", path, ". error: ", err)
 		return errno(err)
 	}
 	node.stat.Size = size
@@ -335,25 +349,31 @@ func (c *CtbFs) Rename(oldPath string, newPath string) (errc int) {
 	defer trace(oldPath, newPath)(&errc)
 	defer c.synchronize()()
 	oldPrnt, oldName, oldNode := c.lookupNode(oldPath, nil)
-	if nil == oldNode {
+	if oldNode == nil {
+		log.Error("Error renaming node: ", oldPath, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	newPrnt, newName, newNode := c.lookupNode(newPath, nil)
-	if nil == newPrnt {
+	if newPrnt == nil {
+		log.Error("Error renaming node: ", newPath, ". New parent does not exist.")
 		return -fuse.ENOENT
 	}
 	if newName == "" {
+		log.Error("Error renaming node: ", newPath, ". New name is empty. (directory loop)")
 		// guard against directory loop creation
 		return -fuse.EINVAL
 	}
 	if oldPrnt == newPrnt && oldName == newName {
+		log.Warn("Renaming node: ", oldPath, " to ", newPath, ". No change.")
 		return 0
 	}
-	if nil != newNode {
+	if newNode != nil {
+		log.Error("Error renaming node: ", newPath, ". Node already exists.")
 		return -fuse.ENOENT
 	}
 	err := c.fs.Rename(oldPath, newPath)
 	if err != nil {
+		log.Error("Error renaming node: ", oldPath, " to ", newPath, ". error: ", err)
 		return -fuse.ENOENT
 	}
 	delete(oldPrnt.chld, oldName)
@@ -366,6 +386,7 @@ func (c *CtbFs) Unlink(path string) (errc int) {
 	defer c.synchronize()()
 	err := c.fs.RemovePath(path)
 	if err != nil {
+		log.Error("Error removing (unlink) node: ", path, ". error: ", err)
 		return -fuse.ENOENT
 	}
 	if err := c.removeNode(path, false); err != 0 {
@@ -384,6 +405,7 @@ func (c *CtbFs) Statfs(_ string, stat *fuse.Statfs_t) (errc int) {
 	stat.Bsize = stat.Frsize
 	totalBytes, freeBytesAvailable, err := c.fs.GetDiskUsage()
 	if err != nil {
+		log.Error("Error getting disk usage: ", err)
 		return -fuse.ENOENT
 	}
 	stat.Blocks = totalBytes / stat.Frsize
@@ -401,7 +423,8 @@ func (c *CtbFs) Chmod(path string, mode uint32) (errc int) {
 	defer trace(path, mode)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error changing mode of node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	node.stat.Mode = (node.stat.Mode & fuse.S_IFMT) | mode&07777
@@ -413,7 +436,8 @@ func (c *CtbFs) Chown(path string, uid uint32, gid uint32) (errc int) {
 	defer trace(path, uid, gid)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error changing ownership of node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	if ^uint32(0) != uid {
@@ -430,7 +454,8 @@ func (c *CtbFs) Utimens(path string, tmsp []fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error setting time of node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	node.stat.Ctim = fuse.Now()
@@ -454,7 +479,8 @@ func (c *CtbFs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	defer trace(path, fh)(&errc, stat)
 	defer c.synchronize()()
 	node := c.getNode(path, fh)
-	if nil == node {
+	if node == nil {
+		log.Error("Error getting attributes of node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	*stat = node.stat
@@ -474,6 +500,7 @@ func (c *CtbFs) Opendir(path string) (errc int, fh uint64) {
 	if !node.explored {
 		err := c.exploreDir(path)
 		if err != nil {
+			log.Error("Error opening directory: ", path, ". error: ", err)
 			return errno(err), ^uint64(0)
 		}
 	}
@@ -508,7 +535,7 @@ func (c *CtbFs) Setxattr(path string, name string, value []byte, flags int) (err
 	defer trace(path, name, value, flags)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
 		return -fuse.ENOENT
 	}
 	if name == "com.apple.ResourceFork" {
@@ -516,16 +543,18 @@ func (c *CtbFs) Setxattr(path string, name string, value []byte, flags int) (err
 	}
 	if fuse.XATTR_CREATE == flags {
 		if _, ok := node.xatr[name]; ok {
+			log.Error("Error setting extended attribute: ", path, ". Extended attribute already exists.")
 			return -fuse.EEXIST
 		}
 	} else if fuse.XATTR_REPLACE == flags {
 		if _, ok := node.xatr[name]; !ok {
+			log.Error("Error setting extended attribute: ", path, ". Extended attribute does not exist.")
 			return -fuse.ENOATTR
 		}
 	}
 	xatr := make([]byte, len(value))
 	copy(xatr, value)
-	if nil == node.xatr {
+	if node.xatr == nil {
 		node.xatr = map[string][]byte{}
 	}
 	node.xatr[name] = xatr
@@ -536,14 +565,17 @@ func (c *CtbFs) Getxattr(path string, name string) (errc int, xatr []byte) {
 	defer trace(path, name)(&errc, &xatr)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error getting extended attribute: ", path, ". Node does not exist.")
 		return -fuse.ENOENT, nil
 	}
 	if name == "com.apple.ResourceFork" {
+		log.Error("Error getting extended attribute: ", path, ". Resource fork is not supported.")
 		return -fuse.ENOTSUP, nil
 	}
 	xatr, ok := node.xatr[name]
 	if !ok {
+		log.Error("Error getting extended attribute: ", path, ". Extended attribute does not exist.")
 		return -fuse.ENOATTR, nil
 	}
 	return 0, xatr
@@ -553,13 +585,16 @@ func (c *CtbFs) Removexattr(path string, name string) (errc int) {
 	defer trace(path, name)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error removing extended attribute: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	if name == "com.apple.ResourceFork" {
+		log.Error("Error removing extended attribute: ", path, ". Resource fork is not supported.")
 		return -fuse.ENOTSUP
 	}
 	if _, ok := node.xatr[name]; !ok {
+		log.Error("Error removing extended attribute: ", path, ". Extended attribute does not exist.")
 		return -fuse.ENOATTR
 	}
 	delete(node.xatr, name)
@@ -570,11 +605,13 @@ func (c *CtbFs) Listxattr(path string, fill func(name string) bool) (errc int) {
 	defer trace(path, fill)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error listing extended attributes: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	for name := range node.xatr {
 		if !fill(name) {
+			log.Error("Error listing extended attributes: ", path, ". Error filling extended attributes.")
 			return -fuse.ERANGE
 		}
 	}
@@ -585,7 +622,8 @@ func (c *CtbFs) Chflags(path string, flags uint32) (errc int) {
 	defer trace(path, flags)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error changing flags of node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	node.stat.Flags = flags
@@ -597,7 +635,8 @@ func (c *CtbFs) Setcrtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error setting creation time of node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	node.stat.Birthtim = tmsp
@@ -609,7 +648,8 @@ func (c *CtbFs) Setchgtime(path string, tmsp fuse.Timespec) (errc int) {
 	defer trace(path, tmsp)(&errc)
 	defer c.synchronize()()
 	_, _, node := c.lookupNode(path, nil)
-	if nil == node {
+	if node == nil {
+		log.Error("Error setting change time of node: ", path, ". Node does not exist.")
 		return -fuse.ENOENT
 	}
 	node.stat.Ctim = tmsp
