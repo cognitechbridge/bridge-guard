@@ -11,6 +11,10 @@
 #
 name: "CodeQL"
 
+env:
+  GOOS: windows
+  GOARCH: amd64
+
 on:
   push:
     branches: [ "master" ]
