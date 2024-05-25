@@ -33,7 +33,7 @@ jobs:
           Start-Process -NoNewWindow -Wait msiexec "/i winfsp.msi /qn INSTALLLEVEL=1000"
 
       - name: Build
-        run: go build -v ./... -o build/storage-x86_64-pc-windows-msvc.exe
+        run: go build -v -o build/storage-x86_64-pc-windows-msvc.exe
 
       - name: Test
         run: go test -v ./...
