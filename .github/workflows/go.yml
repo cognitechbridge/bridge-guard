@@ -38,7 +38,7 @@ jobs:
       - name: Test
         run: go test -v ./...
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: build/storage-x86_64-pc-windows-msvc.exe
