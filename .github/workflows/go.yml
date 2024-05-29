@@ -5,26 +5,25 @@ name: Go
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
-
   build:
     runs-on: windows-latest
     env:
       CPATH: C:\Program Files (x86)\WinFsp\inc\fuse
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21.0'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.0"
 
-    - name: Install winfsp (Windows) # https://github.com/winfsp/cgofuse/blob/master/.github/workflows/test.yml
-      run: |
+      - name: Install winfsp (Windows) # https://github.com/winfsp/cgofuse/blob/master/.github/workflows/test.yml
+        run: |
           $releases = Invoke-WebRequest https://api.github.com/repos/winfsp/winfsp/releases | `
               ConvertFrom-Json
 
@@ -33,8 +32,13 @@ jobs:
           Invoke-WebRequest -Uri $asseturi -Out winfsp.msi
           Start-Process -NoNewWindow -Wait msiexec "/i winfsp.msi /qn INSTALLLEVEL=1000"
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build
+        run: go build -v -o build/storage-x86_64-pc-windows-msvc.exe
 
-    - name: Test
-      run: go test -v ./...
+      - name: Test
+        run: go test -v ./...
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/storage-x86_64-pc-windows-msvc.exe
