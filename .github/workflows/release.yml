@@ -1,12 +1,15 @@
-name: Go
+name: Release
 
 on:
   push:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  release:
     runs-on: windows-latest
     env:
       CPATH: C:\Program Files (x86)\WinFsp\inc\fuse
