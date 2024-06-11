@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package filesyetem_service
+package filesystem_service
 
 import (
 	"syscall"

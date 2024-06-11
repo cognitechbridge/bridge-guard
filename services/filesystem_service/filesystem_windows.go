@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package filesyetem_service
+package filesystem_service
 
 import (
 	"golang.org/x/sys/windows"

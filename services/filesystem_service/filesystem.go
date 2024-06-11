@@ -1,4 +1,4 @@
-package filesyetem_service
+package filesystem_service
 
 import (
 	"ctb-cli/core"

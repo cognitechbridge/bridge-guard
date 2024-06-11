@@ -7,7 +7,7 @@ import (
 	"ctb-cli/objectstorage/cloud"
 	"ctb-cli/repositories"
 	"ctb-cli/services/config_service"
-	"ctb-cli/services/filesyetem_service"
+	"ctb-cli/services/filesystem_service"
 	"ctb-cli/services/key_service"
 	"ctb-cli/services/object_service"
 	"ctb-cli/services/share_service"
@@ -19,7 +19,7 @@ import (
 // App represents the main application struct.
 type App struct {
 	keyStore      core.KeyService
-	fileSystem    *filesyetem_service.FileSystem
+	fileSystem    *filesystem_service.FileSystem
 	shareService  *share_service.Service
 	configService *config_service.ConfigService
 
@@ -80,7 +80,7 @@ func (a *App) initServices() core.AppResult {
 	objectService := object_service.NewService(&objectCacheRepository, &objectRepository, cloudClient)
 	a.shareService = share_service.NewService(a.keyStore, linkRepository, vaultRepository, &objectService)
 	a.configService = config_service.New(root)
-	a.fileSystem = filesyetem_service.NewFileSystem(a.keyStore, objectService, linkRepository, vaultRepository, *a.configService)
+	a.fileSystem = filesystem_service.NewFileSystem(a.keyStore, objectService, linkRepository, vaultRepository, *a.configService)
 
 	return core.NewAppResult()
 }
