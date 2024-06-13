@@ -70,7 +70,9 @@ func (c *CtbFs) Mount() {
 	host.SetCapReaddirPlus(true)
 	opts := make([]string, 0)
 	mount := c.mountPoint
-	opts = append(opts, "-o", "volname=CTB-Secure-Drive")
+	if runtime.GOOS == "windows" {
+		opts = append(opts, "-o", "volname=CTB-Secure-Drive")
+	}
 	host.Mount(mount, opts)
 }
 
