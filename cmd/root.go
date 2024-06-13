@@ -10,6 +10,7 @@ import (
 	"ctb-cli/config"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -98,4 +99,22 @@ func prepareLogger(logpath string) {
 func getTempPath() string {
 	tempPath := filepath.Join(os.TempDir(), ".ctb")
 	return tempPath
+}
+
+func getLogPath() string {
+	if runtime.GOOS == "windows" {
+		homeDir := os.Getenv("HOME")
+		if homeDir == "" {
+			panic("HOME environment variable not set")
+		}
+		logDir := filepath.Join(homeDir, ".cognitechbridge", "logs")
+		logPath := filepath.Join(logDir, "client.log")
+		return logPath
+	} else if runtime.GOOS == "linux" {
+		logDir := filepath.Join("/var/log", "cognitechbridge")
+		logPath := filepath.Join(logDir, "client.log")
+		return logPath
+	} else {
+		panic("Unsupported OS")
+	}
 }
