@@ -38,13 +38,13 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get install -y libfuse-dev
 
-      - name: Build
-        run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            go build -v -o build/storage-x86_64-pc-windows-msvc.exe
-          else
-            go build -v -o build/storage-x86_64-unknown-linux-gnu
-          fi
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: go build -v -o build/storage-x86_64-pc-windows-msvc.exe
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: go build -v -o build/storage-x86_64-unknown-linux-gnu
 
       - name: Test
         run: go test -v ./...
