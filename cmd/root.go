@@ -69,23 +69,12 @@ func initConfig() {
 			panic(err)
 		}
 	}
-	// Get the temp root path
-	tempPath := filepath.Join(os.TempDir(), ".ctb")
-	err := os.MkdirAll(tempPath, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-	//Log path
-	appData := os.Getenv("APPDATA")
-	if appData == "" {
-		panic("APPDATA environment variable not set")
-	}
-	logPath := filepath.Join(appData, "com.cognitechbridge.app", "logs", "client.log")
-	prepareLogger(logPath)
+	//Prepare Logger
+	prepareLogger(getLogPath())
 	// Create the config
 	cfg, err := config.New(
 		repoRootPath,
-		tempPath,
+		getTempPath(),
 		cfgFile,
 	)
 	if err != nil {
@@ -104,4 +93,9 @@ func prepareLogger(logpath string) {
 		Compress:   true,    // Compress old log files
 	})
 	log.Info("App Started")
+}
+
+func getTempPath() string {
+	tempPath := filepath.Join(os.TempDir(), ".ctb")
+	return tempPath
 }

@@ -1,18 +1,17 @@
 package app
 
-import "ctb-cli/core"
+import (
+	"ctb-cli/core"
+	"ctb-cli/services/key_service"
+)
 
 // GenerateUserKey generates a user private key and returns it as a string.
 // It returns an AppResult containing the generated key on success,
 // or an AppErrorResult containing the error on failure.
 func (a *App) GenerateUserKey() core.AppResult {
-	// init the app to be able to use the key store
-	initRes := a.initServices()
-	if !initRes.Ok {
-		return initRes
-	}
+	keyStore := key_service.NewKeyStore(nil, nil)
 	// generate the key
-	key, err := a.keyStore.GenerateUserKey()
+	key, err := keyStore.GenerateUserKey()
 	if err != nil {
 		return core.NewAppResultWithError(err)
 	}
