@@ -52,21 +52,7 @@ func (a *App) initServices() core.AppResult {
 
 	// Get the root paths
 	root, _ := a.cfg.GetRepoCtbRoot()
-	tempRoot, _ := a.cfg.GetTempRoot()
-
-	// Create the repository paths
-	cachePath := filepath.Join(tempRoot, "cache")
-
-	// Check if the paths exist
-	err := errors.Join(
-		checkFolderPath(root),
-		checkFolderPath(cachePath),
-	)
-
-	// If at least one path doesn't exist, panic
-	if err != nil {
-		return core.NewAppResultWithError(ErrInitRepositoryFolders)
-	}
+	cachePath, _ := a.cfg.GetCacheRoot()
 
 	// Create the repositories
 	keyRepository := repositories.NewKeyRepositoryFile(root)
@@ -83,14 +69,6 @@ func (a *App) initServices() core.AppResult {
 	a.fileSystem = filesystem_service.NewFileSystem(a.keyStore, objectService, linkRepository, vaultRepository, *a.configService)
 
 	return core.NewAppResult()
-}
-
-// checkFolderPath checks if the path exists and returns an error if it doesn't.
-func checkFolderPath(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return err
-	}
-	return nil
 }
 
 // SetPrivateKey sets the private key used by the application.
@@ -131,7 +109,6 @@ func (a *App) SetAndCheckPrivateKey(encodedPrivateKey string) core.AppResult {
 func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	// Get the root and temp paths
 	root, _ := a.cfg.GetRepoCtbRoot()
-	tempRoot, _ := a.cfg.GetTempRoot()
 
 	// Check if the root folder is empty
 	rootFiles, err := os.ReadDir(root)
@@ -140,12 +117,6 @@ func (a *App) InitRepo(encryptedPrivateKey string) core.AppResult {
 	}
 	if len(rootFiles) > 0 {
 		return core.NewAppResultWithError(ErrRootFolderNotEmpty)
-	}
-
-	// Create cache folder in the temp path
-	err = os.MkdirAll(filepath.Join(tempRoot, "cache"), os.ModePerm)
-	if err != nil {
-		return core.NewAppResultWithError(ErrCreatingRepositoryFolders)
 	}
 
 	// Create the system folders
