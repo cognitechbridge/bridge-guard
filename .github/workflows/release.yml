@@ -9,12 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-
+  release-windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +20,6 @@ jobs:
           go-version: "1.21.0"
 
       - name: Install winfsp (Windows)
-        if: runner.os == 'Windows'
         run: |
           $releases = Invoke-WebRequest https://api.github.com/repos/winfsp/winfsp/releases | `
               ConvertFrom-Json
@@ -34,16 +29,32 @@ jobs:
           Invoke-WebRequest -Uri $asseturi -OutFile winfsp.msi
           Start-Process -NoNewWindow -Wait msiexec "/i winfsp.msi /qn INSTALLLEVEL=1000"
 
-      - name: Install dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get install -y libfuse-dev
-
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
+      - name: Build
         run: go build -v -o build/storage-x86_64-pc-windows-msvc.exe
 
-      - name: Build (Linux)
-        if: runner.os == 'Linux'
+      - name: Test
+        run: go test -v ./...
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-artifacts
+          path: build/storage-x86_64-pc-windows-msvc.exe
+
+  release-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.0"
+
+      - name: Install dependencies (Linux)
+        run: sudo apt-get install -y libfuse-dev
+
+      - name: Build
         run: go build -v -o build/storage-x86_64-unknown-linux-gnu
 
       - name: Test
@@ -52,10 +63,24 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: |
-            build/storage-x86_64-pc-windows-msvc.exe
-            build/storage-x86_64-unknown-linux-gnu
+          name: linux-build-artifacts
+          path: build/storage-x86_64-unknown-linux-gnu
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [release-windows, release-linux]
+    steps:
+      - name: Download Windows build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build-artifacts
+          path: build/
+
+      - name: Download Linux build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build-artifacts
+          path: build/
 
       - name: Create and Upload Release
         uses: softprops/action-gh-release@v2
