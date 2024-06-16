@@ -103,7 +103,7 @@ func getTempPath() string {
 
 func getLogPath() string {
 	if runtime.GOOS == "windows" {
-		homeDir := os.Getenv("HOME")
+		homeDir := os.Getenv("UserProfile")
 		if homeDir == "" {
 			panic("HOME environment variable not set")
 		}
