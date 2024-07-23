@@ -413,34 +413,29 @@ func (f *FileSystem) OpenInWrite(path string) error {
 // If the user has access, it returns 0777, otherwise it returns 0000.
 // If the path is a directory, it checks if there are any sub-files that the user has access to.
 // If there are, it returns 0555, otherwise it returns 0000.
+// @TODO: Improve this function
 func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
-	//Get vault link
-	vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
+	//If the path is a file, find the access based on it's
+	if !isDir {
+		dir := filepath.Dir(path)
+		perm := f.GetUserFileAccess(dir, true)
+		if perm == 0777 {
+			return 0777
+		} else {
+			return 0000
+		}
+	}
+	vault, err := f.vaultRepo.GetVaultByPath(path)
+	if err != nil {
+		return 0000
+	}
+	parentVaultPath, parentVault, err := f.vaultRepo.GetVaultParent(path)
 	if err != nil {
 		return 0000
 	}
 	//If user has access to vault, he has access to the file
-	if _, err := f.keyService.Get(vault.KeyId, vault.Id, vaultPath); err == nil {
+	if _, err := f.keyService.Get(vault.KeyId, parentVault.Id, parentVaultPath); err == nil {
 		return 0777
-	}
-	//If the path is a file
-	if !isDir {
-		//Get file key id
-		link, err := f.linkRepo.GetByPath(path)
-		if err != nil {
-			return 0000
-		}
-		dir := filepath.Dir(path)
-		keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
-		if err != nil {
-			return 0000
-		}
-		//If user has access to file key, he has access to the file
-		if _, err := f.keyService.Get(keyId, vault.Id, vaultPath); err == nil {
-			return 0777
-		}
-		//If user does not have access to file key, he does not have access to the file
-		return 0000
 	}
 	//If the path is a directory get all sub files
 	subFiles, err := f.linkRepo.GetSubFiles(path)
