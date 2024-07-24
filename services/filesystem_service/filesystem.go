@@ -152,13 +152,18 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 // and then removes the directory itself from the link repository.
 // If any error occurs during the removal process, it is returned.
 func (f *FileSystem) RemoveDir(path string) error {
-	//Remove vault link
-	err := f.vaultRepo.RemoveVaultLink(path)
+	// Remove vault
+	err := f.vaultRepo.RemoveVault(path)
 	if err != nil {
 		return err
 	}
-	//Remove directory in link repo
-	return f.linkRepo.RemoveDir(path)
+	//Remove Share folder
+	err = f.linkRepo.RemoveDir(path)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 // CreateFile creates a new file at the specified path.

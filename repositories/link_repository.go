@@ -95,7 +95,22 @@ func (c *LinkRepository) Remove(path string) error {
 // Returns an error if the directory removal fails.
 func (c *LinkRepository) RemoveDir(path string) error {
 	p := filepath.Join(c.rootPath, path)
-	err := os.Remove(p)
+	systemFolderNames := core.GetRepoSystemFolderNames()
+	for _, folder := range systemFolderNames {
+		err := os.Remove(filepath.Join(p, ".meta", folder))
+		if err != nil {
+			return err
+		}
+	}
+	err := os.Remove(filepath.Join(p, ".meta", "config.yaml"))
+	if err != nil {
+		return err
+	}
+	err = os.Remove(filepath.Join(p, ".meta"))
+	if err != nil {
+		return err
+	}
+	err = os.Remove(p)
 	return err
 }
 

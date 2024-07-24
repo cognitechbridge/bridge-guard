@@ -18,7 +18,7 @@ type VaultRepository interface {
 	RemoveKey(keyId string, vaultId string, vaultPath string) error
 	GetVaultParent(vaultPath string) (string, core.Vault, error)
 	GetVaultByPath(path string) (core.Vault, error)
-	RemoveVaultLink(path string) error
+	RemoveVault(path string) error
 	GetFileVault(path string) (core.Vault, string, error)
 }
 
@@ -174,7 +174,7 @@ func (k *VaultRepositoryFile) getVaultLinkByPath(path string) (vaultLink, error)
 
 // RemoveVaultLink removes the vault link file for the specified path.
 // It takes the path of the link file as input and returns an error if any.
-func (k *VaultRepositoryFile) RemoveVaultLink(path string) error {
+func (k *VaultRepositoryFile) removeVaultLink(path string) error {
 	absPath := k.getVaultLinkPath(path)
 	err := os.Remove(absPath)
 	if err != nil {
@@ -189,6 +189,33 @@ func (k *VaultRepositoryFile) GetFileVault(path string) (core.Vault, string, err
 	dir := filepath.Dir(path)
 	vaultLink, err := k.GetVaultByPath(dir)
 	return vaultLink, dir, err
+}
+
+// RemoveVault removes the vault folder for the specified path.
+// It takes the path of the vault folder as input and returns an error if any.
+func (k *VaultRepositoryFile) RemoveVault(path string) error {
+	// Remove key from parent vault
+	vault, err := k.GetVaultByPath(path)
+	if err != nil {
+		return err
+	}
+	// Remove vault link
+	err = k.removeVaultLink(path)
+	if err != nil {
+		return err
+	}
+	//Remove vault file
+	err = os.Remove(k.vaultFile(vault.Id, path))
+	if err != nil {
+		return err
+	}
+	// Remove vault folder
+	folderPath := k.vaultKeyFolder(vault.Id, path)
+	err = os.Remove(folderPath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // InsertVaultLink inserts a VaultLink into the specified path.
