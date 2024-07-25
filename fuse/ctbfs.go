@@ -48,7 +48,7 @@ func New(fs core.FileSystemService) *CtbFs {
 	}
 	defer c.synchronize()()
 	modePerm := fs.GetUserFileAccess("/", true)
-	c.root = c.newNode(0, true, "/", uint32(modePerm))
+	c.root = c.newNode(0, true, "/", uint32(modePerm), 0)
 	return &c
 }
 
@@ -169,9 +169,8 @@ func (c *CtbFs) exploreDir(path string) (err error) {
 	for _, info := range names {
 		_, _, node := c.lookupNode(info.Name(), parent)
 		if node == nil {
-			node := c.newNode(0, info.IsDir(), path, uint32(info.Mode()))
-			node.path = join(path, info.Name())
-			node.stat.Size = info.Size()
+			nodePath := join(path, info.Name())
+			node := c.newNode(0, info.IsDir(), nodePath, uint32(info.Mode()), info.Size())
 			parent.chld[info.Name()] = node
 		}
 	}
@@ -192,7 +191,7 @@ func (c *CtbFs) Mknod(path string, mode uint32, dev uint64) (errc int) {
 		return -fuse.EEXIST
 	}
 	_ = c.fs.CreateFile(path)
-	node = c.newNode(0, false, path, 0777)
+	node = c.newNode(0, false, path, 0777, 0)
 	prnt.chld[name] = node
 	return 0
 }
@@ -209,7 +208,7 @@ func (c *CtbFs) Mkdir(path string, mode uint32) (errc int) {
 		log.Error("Error creating directory: ", path, ". Directory already exists.")
 		return -fuse.EEXIST
 	}
-	node = c.newNode(0, true, path, 0777)
+	node = c.newNode(0, true, path, 0777, 0)
 	prnt.chld[name] = node
 	_ = c.fs.CreateDir(path)
 	return 0
@@ -276,8 +275,12 @@ func (c *CtbFs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	return
 }
 
-func (c *CtbFs) newNode(dev uint64, isDir bool, path string, modePerm uint32) *Node {
-	uid, gid := c.getUid()
+func (c *CtbFs) newNode(dev uint64, isDir bool, path string, modePerm uint32, size int64) *Node {
+	uid := uint32(0)
+	gid := uint32(0)
+	if path != "/" {
+		uid, gid = c.getUid()
+	}
 	tmsp := fuse.Now()
 	ino := c.getIno()
 	mode := c.getMode(isDir, modePerm)
@@ -294,6 +297,7 @@ func (c *CtbFs) newNode(dev uint64, isDir bool, path string, modePerm uint32) *N
 			Ctim:     tmsp,
 			Birthtim: tmsp,
 			Flags:    0,
+			Size:     size,
 		},
 		path: path,
 	}

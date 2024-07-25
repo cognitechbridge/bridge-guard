@@ -63,6 +63,9 @@ func (f *FileSystem) CreateDir(path string) error {
 		return err
 	}
 	err = f.configService.InitConfig(path)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -152,13 +155,18 @@ func (f *FileSystem) GetSubFiles(path string) (res []fs.FileInfo, err error) {
 // and then removes the directory itself from the link repository.
 // If any error occurs during the removal process, it is returned.
 func (f *FileSystem) RemoveDir(path string) error {
-	//Remove vault link
-	err := f.vaultRepo.RemoveVaultLink(path)
+	// Remove vault
+	err := f.vaultRepo.RemoveVault(path)
 	if err != nil {
 		return err
 	}
-	//Remove directory in link repo
-	return f.linkRepo.RemoveDir(path)
+	//Remove Share folder
+	err = f.linkRepo.RemoveDir(path)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 // CreateFile creates a new file at the specified path.
@@ -241,29 +249,18 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 // Read reads data from a file at the specified path into the provided buffer starting from the given offset.
 // It returns the number of bytes read and any error encountered.
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
-	dir := filepath.Dir(path)
 	//Get file link
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
 		return 0, err
 	}
-	//Get file vault
-	vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
-	if err != nil {
-		return 0, err
-	}
-	//Get file key id
-	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
-	if err != nil {
-		return 0, err
-	}
 	//Get file key
-	key, err := f.keyService.Get(keyId, vault.Id, vaultPath)
+	key, err := f.getKeyByPath(path)
 	if err != nil {
 		return 0, err
 	}
 	//Read file
-	return f.objectService.Read(link.ObjectId, dir, buff, ofst, key)
+	return f.objectService.Read(link.ObjectId, path, buff, ofst, key)
 }
 
 // Resize resizes a file to the specified size.
@@ -329,8 +326,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		if err != nil {
 			return err
 		}
-		oldDir := filepath.Dir(oldPath)
-		keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId, oldDir)
+		keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId, oldPath)
 		if err != nil {
 			return err
 		}
@@ -339,16 +335,11 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		if err != nil {
 			return err
 		}
-		//If the file moved to a different directory, change the directory of the file in the object service
-		newDir := filepath.Dir(newPath)
-		if newDir != oldDir {
-			//Change the directory of the file in the object service
-			err = f.objectService.ChangeDir(obj.ObjectId, oldDir, newDir)
-			if err != nil {
-				return err
-			}
+		//Change the path of the file in the object service
+		err = f.objectService.ChangePath(obj.ObjectId, oldPath, newPath)
+		if err != nil {
+			return err
 		}
-
 	}
 	return f.linkRepo.Rename(oldPath, newPath)
 }
@@ -378,8 +369,7 @@ func (f *FileSystem) Commit(path string) error {
 			return err
 		}
 		//Commit changes
-		dir := filepath.Dir(path)
-		return f.objectService.Commit(link, dir, keyInfo)
+		return f.objectService.Commit(link, path, keyInfo)
 	}
 	//Remove file from object cache if it is not open for writing
 	link, err := f.linkRepo.GetByPath(path)
@@ -399,6 +389,20 @@ func (f *FileSystem) Commit(path string) error {
 func (f *FileSystem) OpenInWrite(path string) error {
 	_, ex := f.openToWrite[path]
 	if !ex {
+		// Make sure the file is available in the cache
+		link, err := f.linkRepo.GetByPath(path)
+		if err != nil {
+			return err
+		}
+		key, err := f.getKeyByPath(path)
+		if err != nil {
+			return err
+		}
+		err = f.objectService.AvailableInCache(link.ObjectId, path, key)
+		if err != nil {
+			return err
+		}
+		// Change the file ID
 		newId, err := f.changeFileId(path)
 		if err != nil {
 			return err
@@ -449,4 +453,29 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 		}
 	}
 	return 0000
+}
+
+// keyFileKey returns the key for a given file.
+func (f *FileSystem) getKeyByPath(path string) (*core.KeyInfo, error) {
+	//Get file linkc
+	link, err := f.linkRepo.GetByPath(path)
+	if err != nil {
+		return nil, err
+	}
+	//Get file vault
+	vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
+	if err != nil {
+		return nil, err
+	}
+	//Get file key id
+	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, path)
+	if err != nil {
+		return nil, err
+	}
+	//Get file key
+	key, err := f.keyService.Get(keyId, vault.Id, vaultPath)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
