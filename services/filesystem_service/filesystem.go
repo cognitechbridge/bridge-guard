@@ -63,6 +63,9 @@ func (f *FileSystem) CreateDir(path string) error {
 		return err
 	}
 	err = f.configService.InitConfig(path)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
