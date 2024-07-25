@@ -46,7 +46,7 @@ func NewService(cache *repositories.ObjectCacheRepository, objectRepo *repositor
 // It populates the provided buffer with the object data starting from the specified offset.
 // Returns the number of bytes read and any error encountered.
 func (o *Service) Read(id string, dir string, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
-	err = o.availableInCache(id, dir, key)
+	err = o.AvailableInCache(id, dir, key)
 	if err != nil {
 		return 0, err
 	}
@@ -92,7 +92,7 @@ func (o *Service) Truncate(id string, size int64) (err error) {
 // If the object is not in the repository, it downloads the object and stores it in the repository.
 // Finally, it decrypts the object and stores it in the cache.
 // It returns an error if any error occurs during the process.
-func (o *Service) availableInCache(id string, dir string, key *core.KeyInfo) error {
+func (o *Service) AvailableInCache(id string, dir string, key *core.KeyInfo) error {
 	//check if object is already in cache, if yes, return
 	if o.objectCacheRepo.IsInCache(id) {
 		return nil

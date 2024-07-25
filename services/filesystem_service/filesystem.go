@@ -252,18 +252,8 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 	if err != nil {
 		return 0, err
 	}
-	//Get file vault
-	vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
-	if err != nil {
-		return 0, err
-	}
-	//Get file key id
-	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
-	if err != nil {
-		return 0, err
-	}
 	//Get file key
-	key, err := f.keyService.Get(keyId, vault.Id, vaultPath)
+	key, err := f.getKeyByPath(path)
 	if err != nil {
 		return 0, err
 	}
@@ -404,6 +394,21 @@ func (f *FileSystem) Commit(path string) error {
 func (f *FileSystem) OpenInWrite(path string) error {
 	_, ex := f.openToWrite[path]
 	if !ex {
+		// Make sure the file is available in the cache
+		link, err := f.linkRepo.GetByPath(path)
+		if err != nil {
+			return err
+		}
+		key, err := f.getKeyByPath(path)
+		if err != nil {
+			return err
+		}
+		dirPath := filepath.Dir(path)
+		err = f.objectService.AvailableInCache(link.ObjectId, dirPath, key)
+		if err != nil {
+			return err
+		}
+		// Change the file ID
 		newId, err := f.changeFileId(path)
 		if err != nil {
 			return err
@@ -454,4 +459,30 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 		}
 	}
 	return 0000
+}
+
+// keyFileKey returns the key for a given file.
+func (f *FileSystem) getKeyByPath(path string) (*core.KeyInfo, error) {
+	dir := filepath.Dir(path)
+	//Get file linkc
+	link, err := f.linkRepo.GetByPath(path)
+	if err != nil {
+		return nil, err
+	}
+	//Get file vault
+	vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
+	if err != nil {
+		return nil, err
+	}
+	//Get file key id
+	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
+	if err != nil {
+		return nil, err
+	}
+	//Get file key
+	key, err := f.keyService.Get(keyId, vault.Id, vaultPath)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
