@@ -277,7 +277,11 @@ func (c *CtbFs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 }
 
 func (c *CtbFs) newNode(dev uint64, isDir bool, path string, modePerm uint32) *Node {
-	uid, gid := c.getUid()
+	uid := uint32(0)
+	gid := uint32(0)
+	if path != "/" {
+		uid, gid = c.getUid()
+	}
 	tmsp := fuse.Now()
 	ino := c.getIno()
 	mode := c.getMode(isDir, modePerm)
