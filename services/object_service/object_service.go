@@ -109,7 +109,7 @@ func (o *Service) AvailableInCache(id string, path string, key *core.KeyInfo) er
 		}
 	}
 	//decrypt object to cache
-	err := o.decryptToCache(id, dir, key)
+	err := o.decryptToCache(id, path, key)
 	if err != nil {
 		return err
 	}
@@ -121,9 +121,9 @@ func (o *Service) AvailableInCache(id string, path string, key *core.KeyInfo) er
 // and writes the decrypted object to the cache using the created writer and reader.
 // The decrypted object is written to the cache using the object's ID as the cache key.
 // If any error occurs during the decryption or writing process, it is returned.
-func (o *Service) decryptToCache(id string, objectPath string, key *core.KeyInfo) error {
+func (o *Service) decryptToCache(id string, path string, key *core.KeyInfo) error {
 	//open object from repo
-	openObject, _ := o.objectRepo.OpenObject(id, objectPath)
+	openObject, _ := o.objectRepo.OpenObject(id, path)
 	defer openObject.Close()
 	//Create an unencrypted reader from encrypted file (reader interface) and the key
 	decryptedReader, _ := o.decryptReader(openObject, key)
@@ -174,9 +174,9 @@ func (o *Service) decryptReader(reader io.Reader, key *core.KeyInfo) (read io.Re
 // GetKeyIdByObjectId retrieves the key ID associated with the given object ID.
 // It opens the object from the repository, parses the encrypted file, and returns the key ID from the header.
 // If any error occurs during the process, it returns an empty string and the error.
-func (o *Service) GetKeyIdByObjectId(id string, dir string) (string, error) {
+func (o *Service) GetKeyIdByObjectId(id string, path string) (string, error) {
 	//open object from repo
-	reader, err := o.objectRepo.OpenObject(id, dir)
+	reader, err := o.objectRepo.OpenObject(id, path)
 	if err != nil {
 		return "", err
 	}

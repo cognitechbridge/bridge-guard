@@ -326,8 +326,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		if err != nil {
 			return err
 		}
-		oldDir := filepath.Dir(oldPath)
-		keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId, oldDir)
+		keyId, err := f.objectService.GetKeyIdByObjectId(obj.ObjectId, oldPath)
 		if err != nil {
 			return err
 		}
@@ -337,6 +336,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 			return err
 		}
 		//If the file moved to a different directory, change the directory of the file in the object service
+		oldDir := filepath.Dir(oldPath)
 		newDir := filepath.Dir(newPath)
 		if newDir != oldDir {
 			//Change the directory of the file in the object service
@@ -464,7 +464,6 @@ func (f *FileSystem) GetUserFileAccess(path string, isDir bool) fs.FileMode {
 
 // keyFileKey returns the key for a given file.
 func (f *FileSystem) getKeyByPath(path string) (*core.KeyInfo, error) {
-	dir := filepath.Dir(path)
 	//Get file linkc
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
@@ -476,7 +475,7 @@ func (f *FileSystem) getKeyByPath(path string) (*core.KeyInfo, error) {
 		return nil, err
 	}
 	//Get file key id
-	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, dir)
+	keyId, err := f.objectService.GetKeyIdByObjectId(link.ObjectId, path)
 	if err != nil {
 		return nil, err
 	}

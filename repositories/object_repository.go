@@ -30,9 +30,10 @@ func (o *ObjectRepository) CreateFile(id string, dir string) (*os.File, error) {
 	return file, nil
 }
 
-func (o *ObjectRepository) OpenObject(id string, dir string) (io.ReadCloser, error) {
-	path := o.GetPath(id, dir)
-	file, _ := os.Open(path)
+func (o *ObjectRepository) OpenObject(id string, path string) (io.ReadCloser, error) {
+	dir := filepath.Dir(path)
+	objectPath := o.GetPath(id, dir)
+	file, _ := os.Open(objectPath)
 	return file, nil
 }
 
