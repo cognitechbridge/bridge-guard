@@ -5,6 +5,7 @@ import (
 	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/repositories"
 	"io"
+	"path/filepath"
 )
 
 // Service represents the object service.
@@ -45,8 +46,8 @@ func NewService(cache *repositories.ObjectCacheRepository, objectRepo *repositor
 // Read reads the object with the specified ID from the object service.
 // It populates the provided buffer with the object data starting from the specified offset.
 // Returns the number of bytes read and any error encountered.
-func (o *Service) Read(id string, dir string, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
-	err = o.AvailableInCache(id, dir, key)
+func (o *Service) Read(id string, path string, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
+	err = o.AvailableInCache(id, path, key)
 	if err != nil {
 		return 0, err
 	}
@@ -92,7 +93,9 @@ func (o *Service) Truncate(id string, size int64) (err error) {
 // If the object is not in the repository, it downloads the object and stores it in the repository.
 // Finally, it decrypts the object and stores it in the cache.
 // It returns an error if any error occurs during the process.
-func (o *Service) AvailableInCache(id string, dir string, key *core.KeyInfo) error {
+func (o *Service) AvailableInCache(id string, path string, key *core.KeyInfo) error {
+	// find object directory
+	dir := filepath.Dir(path)
 	//check if object is already in cache, if yes, return
 	if o.objectCacheRepo.IsInCache(id) {
 		return nil

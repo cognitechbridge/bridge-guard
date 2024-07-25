@@ -246,7 +246,6 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 // Read reads data from a file at the specified path into the provided buffer starting from the given offset.
 // It returns the number of bytes read and any error encountered.
 func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err error) {
-	dir := filepath.Dir(path)
 	//Get file link
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
@@ -258,7 +257,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Read file
-	return f.objectService.Read(link.ObjectId, dir, buff, ofst, key)
+	return f.objectService.Read(link.ObjectId, path, buff, ofst, key)
 }
 
 // Resize resizes a file to the specified size.
@@ -403,8 +402,7 @@ func (f *FileSystem) OpenInWrite(path string) error {
 		if err != nil {
 			return err
 		}
-		dirPath := filepath.Dir(path)
-		err = f.objectService.AvailableInCache(link.ObjectId, dirPath, key)
+		err = f.objectService.AvailableInCache(link.ObjectId, path, key)
 		if err != nil {
 			return err
 		}
