@@ -101,7 +101,7 @@ func (o *Service) AvailableInCache(id string, path string, key *core.KeyInfo) er
 		return nil
 	}
 	//if not, check if object is in repo, if not, download it
-	if !o.objectRepo.IsInRepo(id, dir) {
+	if !o.objectRepo.IsInRepo(id, path) {
 		//download object
 		err := o.downloadToObject(id, dir)
 		if err != nil {

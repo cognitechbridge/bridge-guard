@@ -16,7 +16,8 @@ func NewObjectRepository(rootPath string) ObjectRepository {
 	}
 }
 
-func (o *ObjectRepository) IsInRepo(id string, dir string) (is bool) {
+func (o *ObjectRepository) IsInRepo(id string, path string) (is bool) {
+	dir := filepath.Dir(path)
 	p := o.GetPath(id, dir)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		return false
