@@ -25,9 +25,10 @@ func (o *ObjectRepository) IsInRepo(id string, path string) (is bool) {
 	return true
 }
 
-func (o *ObjectRepository) CreateFile(id string, dir string) (*os.File, error) {
-	path := o.GetPath(id, dir)
-	file, _ := os.Create(path)
+func (o *ObjectRepository) CreateFile(id string, path string) (*os.File, error) {
+	dir := filepath.Dir(path)
+	objectPath := o.GetPath(id, dir)
+	file, _ := os.Create(objectPath)
 	return file, nil
 }
 

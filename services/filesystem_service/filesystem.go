@@ -375,8 +375,7 @@ func (f *FileSystem) Commit(path string) error {
 			return err
 		}
 		//Commit changes
-		dir := filepath.Dir(path)
-		return f.objectService.Commit(link, dir, keyInfo)
+		return f.objectService.Commit(link, path, keyInfo)
 	}
 	//Remove file from object cache if it is not open for writing
 	link, err := f.linkRepo.GetByPath(path)
