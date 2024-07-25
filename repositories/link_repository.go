@@ -97,7 +97,7 @@ func (c *LinkRepository) RemoveDir(path string) error {
 	p := filepath.Join(c.rootPath, path)
 	systemFolderNames := core.GetRepoSystemFolderNames()
 	for _, folder := range systemFolderNames {
-		err := os.Remove(filepath.Join(p, ".meta", folder))
+		err := os.RemoveAll(filepath.Join(p, ".meta", folder))
 		if err != nil {
 			return err
 		}

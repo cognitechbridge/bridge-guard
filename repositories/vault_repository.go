@@ -211,7 +211,7 @@ func (k *VaultRepositoryFile) RemoveVault(path string) error {
 	}
 	// Remove vault folder
 	folderPath := k.vaultKeyFolder(vault.Id, path)
-	err = os.Remove(folderPath)
+	err = os.RemoveAll(folderPath)
 	if err != nil {
 		return err
 	}
