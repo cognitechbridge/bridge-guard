@@ -169,8 +169,8 @@ func (c *CtbFs) exploreDir(path string) (err error) {
 	for _, info := range names {
 		_, _, node := c.lookupNode(info.Name(), parent)
 		if node == nil {
-			node := c.newNode(0, info.IsDir(), path, uint32(info.Mode()))
-			node.path = join(path, info.Name())
+			nodePath := join(path, info.Name())
+			node := c.newNode(0, info.IsDir(), nodePath, uint32(info.Mode()))
 			node.stat.Size = info.Size()
 			parent.chld[info.Name()] = node
 		}
