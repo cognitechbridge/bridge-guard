@@ -335,17 +335,11 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		if err != nil {
 			return err
 		}
-		//If the file moved to a different directory, change the directory of the file in the object service
-		oldDir := filepath.Dir(oldPath)
-		newDir := filepath.Dir(newPath)
-		if newDir != oldDir {
-			//Change the directory of the file in the object service
-			err = f.objectService.ChangeDir(obj.ObjectId, oldDir, newDir)
-			if err != nil {
-				return err
-			}
+		//Change the path of the file in the object service
+		err = f.objectService.ChangePath(obj.ObjectId, oldPath, newPath)
+		if err != nil {
+			return err
 		}
-
 	}
 	return f.linkRepo.Rename(oldPath, newPath)
 }

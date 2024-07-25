@@ -39,10 +39,15 @@ func (o *ObjectRepository) OpenObject(id string, path string) (io.ReadCloser, er
 	return file, nil
 }
 
-func (o *ObjectRepository) ChangeDir(id string, oldDir string, newDir string) error {
-	oldPath := o.GetPath(id, oldDir)
-	newPath := o.GetPath(id, newDir)
-	return os.Rename(oldPath, newPath)
+func (o *ObjectRepository) ChangePath(id string, oldPath string, newPath string) error {
+	oldDir := filepath.Dir(oldPath)
+	newDir := filepath.Dir(newPath)
+	if oldDir != newDir {
+		oldObjectPath := o.GetPath(id, oldDir)
+		newObjectPath := o.GetPath(id, newDir)
+		return os.Rename(oldObjectPath, newObjectPath)
+	}
+	return nil
 }
 
 func (o *ObjectRepository) GetPath(id string, dir string) string {
