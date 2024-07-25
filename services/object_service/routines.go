@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 )
 
 // StartEncryptRoutine starts a routine that continuously encrypts items from the encryptChan channel.
@@ -79,9 +78,8 @@ func (o *Service) StartUploadRoutine() {
 
 // upload uploads the file with the specified ID.
 func (o *Service) upload(id string, path string) error {
-	dir := filepath.Dir(path)
 	// Get the dir of the object using the object repository
-	objectPath := o.objectRepo.GetPath(id, dir)
+	objectPath := o.objectRepo.GetPath(id, path)
 	// Open the file
 	file, err := os.Open(objectPath)
 	if err != nil {

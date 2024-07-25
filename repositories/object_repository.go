@@ -17,8 +17,7 @@ func NewObjectRepository(rootPath string) ObjectRepository {
 }
 
 func (o *ObjectRepository) IsInRepo(id string, path string) (is bool) {
-	dir := filepath.Dir(path)
-	p := o.GetPath(id, dir)
+	p := o.GetPath(id, path)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		return false
 	}
@@ -26,31 +25,28 @@ func (o *ObjectRepository) IsInRepo(id string, path string) (is bool) {
 }
 
 func (o *ObjectRepository) CreateFile(id string, path string) (*os.File, error) {
-	dir := filepath.Dir(path)
-	objectPath := o.GetPath(id, dir)
+	objectPath := o.GetPath(id, path)
 	file, _ := os.Create(objectPath)
 	return file, nil
 }
 
 func (o *ObjectRepository) OpenObject(id string, path string) (io.ReadCloser, error) {
-	dir := filepath.Dir(path)
-	objectPath := o.GetPath(id, dir)
+	objectPath := o.GetPath(id, path)
 	file, _ := os.Open(objectPath)
 	return file, nil
 }
 
 func (o *ObjectRepository) ChangePath(id string, oldPath string, newPath string) error {
-	oldDir := filepath.Dir(oldPath)
-	newDir := filepath.Dir(newPath)
-	if oldDir != newDir {
-		oldObjectPath := o.GetPath(id, oldDir)
-		newObjectPath := o.GetPath(id, newDir)
+	if o.GetPath(id, oldPath) != o.GetPath(id, newPath) {
+		oldObjectPath := o.GetPath(id, oldPath)
+		newObjectPath := o.GetPath(id, newPath)
 		return os.Rename(oldObjectPath, newObjectPath)
 	}
 	return nil
 }
 
-func (o *ObjectRepository) GetPath(id string, dir string) string {
-	path := filepath.Join(o.rootPath, dir, ".meta", ".object", id)
-	return path
+func (o *ObjectRepository) GetPath(id string, path string) string {
+	dir := filepath.Dir(path)
+	res := filepath.Join(o.rootPath, dir, ".meta", ".object", id)
+	return res
 }
