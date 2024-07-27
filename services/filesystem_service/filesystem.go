@@ -263,7 +263,7 @@ func (f *FileSystem) Read(path string, buff []byte, ofst int64) (n int, err erro
 		return 0, err
 	}
 	//Read file
-	return f.objectService.Read(link.Data.ObjectId, path, buff, ofst, key)
+	return f.objectService.Read(link, buff, ofst, key)
 }
 
 // Resize resizes a file to the specified size.
@@ -401,7 +401,7 @@ func (f *FileSystem) OpenInWrite(path string) error {
 		if err != nil {
 			return err
 		}
-		err = f.objectService.AvailableInCache(link.Data.ObjectId, path, key)
+		err = f.objectService.AvailableInCache(link, key)
 		if err != nil {
 			return err
 		}

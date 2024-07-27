@@ -46,12 +46,12 @@ func NewService(cache *repositories.ObjectCacheRepository, objectRepo *repositor
 // Read reads the object with the specified ID from the object service.
 // It populates the provided buffer with the object data starting from the specified offset.
 // Returns the number of bytes read and any error encountered.
-func (o *Service) Read(id string, path string, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
-	err = o.AvailableInCache(id, path, key)
+func (o *Service) Read(link core.Link, buff []byte, ofst int64, key *core.KeyInfo) (n int, err error) {
+	err = o.AvailableInCache(link, key)
 	if err != nil {
 		return 0, err
 	}
-	return o.objectCacheRepo.Read(id, buff, ofst)
+	return o.objectCacheRepo.Read(link.Data.ObjectId, buff, ofst)
 }
 
 // Write writes the given byte slice to the object cache repository at the specified offset.
@@ -93,23 +93,23 @@ func (o *Service) Truncate(id string, size int64) (err error) {
 // If the object is not in the repository, it downloads the object and stores it in the repository.
 // Finally, it decrypts the object and stores it in the cache.
 // It returns an error if any error occurs during the process.
-func (o *Service) AvailableInCache(id string, path string, key *core.KeyInfo) error {
+func (o *Service) AvailableInCache(link core.Link, key *core.KeyInfo) error {
 	// find object directory
-	dir := filepath.Dir(path)
+	dir := filepath.Dir(link.Path)
 	//check if object is already in cache, if yes, return
-	if o.objectCacheRepo.IsInCache(id) {
+	if o.objectCacheRepo.IsInCache(link.Data.ObjectId) {
 		return nil
 	}
 	//if not, check if object is in repo, if not, download it
-	if !o.objectRepo.IsInRepo(id, path) {
+	if !o.objectRepo.IsInRepo(link.Data.ObjectId, link.Path) {
 		//download object
-		err := o.downloadToObject(id, dir)
+		err := o.downloadToObject(link.Data.ObjectId, dir)
 		if err != nil {
 			return err
 		}
 	}
 	//decrypt object to cache
-	err := o.decryptToCache(id, path, key)
+	err := o.decryptToCache(link.Data.ObjectId, link.Path, key)
 	if err != nil {
 		return err
 	}
