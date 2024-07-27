@@ -30,8 +30,8 @@ func NewLinkRepository(rootPath string) *LinkRepository {
 // If the file or any necessary directories do not exist, they will be created.
 // The path parameter specifies the relative path to the file, and the link parameter contains the data to be written.
 // Returns an error if any error occurs during the creation or writing process.
-func (c *LinkRepository) Create(path string, link core.Link) error {
-	absPath := filepath.Join(c.rootPath, path)
+func (c *LinkRepository) Create(link core.Link) error {
+	absPath := filepath.Join(c.rootPath, link.Path)
 	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
 	if err != nil {
 		return err
@@ -41,21 +41,21 @@ func (c *LinkRepository) Create(path string, link core.Link) error {
 		return err
 	}
 	defer file.Close()
-	js, _ := json.Marshal(link)
+	js, _ := json.Marshal(link.Data)
 	_, _ = file.Write(js)
 	return nil
 }
 
 // Update updates the link file at the specified path with the provided link data.
 // It returns an error if there was a problem updating the file.
-func (c *LinkRepository) Update(path string, link core.Link) error {
-	absPath := filepath.Join(c.rootPath, path)
+func (c *LinkRepository) Update(link core.Link) error {
+	absPath := filepath.Join(c.rootPath, link.Path)
 	file, err := os.OpenFile(absPath, os.O_RDWR, 0666)
 	if err != nil {
 		return fmt.Errorf("error updating link file: %v", err)
 	}
 	defer file.Close()
-	js, _ := json.Marshal(link)
+	js, _ := json.Marshal(link.Data)
 	_, err = file.Write(js)
 	return err
 }
@@ -71,12 +71,15 @@ func (c *LinkRepository) GetByPath(path string) (core.Link, error) {
 	if err != nil {
 		return core.Link{}, ErrReadingLinkFile
 	}
-	var link core.Link
-	err = json.Unmarshal(js, &link)
+	var linkData core.LinkData
+	err = json.Unmarshal(js, &linkData)
 	if err != nil {
 		return core.Link{}, fmt.Errorf("error unmarshalink link file: %v", err)
 	}
-	return link, nil
+	return core.Link{
+		Path: path,
+		Data: linkData,
+	}, nil
 }
 
 // Remove deletes the file at the specified path.

@@ -192,9 +192,9 @@ func (o *Service) GetKeyIdByObjectId(id string, path string) (string, error) {
 
 // Commit adds the object to the encrypt channel queue.
 // It takes a link and a key as parameters and returns an error if any.
-func (o *Service) Commit(link core.Link, path string, key *core.KeyInfo) error {
+func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
 	// Add the object to the encrypt channel queue
-	o.encryptChan <- encryptChanItem{id: link.ObjectId, path: path, key: key}
+	o.encryptChan <- encryptChanItem{id: link.Data.ObjectId, path: link.Path, key: key}
 	return nil
 }
 
