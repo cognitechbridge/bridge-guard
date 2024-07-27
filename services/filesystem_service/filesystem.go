@@ -5,9 +5,15 @@ import (
 	"ctb-cli/repositories"
 	"ctb-cli/services/config_service"
 	"ctb-cli/services/object_service"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
+)
+
+// Errors
+var (
+	ErrCommitFailed = errors.New("commit failed")
 )
 
 // FileSystem implements the FileSystem interface
@@ -17,13 +23,6 @@ type FileSystem struct {
 	vaultRepo     repositories.VaultRepository
 	keyService    core.KeyService
 	configService config_service.ConfigService
-
-	openToWrite map[string]openToWrite
-}
-
-// openToWrite is a map of files open for writing
-type openToWrite struct {
-	id string
 }
 
 // Make sure FileSystem implements the FileSystemService interface
@@ -43,7 +42,6 @@ func NewFileSystem(
 		vaultRepo:     vaultRepo,
 		keyService:    keyService,
 		configService: configService,
-		openToWrite:   make(map[string]openToWrite),
 	}
 
 	return &fileSys
@@ -191,8 +189,6 @@ func (f *FileSystem) CreateFile(path string) (err error) {
 	if err != nil {
 		return err
 	}
-	//Add file to open to write
-	f.openToWrite[path] = openToWrite{id: id}
 	return
 }
 
@@ -355,11 +351,13 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 // Returns nil if the file is not open for writing.
 // If the file is not open for writing, it removes the file from the object cache.
 func (f *FileSystem) Commit(path string) error {
-	_, ex := f.openToWrite[path]
+	link, err := f.linkRepo.GetByPath(path)
+	if err != nil {
+		return ErrCommitFailed
+	}
+	ex := f.objectService.IsOpenForWrite(link)
 	// If the file is open for writing
 	if ex {
-		//Remove file from open to write
-		delete(f.openToWrite, path)
 		//Get vault
 		link, _ := f.linkRepo.GetByPath(path)
 		vault, vaultPath, err := f.vaultRepo.GetFileVault(path)
@@ -375,7 +373,7 @@ func (f *FileSystem) Commit(path string) error {
 		return f.objectService.Commit(link, keyInfo)
 	}
 	//Remove file from object cache if it is not open for writing
-	link, err := f.linkRepo.GetByPath(path)
+	link, err = f.linkRepo.GetByPath(path)
 	if err != nil {
 		return err
 	}
@@ -390,7 +388,11 @@ func (f *FileSystem) Commit(path string) error {
 // If the file is not already open for writing, it assigns a new ID to the file and adds it to the list of files open for writing.
 // Returns an error if there was an issue changing the file ID or if the file is already open for writing.
 func (f *FileSystem) OpenInWrite(path string) error {
-	_, ex := f.openToWrite[path]
+	link, err := f.linkRepo.GetByPath(path)
+	if err != nil {
+		return ErrCommitFailed
+	}
+	ex := f.objectService.IsOpenForWrite(link)
 	if !ex {
 		// Make sure the file is available in the cache
 		link, err := f.linkRepo.GetByPath(path)
@@ -406,11 +408,10 @@ func (f *FileSystem) OpenInWrite(path string) error {
 			return err
 		}
 		// Change the file ID
-		newId, err := f.changeFileId(path)
+		_, err = f.changeFileId(path)
 		if err != nil {
 			return err
 		}
-		f.openToWrite[path] = openToWrite{id: newId}
 	}
 	return nil
 }

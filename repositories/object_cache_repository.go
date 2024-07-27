@@ -154,3 +154,12 @@ func (o *ObjectCacheRepository) RemoveFromCache(id string) error {
 	err := os.Remove(p)
 	return err
 }
+
+// IsOpenForWrite returns true if the object is in the write cache.
+func (o *ObjectCacheRepository) IsOpenForWrite(id string) bool {
+	p := filepath.Join(o.writePath, id)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}

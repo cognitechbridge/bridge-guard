@@ -50,7 +50,7 @@ func (c *LinkRepository) Create(link core.Link) error {
 // It returns an error if there was a problem updating the file.
 func (c *LinkRepository) Update(link core.Link) error {
 	absPath := filepath.Join(c.rootPath, link.Path)
-	file, err := os.OpenFile(absPath, os.O_RDWR, 0666)
+	file, err := os.OpenFile(absPath, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
 		return fmt.Errorf("error updating link file: %v", err)
 	}
