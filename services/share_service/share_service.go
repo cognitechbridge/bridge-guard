@@ -71,7 +71,7 @@ func (s *Service) GetKeyIdByPath(path string) (keyId string, startVaultId string
 		if err != nil {
 			return "", "", "", err
 		}
-		keyId, err = s.objectService.GetKeyIdByObjectId(link.Data.ObjectId, path)
+		keyId, err = s.objectService.GetKeyIdByObjectId(link)
 		if err != nil {
 			return "", "", "", err
 		}

@@ -24,21 +24,21 @@ func (o *Service) StartEncryptRoutine() {
 // The function returns an error if any operation fails.
 func (o *Service) encrypt(e encryptChanItem) (err error) {
 	//Open object file
-	inputFile, err := o.objectCacheRepo.AsFile(e.id)
+	inputFile, err := o.objectCacheRepo.AsFile(e.link.Data.ObjectId)
 	defer closeFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
 
 	//Create output file
-	file, err := o.objectRepo.CreateFile(e.id, e.path)
+	file, err := o.objectRepo.CreateFile(e.link)
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
 	defer file.Close()
 
 	//Create encrypted writer
-	encryptedWriter, err := o.encryptWriter(file, e.id, e.key)
+	encryptedWriter, err := o.encryptWriter(file, e.link.Data.ObjectId, e.key)
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)
@@ -51,14 +51,14 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 		return
 	}
 	//Flush the object from the cache
-	err = o.objectCacheRepo.Flush(e.id)
+	err = o.objectCacheRepo.Flush(e.link.Data.ObjectId)
 	if err != nil {
 		return
 	}
-	fmt.Printf("File Encrypted: %s \n", e.id)
+	fmt.Printf("File Encrypted: %s \n", e.link.Data.ObjectId)
 
 	//Trigger upload
-	o.uploadChan <- uploadChanItem{id: e.id, path: e.path}
+	o.uploadChan <- uploadChanItem{id: e.link.Data.ObjectId, path: e.link.Path}
 
 	return nil
 }

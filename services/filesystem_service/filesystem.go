@@ -325,11 +325,11 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 		}
 	} else {
 		//If the path is a file, move the file key to the new vault
-		obj, err := f.linkRepo.GetByPath(oldPath)
+		link, err := f.linkRepo.GetByPath(oldPath)
 		if err != nil {
 			return err
 		}
-		keyId, err := f.objectService.GetKeyIdByObjectId(obj.Data.ObjectId, oldPath)
+		keyId, err := f.objectService.GetKeyIdByObjectId(link)
 		if err != nil {
 			return err
 		}
@@ -339,7 +339,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 			return err
 		}
 		//Change the path of the file in the object service
-		err = f.objectService.ChangePath(obj.Data.ObjectId, oldPath, newPath)
+		err = f.objectService.ChangePath(link.Data.ObjectId, oldPath, newPath)
 		if err != nil {
 			return err
 		}
@@ -471,7 +471,7 @@ func (f *FileSystem) getKeyByPath(path string) (*core.KeyInfo, error) {
 		return nil, err
 	}
 	//Get file key id
-	keyId, err := f.objectService.GetKeyIdByObjectId(link.Data.ObjectId, path)
+	keyId, err := f.objectService.GetKeyIdByObjectId(link)
 	if err != nil {
 		return nil, err
 	}

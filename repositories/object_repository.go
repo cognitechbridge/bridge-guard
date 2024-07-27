@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"ctb-cli/core"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,22 +17,22 @@ func NewObjectRepository(rootPath string) ObjectRepository {
 	}
 }
 
-func (o *ObjectRepository) IsInRepo(id string, path string) (is bool) {
-	p := o.GetPath(id, path)
+func (o *ObjectRepository) IsInRepo(link core.Link) (is bool) {
+	p := o.GetPath(link.Data.ObjectId, link.Path)
 	if _, err := os.Stat(p); os.IsNotExist(err) {
 		return false
 	}
 	return true
 }
 
-func (o *ObjectRepository) CreateFile(id string, path string) (*os.File, error) {
-	objectPath := o.GetPath(id, path)
+func (o *ObjectRepository) CreateFile(link core.Link) (*os.File, error) {
+	objectPath := o.GetPath(link.Data.ObjectId, link.Path)
 	file, _ := os.Create(objectPath)
 	return file, nil
 }
 
-func (o *ObjectRepository) OpenObject(id string, path string) (io.ReadCloser, error) {
-	objectPath := o.GetPath(id, path)
+func (o *ObjectRepository) OpenObject(link core.Link) (io.ReadCloser, error) {
+	objectPath := o.GetPath(link.Data.ObjectId, link.Path)
 	file, _ := os.Open(objectPath)
 	return file, nil
 }
