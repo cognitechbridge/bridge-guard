@@ -201,3 +201,8 @@ func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
 func (o *Service) RemoveFromCache(id string) error {
 	return o.objectCacheRepo.RemoveFromCache(id)
 }
+
+// IsOpenForWrite returns true if the object with the specified ID is open for writing.
+func (o *Service) IsOpenForWrite(link core.Link) bool {
+	return o.objectCacheRepo.IsOpenForWrite(link.Data.ObjectId)
+}
