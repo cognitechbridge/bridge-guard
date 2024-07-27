@@ -1,14 +1,16 @@
 package core
 
-import "io/fs"
+import (
+	"io/fs"
+)
 
 type ObjectService interface {
-	Read(id string, dir string, buff []byte, ofst int64, key *KeyInfo) (int, error)
+	Read(link Link, buff []byte, ofst int64, key *KeyInfo) (int, error)
 	Write(id string, buff []byte, ofst int64) (int, error)
 	Create(id string) error
 	Move(oldId string, newId string) error
 	Truncate(id string, size int64) error
-	GetKeyIdByObjectId(id string, dir string) (string, error)
+	GetKeyIdByObjectId(link Link) (string, error)
 	RemoveFromCache(id string) error
 }
 

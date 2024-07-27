@@ -4,8 +4,7 @@ import "ctb-cli/core"
 
 // encryptChanItem represents an item to be encrypted.
 type encryptChanItem struct {
-	id   string
-	path string
+	link core.Link
 	key  *core.KeyInfo
 }
 
