@@ -123,7 +123,9 @@ func (o *ObjectCacheRepository) IsInCache(id string) (is bool) {
 	return true
 }
 
-func (o *ObjectCacheRepository) Flush(id string) (err error) {
+// FlushFromWrite removes the object with the specified ID from the write cache.
+// It returns an error if the removal operation fails.
+func (o *ObjectCacheRepository) FlushFromWrite(id string) (err error) {
 	delete(o.committingList, id)
 	p := filepath.Join(o.writePath, id)
 	err = os.Remove(p)
@@ -153,10 +155,10 @@ func (o *ObjectCacheRepository) resolverFile(id string) (err error) {
 	return
 }
 
-// RemoveFromCache removes the object with the specified ID from the cache.
+// FlushFromRead removes the object with the specified ID from the cache.
 // It returns an error if the removal operation fails.
 // If the object is not in the cache, it returns nil (no error).
-func (o *ObjectCacheRepository) RemoveFromCache(id string) error {
+func (o *ObjectCacheRepository) FlushFromRead(id string) error {
 	// If the object is in the list of committed objects, we should wait for it to be committed.
 	_, committed := o.committingList[id]
 	if committed {

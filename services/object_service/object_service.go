@@ -200,7 +200,7 @@ func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
 // It returns an error if the removal operation fails.
 // If the object is not in the cache, it returns nil (no error).
 func (o *Service) RemoveFromCache(id string) error {
-	return o.objectCacheRepo.RemoveFromCache(id)
+	return o.objectCacheRepo.FlushFromRead(id)
 }
 
 // IsOpenForWrite returns true if the object with the specified ID is open for writing.

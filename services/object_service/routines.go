@@ -54,12 +54,12 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	inputFile.Close()
 
 	//Flush the object from the write cache
-	err = o.objectCacheRepo.Flush(e.link.Data.ObjectId)
+	err = o.objectCacheRepo.FlushFromWrite(e.link.Data.ObjectId)
 	if err != nil {
 		return
 	}
 	// Flush the object from the read cache
-	err = o.objectCacheRepo.RemoveFromCache(e.link.Data.ObjectId)
+	err = o.objectCacheRepo.FlushFromRead(e.link.Data.ObjectId)
 	if err != nil {
 		return
 	}
