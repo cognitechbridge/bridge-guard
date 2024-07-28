@@ -204,9 +204,8 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 	if err != nil {
 		return 0, err
 	}
-	id := link.Data.ObjectId
 	//Write file using object service
-	n, err = f.objectService.Write(id, buff, ofst)
+	n, err = f.objectService.Write(link.Id(), buff, ofst)
 	//Update file size in link repo
 	if link, _ := f.linkRepo.GetByPath(path); link.Data.Size < ofst+int64(len(buff)) {
 		link.Data.Size = ofst + int64(len(buff))
@@ -230,7 +229,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 		return "", err
 	}
 	//Change file id in link repo
-	oldId := link.Data.ObjectId
+	oldId := link.Id()
 	newId, _ = core.NewUid()
 	link.Data.ObjectId = newId
 	err = f.linkRepo.Update(link)
@@ -283,7 +282,7 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 		return err
 	}
 	//Resize file in object service
-	err = f.objectService.Truncate(link.Data.ObjectId, size)
+	err = f.objectService.Truncate(link.Id(), size)
 	if err != nil {
 		return err
 	}
@@ -377,7 +376,7 @@ func (f *FileSystem) Commit(path string) error {
 		if err != nil {
 			return err
 		}
-		err = f.objectService.RemoveFromCache(link.Data.ObjectId)
+		err = f.objectService.RemoveFromCache(link.Id())
 		if err != nil {
 			return err
 		}
