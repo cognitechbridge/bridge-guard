@@ -73,7 +73,7 @@ func (o *Service) Create(id string) (err error) {
 // Move moves an object from the oldId to the newId.
 // It returns an error if the move operation fails.
 func (o *Service) Move(oldId string, newId string) (err error) {
-	return o.objectCacheRepo.Move(oldId, newId)
+	return o.objectCacheRepo.MoveToWrite(oldId, newId)
 }
 
 func (o *Service) ChangePath(id string, oldPath string, newPath string) (err error) {

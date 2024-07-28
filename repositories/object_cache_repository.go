@@ -31,8 +31,9 @@ func NewObjectCacheRepository(path string) ObjectCacheRepository {
 	}
 }
 
-// @TODO: Refactor this
-func (o *ObjectCacheRepository) Move(oldId string, newId string) (err error) {
+// MoveToWrite moves the object with the specified ID from the read cache to the write cache with the new ID.
+// Returns an error if there was a problem moving the object.
+func (o *ObjectCacheRepository) MoveToWrite(oldId string, newId string) (err error) {
 	//Move to Write cache path
 	oldPath := filepath.Join(o.readPath, oldId)
 	newPath := filepath.Join(o.writePath, newId)
