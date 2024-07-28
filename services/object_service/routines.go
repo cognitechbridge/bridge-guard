@@ -25,7 +25,6 @@ func (o *Service) StartEncryptRoutine() {
 func (o *Service) encrypt(e encryptChanItem) (err error) {
 	//Open object file
 	inputFile, err := o.objectCacheRepo.AsFile(e.link.Data.ObjectId)
-	defer closeFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
@@ -50,11 +49,21 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	if err != nil {
 		return
 	}
-	//Flush the object from the cache
-	err = o.objectCacheRepo.Flush(e.link.Data.ObjectId)
+
+	// Close cache file
+	inputFile.Close()
+
+	//Flush the object from the write cache
+	err = o.objectCacheRepo.FlushFromWrite(e.link.Data.ObjectId)
 	if err != nil {
 		return
 	}
+	// Flush the object from the read cache
+	err = o.objectCacheRepo.FlushFromRead(e.link.Data.ObjectId)
+	if err != nil {
+		return
+	}
+
 	fmt.Printf("File Encrypted: %s \n", e.link.Data.ObjectId)
 
 	//Trigger upload
