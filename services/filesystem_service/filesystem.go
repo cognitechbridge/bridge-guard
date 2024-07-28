@@ -371,15 +371,16 @@ func (f *FileSystem) Commit(path string) error {
 		}
 		//Commit changes
 		return f.objectService.Commit(link, keyInfo)
-	}
-	//Remove file from object cache if it is not open for writing
-	link, err = f.linkRepo.GetByPath(path)
-	if err != nil {
-		return err
-	}
-	err = f.objectService.RemoveFromCache(link.Data.ObjectId)
-	if err != nil {
-		return err
+	} else {
+		//Remove file from object cache if it is not open for writing
+		link, err = f.linkRepo.GetByPath(path)
+		if err != nil {
+			return err
+		}
+		err = f.objectService.RemoveFromCache(link.Data.ObjectId)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

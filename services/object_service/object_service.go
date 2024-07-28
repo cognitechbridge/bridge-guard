@@ -190,6 +190,7 @@ func (o *Service) GetKeyIdByObjectId(link core.Link) (string, error) {
 // Commit adds the object to the encrypt channel queue.
 // It takes a link and a key as parameters and returns an error if any.
 func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
+	o.objectCacheRepo.AdToCommitting(link.Data.ObjectId)
 	// Add the object to the encrypt channel queue
 	o.encryptChan <- encryptChanItem{link: link, key: key}
 	return nil
