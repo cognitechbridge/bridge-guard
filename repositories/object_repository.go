@@ -37,10 +37,10 @@ func (o *ObjectRepository) OpenObject(link core.Link) (io.ReadCloser, error) {
 	return file, nil
 }
 
-func (o *ObjectRepository) ChangePath(id string, oldPath string, newPath string) error {
-	if o.GetPath(id, oldPath) != o.GetPath(id, newPath) {
-		oldObjectPath := o.GetPath(id, oldPath)
-		newObjectPath := o.GetPath(id, newPath)
+func (o *ObjectRepository) ChangePath(link core.Link, newPath string) error {
+	if o.GetPath(link.Data.ObjectId, link.Path) != o.GetPath(link.Data.ObjectId, newPath) {
+		oldObjectPath := o.GetPath(link.Data.ObjectId, link.Path)
+		newObjectPath := o.GetPath(link.Data.ObjectId, newPath)
 		return os.Rename(oldObjectPath, newObjectPath)
 	}
 	return nil

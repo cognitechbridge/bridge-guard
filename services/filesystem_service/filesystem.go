@@ -335,7 +335,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 			return err
 		}
 		//Change the path of the file in the object service
-		err = f.objectService.ChangePath(link.Data.ObjectId, oldPath, newPath)
+		err = f.objectService.ChangePath(link, newPath)
 		if err != nil {
 			return err
 		}

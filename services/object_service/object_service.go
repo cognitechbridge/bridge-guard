@@ -76,8 +76,8 @@ func (o *Service) Move(oldId string, newId string) (err error) {
 	return o.objectCacheRepo.MoveToWrite(oldId, newId)
 }
 
-func (o *Service) ChangePath(id string, oldPath string, newPath string) (err error) {
-	return o.objectRepo.ChangePath(id, oldPath, newPath)
+func (o *Service) ChangePath(link core.Link, newPath string) (err error) {
+	return o.objectRepo.ChangePath(link, newPath)
 }
 
 // Truncate truncates the object with the specified ID to the given size.
