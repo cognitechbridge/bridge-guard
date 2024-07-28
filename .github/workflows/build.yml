@@ -33,14 +33,9 @@ jobs:
       - name: Install winfsp (Windows)
         if: runner.os == 'Windows'
         run: |
-          $releases = Invoke-WebRequest https://api.github.com/repos/winfsp/winfsp/releases | `
-              ConvertFrom-Json
-
-          $asseturi = $releases[0].assets.browser_download_url | `
-              Where-Object { $_ -match "winfsp-.*\.msi" }
-          Invoke-WebRequest -Uri $asseturi -OutFile winfsp.msi
+          $msiUrl = "https://github.com/winfsp/winfsp/releases/download/v2.0/winfsp-2.0.23075.msi"
+          Invoke-WebRequest -Uri $msiUrl -OutFile winfsp.msi
           Start-Process -NoNewWindow -Wait msiexec "/i winfsp.msi /qn INSTALLLEVEL=1000"
-
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get install -y libfuse-dev
