@@ -5,15 +5,9 @@ import (
 	"ctb-cli/repositories"
 	"ctb-cli/services/config_service"
 	"ctb-cli/services/object_service"
-	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
-)
-
-// Errors
-var (
-	ErrCommitFailed = errors.New("commit failed")
 )
 
 // FileSystem implements the FileSystem interface
@@ -352,7 +346,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 func (f *FileSystem) Commit(path string) error {
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
-		return ErrCommitFailed
+		return err
 	}
 	ex := f.objectService.IsOpenForWrite(link)
 	// If the file is open for writing
@@ -390,7 +384,7 @@ func (f *FileSystem) Commit(path string) error {
 func (f *FileSystem) OpenInWrite(path string) error {
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
-		return ErrCommitFailed
+		return err
 	}
 	ex := f.objectService.IsOpenForWrite(link)
 	if !ex {
