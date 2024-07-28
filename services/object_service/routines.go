@@ -24,7 +24,7 @@ func (o *Service) StartEncryptRoutine() {
 // The function returns an error if any operation fails.
 func (o *Service) encrypt(e encryptChanItem) (err error) {
 	//Open object file
-	inputFile, err := o.objectCacheRepo.AsFile(e.link.Data.ObjectId)
+	inputFile, err := o.objectCacheRepo.AsFile(e.link.Id())
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
@@ -37,7 +37,7 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	defer file.Close()
 
 	//Create encrypted writer
-	encryptedWriter, err := o.encryptWriter(file, e.link.Data.ObjectId, e.key)
+	encryptedWriter, err := o.encryptWriter(file, e.link.Id(), e.key)
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)
@@ -54,20 +54,20 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	inputFile.Close()
 
 	//Flush the object from the write cache
-	err = o.objectCacheRepo.FlushFromWrite(e.link.Data.ObjectId)
+	err = o.objectCacheRepo.FlushFromWrite(e.link.Id())
 	if err != nil {
 		return
 	}
 	// Flush the object from the read cache
-	err = o.objectCacheRepo.FlushFromRead(e.link.Data.ObjectId)
+	err = o.objectCacheRepo.FlushFromRead(e.link.Id())
 	if err != nil {
 		return
 	}
 
-	fmt.Printf("File Encrypted: %s \n", e.link.Data.ObjectId)
+	fmt.Printf("File Encrypted: %s \n", e.link.Id())
 
 	//Trigger upload
-	o.uploadChan <- uploadChanItem{id: e.link.Data.ObjectId, path: e.link.Path}
+	o.uploadChan <- uploadChanItem{id: e.link.Id(), path: e.link.Path}
 
 	return nil
 }

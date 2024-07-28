@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrRemoveFileFromCache = fmt.Errorf("error removing file from cache")
+	ErrRemoveFileFromReadCache  = fmt.Errorf("error removing file from read cache")
+	ErrRemoveFileFromWriteCache = fmt.Errorf("error removing file from write cache")
 )
 
 type ObjectCacheRepository struct {
@@ -31,8 +32,9 @@ func NewObjectCacheRepository(path string) ObjectCacheRepository {
 	}
 }
 
-// @TODO: Refactor this
-func (o *ObjectCacheRepository) Move(oldId string, newId string) (err error) {
+// MoveToWrite moves the object with the specified ID from the read cache to the write cache with the new ID.
+// Returns an error if there was a problem moving the object.
+func (o *ObjectCacheRepository) MoveToWrite(oldId string, newId string) (err error) {
 	//Move to Write cache path
 	oldPath := filepath.Join(o.readPath, oldId)
 	newPath := filepath.Join(o.writePath, newId)
@@ -130,7 +132,7 @@ func (o *ObjectCacheRepository) FlushFromWrite(id string) (err error) {
 	p := filepath.Join(o.writePath, id)
 	err = os.Remove(p)
 	if err != nil {
-		return
+		return fmt.Errorf("%w: %v", ErrRemoveFileFromWriteCache, err)
 	}
 	return
 }
@@ -171,7 +173,7 @@ func (o *ObjectCacheRepository) FlushFromRead(id string) error {
 	}
 	err := os.Remove(p)
 	if err != nil {
-		return ErrRemoveFileFromCache
+		return fmt.Errorf("%w: %v", ErrRemoveFileFromReadCache, err)
 	}
 	return nil
 }

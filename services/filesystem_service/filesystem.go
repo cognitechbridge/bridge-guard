@@ -5,15 +5,9 @@ import (
 	"ctb-cli/repositories"
 	"ctb-cli/services/config_service"
 	"ctb-cli/services/object_service"
-	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
-)
-
-// Errors
-var (
-	ErrCommitFailed = errors.New("commit failed")
 )
 
 // FileSystem implements the FileSystem interface
@@ -204,9 +198,8 @@ func (f *FileSystem) Write(path string, buff []byte, ofst int64) (n int, err err
 	if err != nil {
 		return 0, err
 	}
-	id := link.Data.ObjectId
 	//Write file using object service
-	n, err = f.objectService.Write(id, buff, ofst)
+	n, err = f.objectService.Write(link.Id(), buff, ofst)
 	//Update file size in link repo
 	if link, _ := f.linkRepo.GetByPath(path); link.Data.Size < ofst+int64(len(buff)) {
 		link.Data.Size = ofst + int64(len(buff))
@@ -230,7 +223,7 @@ func (f *FileSystem) changeFileId(path string) (newId string, err error) {
 		return "", err
 	}
 	//Change file id in link repo
-	oldId := link.Data.ObjectId
+	oldId := link.Id()
 	newId, _ = core.NewUid()
 	link.Data.ObjectId = newId
 	err = f.linkRepo.Update(link)
@@ -283,7 +276,7 @@ func (f *FileSystem) Resize(path string, size int64) (err error) {
 		return err
 	}
 	//Resize file in object service
-	err = f.objectService.Truncate(link.Data.ObjectId, size)
+	err = f.objectService.Truncate(link.Id(), size)
 	if err != nil {
 		return err
 	}
@@ -335,7 +328,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 			return err
 		}
 		//Change the path of the file in the object service
-		err = f.objectService.ChangePath(link.Data.ObjectId, oldPath, newPath)
+		err = f.objectService.ChangePath(link, newPath)
 		if err != nil {
 			return err
 		}
@@ -353,7 +346,7 @@ func (f *FileSystem) Rename(oldPath string, newPath string) (err error) {
 func (f *FileSystem) Commit(path string) error {
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
-		return ErrCommitFailed
+		return err
 	}
 	ex := f.objectService.IsOpenForWrite(link)
 	// If the file is open for writing
@@ -377,7 +370,7 @@ func (f *FileSystem) Commit(path string) error {
 		if err != nil {
 			return err
 		}
-		err = f.objectService.RemoveFromCache(link.Data.ObjectId)
+		err = f.objectService.RemoveFromCache(link.Id())
 		if err != nil {
 			return err
 		}
@@ -391,7 +384,7 @@ func (f *FileSystem) Commit(path string) error {
 func (f *FileSystem) OpenInWrite(path string) error {
 	link, err := f.linkRepo.GetByPath(path)
 	if err != nil {
-		return ErrCommitFailed
+		return err
 	}
 	ex := f.objectService.IsOpenForWrite(link)
 	if !ex {

@@ -50,7 +50,7 @@ func (o *Service) Read(link core.Link, buff []byte, ofst int64, key *core.KeyInf
 	if err != nil {
 		return 0, err
 	}
-	return o.objectCacheRepo.Read(link.Data.ObjectId, buff, ofst)
+	return o.objectCacheRepo.Read(link.Id(), buff, ofst)
 }
 
 // Write writes the given byte slice to the object cache repository at the specified offset.
@@ -73,11 +73,11 @@ func (o *Service) Create(id string) (err error) {
 // Move moves an object from the oldId to the newId.
 // It returns an error if the move operation fails.
 func (o *Service) Move(oldId string, newId string) (err error) {
-	return o.objectCacheRepo.Move(oldId, newId)
+	return o.objectCacheRepo.MoveToWrite(oldId, newId)
 }
 
-func (o *Service) ChangePath(id string, oldPath string, newPath string) (err error) {
-	return o.objectRepo.ChangePath(id, oldPath, newPath)
+func (o *Service) ChangePath(link core.Link, newPath string) (err error) {
+	return o.objectRepo.ChangePath(link, newPath)
 }
 
 // Truncate truncates the object with the specified ID to the given size.
@@ -94,7 +94,7 @@ func (o *Service) Truncate(id string, size int64) (err error) {
 // It returns an error if any error occurs during the process.
 func (o *Service) AvailableInCache(link core.Link, key *core.KeyInfo) error {
 	//check if object is already in cache, if yes, return
-	if o.objectCacheRepo.IsInCache(link.Data.ObjectId) {
+	if o.objectCacheRepo.IsInCache(link.Id()) {
 		return nil
 	}
 	//if not, check if object is in repo, if not, download it
@@ -125,7 +125,7 @@ func (o *Service) decryptToCache(link core.Link, key *core.KeyInfo) error {
 	//Create an unencrypted reader from encrypted file (reader interface) and the key
 	decryptedReader, _ := o.decryptReader(openObject, key)
 	//Create a writer to write the decrypted object to the cache
-	writer, err := o.objectCacheRepo.CacheObjectWriter(link.Data.ObjectId)
+	writer, err := o.objectCacheRepo.CacheObjectWriter(link.Id())
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (o *Service) downloadToObject(link core.Link) error {
 	//create the file in the repository
 	file, _ := o.objectRepo.CreateFile(link)
 	//download the object and store it in the repository
-	err := o.downloader.Download(link.Data.ObjectId, file)
+	err := o.downloader.Download(link.Id(), file)
 	defer file.Close()
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (o *Service) GetKeyIdByObjectId(link core.Link) (string, error) {
 // Commit adds the object to the encrypt channel queue.
 // It takes a link and a key as parameters and returns an error if any.
 func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
-	o.objectCacheRepo.AdToCommitting(link.Data.ObjectId)
+	o.objectCacheRepo.AdToCommitting(link.Id())
 	// Add the object to the encrypt channel queue
 	o.encryptChan <- encryptChanItem{link: link, key: key}
 	return nil
@@ -205,5 +205,5 @@ func (o *Service) RemoveFromCache(id string) error {
 
 // IsOpenForWrite returns true if the object with the specified ID is open for writing.
 func (o *Service) IsOpenForWrite(link core.Link) bool {
-	return o.objectCacheRepo.IsOpenForWrite(link.Data.ObjectId)
+	return o.objectCacheRepo.IsOpenForWrite(link.Id())
 }
