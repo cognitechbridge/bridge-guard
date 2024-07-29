@@ -36,6 +36,10 @@ jobs:
           $msiUrl = "https://github.com/winfsp/winfsp/releases/download/v2.0/winfsp-2.0.23075.msi"
           Invoke-WebRequest -Uri $msiUrl -OutFile winfsp.msi
           Start-Process -NoNewWindow -Wait msiexec "/i winfsp.msi /qn INSTALLLEVEL=1000"
+          cd C:\Program Files (x86)\WinFsp\inc\fuse
+          ls
+          echo $Env:CPATH
+          echo $Env:PATH
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get install -y libfuse-dev
