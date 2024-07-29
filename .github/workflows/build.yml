@@ -25,17 +25,13 @@ jobs:
         with:
           go-version: "1.21.0"
 
-      - name: Set up environment variables (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          $env:CPATH = "C:\Program Files (x86)\WinFsp\inc\fuse"
-
       - name: Install winfsp (Windows)
         if: runner.os == 'Windows'
         run: |
           $msiUrl = "https://github.com/winfsp/winfsp/releases/download/v2.0/winfsp-2.0.23075.msi"
           Invoke-WebRequest -Uri $msiUrl -OutFile winfsp.msi
           Start-Process -NoNewWindow -Wait msiexec "/i winfsp.msi /qn INSTALLLEVEL=1000"
+
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get install -y libfuse-dev
@@ -43,13 +39,7 @@ jobs:
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: |
-          cd "C:\Program Files (x86)\WinFsp\inc\fuse"
-          ls
-          echo "CPATH:"
-          echo $Env:CPATH
-          echo "DONE"
           $env:CPATH = "C:\Program Files (x86)\WinFsp\inc\fuse"
-          echo $Env:CPATH
           go build -v -o build/storage-x86_64-pc-windows-msvc.exe
 
       - name: Build (Linux)
