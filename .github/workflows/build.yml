@@ -48,6 +48,8 @@ jobs:
           echo "CPATH:"
           echo $Env:CPATH
           echo "DONE"
+          $env:CPATH = "C:\Program Files (x86)\WinFsp\inc\fuse"
+          echo $Env:CPATH
           go build -v -o build/storage-x86_64-pc-windows-msvc.exe
 
       - name: Build (Linux)
