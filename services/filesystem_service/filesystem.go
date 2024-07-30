@@ -5,6 +5,7 @@ import (
 	"ctb-cli/repositories"
 	"ctb-cli/services/config_service"
 	"ctb-cli/services/object_service"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -18,6 +19,11 @@ type FileSystem struct {
 	keyService    core.KeyService
 	configService config_service.ConfigService
 }
+
+var (
+	ErrFindingKey  = errors.New("Cannot find key")
+	ErrFindingLink = errors.New("Cannot find link")
+)
 
 // Make sure FileSystem implements the FileSystemService interface
 var _ core.FileSystemService = &FileSystem{}
@@ -376,6 +382,21 @@ func (f *FileSystem) Commit(path string) error {
 		}
 	}
 	return nil
+}
+
+// ValidatePath validates the path and returns an error if the path is not valid.
+// If the path is valid, it returns nil. If the path is not valid, it returns the error.
+func (f *FileSystem) validatePath(path string) error {
+	link, err := f.linkRepo.GetByPath(path)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrFindingLink, err)
+	}
+	key, err := f.getKeyByPath(path)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrFindingKey, err)
+	}
+	err = f.objectService.ValidateObject(link, key)
+	return err
 }
 
 // OpenInWrite opens the file at the specified path for writing.
