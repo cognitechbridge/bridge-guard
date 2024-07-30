@@ -53,6 +53,12 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 	// Close cache file
 	inputFile.Close()
 
+	// Validate cache
+	err = o.ValidateObject(e.link, e.key)
+	if err != nil {
+		return fmt.Errorf("Object validation failed: %w", err)
+	}
+
 	//Flush the object from the write cache
 	err = o.objectCacheRepo.FlushFromWrite(e.link.Id())
 	if err != nil {

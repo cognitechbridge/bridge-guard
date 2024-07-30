@@ -1,9 +1,12 @@
 package object_service
 
 import (
+	"bytes"
+	"crypto/md5"
 	"ctb-cli/core"
 	"ctb-cli/crypto/file_crypto"
 	"ctb-cli/repositories"
+	"errors"
 	"io"
 )
 
@@ -206,4 +209,55 @@ func (o *Service) RemoveFromCache(id string) error {
 // IsOpenForWrite returns true if the object with the specified ID is open for writing.
 func (o *Service) IsOpenForWrite(link core.Link) bool {
 	return o.objectCacheRepo.IsOpenForWrite(link.Id())
+}
+
+// ValidateObject validates the object with the specified ID.
+// It returns an error if the validation fails.
+func (o *Service) ValidateObject(link core.Link, key *core.KeyInfo) error {
+	//open object from repo
+	openObject, _ := o.objectRepo.OpenObject(link)
+	defer openObject.Close()
+	//Create an unencrypted reader from encrypted file (reader interface) and the key
+	decryptedReader, _ := o.decryptReader(openObject, key)
+	//Create a hash object to calculate the MD5 hash
+	hash1 := md5.New()
+	//Copy the decrypted object to the hash object
+	_, err := io.Copy(hash1, decryptedReader)
+	if err != nil {
+		return err
+	}
+	//Get the resulting hash sum
+	hashSum1 := hash1.Sum(nil)
+
+	// Create a hash object to calculate the MD5 hash in the cache
+	hash2 := md5.New()
+	// Read the decrypted object and update the hash
+	buff := make([]byte, 1024*1024) // 1 MB
+	nt := (int64)(0)
+	for {
+		n, err := o.objectCacheRepo.Read(link.Id(), buff, nt)
+		if n > 0 {
+			if _, err := hash2.Write(buff[:n]); err != nil {
+				return err
+			}
+		}
+		nt += int64(n)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if nt != link.Data.Size {
+		return errors.New("Data size mismatch")
+	}
+	// Get the resulting hash sum
+	hashSum2 := hash2.Sum(nil)
+
+	// Compare the hash sums
+	if !bytes.Equal(hashSum1, hashSum2) {
+		return errors.New("Hash sum mismatch")
+	}
+	return nil
 }
