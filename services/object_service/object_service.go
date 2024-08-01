@@ -8,6 +8,8 @@ import (
 	"ctb-cli/repositories"
 	"errors"
 	"io"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Service represents the object service.
@@ -16,9 +18,7 @@ type Service struct {
 	objectRepo      *repositories.ObjectRepository
 	downloader      core.CloudStorage
 
-	// internal queues and channels
-	encryptChan chan encryptChanItem
-	uploadChan  chan uploadChanItem
+	uploadChan chan uploadChanItem
 }
 
 // Make sure Service implements the core.ObjectService interface
@@ -34,12 +34,10 @@ func NewService(cache *repositories.ObjectCacheRepository, objectRepo *repositor
 		downloader:      dn,
 		objectCacheRepo: cache,
 		objectRepo:      objectRepo,
-		encryptChan:     make(chan encryptChanItem, 10),
 		uploadChan:      make(chan uploadChanItem, 10),
 	}
 
 	//start the encryption and upload routines in separate goroutines
-	go service.StartEncryptRoutine()
 	go service.StartUploadRoutine()
 
 	return service
@@ -80,6 +78,7 @@ func (o *Service) Move(oldId string, newId string) (err error) {
 }
 
 func (o *Service) ChangePath(link core.Link, newPath string) (err error) {
+	log.Debugf("ChangePath: %s to %s", link.Id(), newPath)
 	return o.objectRepo.ChangePath(link, newPath)
 }
 
@@ -194,8 +193,8 @@ func (o *Service) GetKeyIdByObjectId(link core.Link) (string, error) {
 // It takes a link and a key as parameters and returns an error if any.
 func (o *Service) Commit(link core.Link, key *core.KeyInfo) error {
 	o.objectCacheRepo.AdToCommitting(link.Id())
-	// Add the object to the encrypt channel queue
-	o.encryptChan <- encryptChanItem{link: link, key: key}
+	// Encrypt the object
+	o.encrypt(link, key)
 	return nil
 }
 
