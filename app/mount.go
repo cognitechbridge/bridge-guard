@@ -13,7 +13,7 @@ func (a *App) Mount() core.AppResult {
 }
 
 // PrepareMount creates the fuse file system and returns the result.
-func (a *App) PrepareMount(encryptedPrivateKey string) core.AppResult {
+func (a *App) PrepareMount(encryptedPrivateKey string, mount string) core.AppResult {
 	// init the app
 	initRes := a.initServices()
 	if !initRes.Ok {
@@ -26,6 +26,6 @@ func (a *App) PrepareMount(encryptedPrivateKey string) core.AppResult {
 	}
 	// create the fuse
 	a.fuse = fuse.New(a.fileSystem)
-	res := a.fuse.FindMountPoint()
+	res := a.fuse.FindMountPoint(mount)
 	return core.NewAppResultWithValue(res)
 }
