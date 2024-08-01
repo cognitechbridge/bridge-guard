@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,7 +24,7 @@ type TestSuite struct {
 
 func (suite *TestSuite) SetupSuite() {
 	suite.program = "bridge_guard"
-	suite.mountPoint = "Z:"
+	suite.mountPoint = "Z:\\"
 	suite.key = "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ"
 	tempDir := os.TempDir()
 	suite.repoAddress = filepath.Join(tempDir, "bridge_guard_temp_mount")
@@ -44,8 +46,15 @@ func (suite *TestSuite) initRepo() {
 	assert.NoError(suite.T(), err)
 }
 
+func removeTrailingBackslash(path string) string {
+	if runtime.GOOS == "windows" && strings.HasSuffix(path, "\\") {
+		path = strings.TrimSuffix(path, "\\")
+	}
+	return path
+}
+
 func (suite *TestSuite) mountRepo() {
-	suite.mountCmd = exec.Command(suite.program, "mount", "-k", suite.key, "-p", suite.repoAddress, "-m", suite.mountPoint)
+	suite.mountCmd = exec.Command(suite.program, "mount", "-k", suite.key, "-p", suite.repoAddress, "-m", removeTrailingBackslash((suite.mountPoint)))
 	err := suite.mountCmd.Start()
 	assert.NoError(suite.T(), err)
 	time.Sleep(2 * time.Second)
@@ -84,6 +93,13 @@ func (suite *TestSuite) readDirectory(dirName string) []os.DirEntry {
 	return entries
 }
 
+func (suite *TestSuite) moveFile(srcDir, destDir, fileName string) {
+	srcPath := filepath.Join(suite.mountPoint, srcDir, fileName)
+	destPath := filepath.Join(suite.mountPoint, destDir, fileName)
+	err := os.Rename(srcPath, destPath)
+	assert.NoError(suite.T(), err)
+}
+
 func (suite *TestSuite) TestWriteAndReadFile() {
 	fileName := "test.txt"
 	content := "Hello World!"
@@ -101,6 +117,27 @@ func (suite *TestSuite) TestWriteAndReadDirectory() {
 	entries := suite.readDirectory(dirName)
 
 	assert.Equal(suite.T(), 0, len(entries))
+}
+
+func (suite *TestSuite) TestMoveFile() {
+	srcDir := "src_dir"
+	destDir := "dest_dir"
+	fileName := "test.txt"
+	content := "Hello World!"
+
+	suite.writeDirectory(srcDir)
+	suite.writeDirectory(destDir)
+	suite.writeFile(filepath.Join(srcDir, fileName), content)
+
+	suite.moveFile(srcDir, destDir, fileName)
+
+	srcEntries := suite.readDirectory(srcDir)
+	destEntries := suite.readDirectory(destDir)
+	readContent := suite.readFile(filepath.Join(destDir, fileName))
+
+	assert.Equal(suite.T(), 0, len(srcEntries))
+	assert.Equal(suite.T(), 1, len(destEntries))
+	assert.Equal(suite.T(), content, readContent)
 }
 
 func TestBridgeGuardTestSuite(t *testing.T) {
