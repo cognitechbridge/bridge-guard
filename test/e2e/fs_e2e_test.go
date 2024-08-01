@@ -71,6 +71,19 @@ func (suite *TestSuite) readFile(fileName string) string {
 	return string(content)
 }
 
+func (suite *TestSuite) writeDirectory(dirName string) {
+	dirPath := filepath.Join(suite.mountPoint, dirName)
+	err := os.MkdirAll(dirPath, 0755)
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *TestSuite) readDirectory(dirName string) []os.DirEntry {
+	dirPath := filepath.Join(suite.mountPoint, dirName)
+	entries, err := os.ReadDir(dirPath)
+	assert.NoError(suite.T(), err)
+	return entries
+}
+
 func (suite *TestSuite) TestWriteAndReadFile() {
 	fileName := "test.txt"
 	content := "Hello World!"
@@ -79,6 +92,15 @@ func (suite *TestSuite) TestWriteAndReadFile() {
 	readContent := suite.readFile(fileName)
 
 	assert.Equal(suite.T(), content, readContent)
+}
+
+func (suite *TestSuite) TestWriteAndReadDirectory() {
+	dirName := "test_dir"
+
+	suite.writeDirectory(dirName)
+	entries := suite.readDirectory(dirName)
+
+	assert.Equal(suite.T(), 0, len(entries))
 }
 
 func TestBridgeGuardTestSuite(t *testing.T) {
