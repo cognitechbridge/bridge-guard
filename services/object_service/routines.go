@@ -1,43 +1,38 @@
 package object_service
 
 import (
+	"ctb-cli/core"
 	"fmt"
 	"io"
 	"os"
-)
 
-// StartEncryptRoutine starts a routine that continuously encrypts items from the encryptChan channel.
-// It calls the encrypt method for each item and continues to the next item if an error occurs.
-func (o *Service) StartEncryptRoutine() {
-	for {
-		item := <-o.encryptChan
-		err := o.encrypt(item)
-		if err != nil {
-			continue
-		}
-	}
-}
+	log "github.com/sirupsen/logrus"
+)
 
 // encrypt encrypts the object identified by the given ID using the provided encryption key.
 // It opens the object file, creates an output file, and copies the encrypted content from the input file to the output file.
 // After encrypting the file, it flushes the object from the cache and triggers an upload of the encrypted file.
 // The function returns an error if any operation fails.
-func (o *Service) encrypt(e encryptChanItem) (err error) {
+func (o *Service) encrypt(link core.Link, key *core.KeyInfo) (err error) {
 	//Open object file
-	inputFile, err := o.objectCacheRepo.AsFile(e.link.Id())
+	inputFile, err := o.objectCacheRepo.AsFile(link.Id())
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
+	defer inputFile.Close()
 
 	//Create output file
-	file, err := o.objectRepo.CreateFile(e.link)
+	file, err := o.objectRepo.CreateFile(link)
 	if err != nil {
 		return fmt.Errorf("failed to Create output file: %w", err)
 	}
 	defer file.Close()
 
 	//Create encrypted writer
-	encryptedWriter, err := o.encryptWriter(file, e.link.Id(), e.key)
+	encryptedWriter, err := o.encryptWriter(file, link.Id(), key)
+	if err != nil {
+		return fmt.Errorf("failed to create encrypted writer: %w", err)
+	}
 
 	//Copy to output
 	_, err = io.Copy(encryptedWriter, inputFile)
@@ -50,30 +45,39 @@ func (o *Service) encrypt(e encryptChanItem) (err error) {
 		return
 	}
 
+	// Close object file
+	err = file.Close()
+	if err != nil {
+		return
+	}
 	// Close cache file
-	inputFile.Close()
+	err = inputFile.Close()
+	if err != nil {
+		return
+	}
 
 	// Validate cache
-	err = o.ValidateObject(e.link, e.key)
+	err = o.ValidateObject(link, key)
 	if err != nil {
 		return fmt.Errorf("Object validation failed: %w", err)
 	}
 
 	//Flush the object from the write cache
-	err = o.objectCacheRepo.FlushFromWrite(e.link.Id())
+	err = o.objectCacheRepo.FlushFromWrite(link.Id())
 	if err != nil {
 		return
 	}
 	// Flush the object from the read cache
-	err = o.objectCacheRepo.FlushFromRead(e.link.Id())
+	err = o.objectCacheRepo.FlushFromRead(link.Id())
 	if err != nil {
 		return
 	}
 
-	fmt.Printf("File Encrypted: %s \n", e.link.Id())
+	log.Debugf("File Encrypted: %s", link.Id())
+	fmt.Printf("File Encrypted: %s \n", link.Id())
 
 	//Trigger upload
-	o.uploadChan <- uploadChanItem{id: e.link.Id(), path: e.link.Path}
+	//o.uploadChan <- uploadChanItem{id: link.Id(), path: link.Path}
 
 	return nil
 }
