@@ -16,7 +16,8 @@ var mountCmd = &cobra.Command{
 	Short: "Mount",
 	Long:  `Mount the file system. This command mounts the file system and blocks the terminal.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		res := ctbApp.PrepareMount(encryptedPrivateKey)
+		mount, _ := cmd.Flags().GetString("mount")
+		res := ctbApp.PrepareMount(encryptedPrivateKey, mount)
 		MarshalOutput(res)
 		fmt.Fprint(os.Stdout, "/**********************************\n")
 		ctbApp.Mount()
@@ -26,4 +27,5 @@ var mountCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(mountCmd)
 	SetRequiredKeyFlag(mountCmd)
+	mountCmd.PersistentFlags().StringP("mount", "m", "", "Mount point.")
 }

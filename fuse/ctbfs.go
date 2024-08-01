@@ -52,14 +52,15 @@ func New(fs core.FileSystemService) *CtbFs {
 	return &c
 }
 
-func (c *CtbFs) FindMountPoint() string {
-	mount := ""
-	if runtime.GOOS == "windows" {
-		mount = c.FindUnusedDrive()
-	} else if runtime.GOOS == "darwin" {
-		mount = "/Volumes/ctbfs"
-	} else if runtime.GOOS == "linux" {
-		mount = "/mnt/ctbfs"
+func (c *CtbFs) FindMountPoint(mount string) string {
+	if mount == "" {
+		if runtime.GOOS == "windows" {
+			mount = c.FindUnusedDrive()
+		} else if runtime.GOOS == "darwin" {
+			mount = "/Volumes/ctbfs"
+		} else if runtime.GOOS == "linux" {
+			mount = "/mnt/ctbfs"
+		}
 	}
 	c.mountPoint = mount
 	return c.mountPoint
