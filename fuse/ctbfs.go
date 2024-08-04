@@ -261,6 +261,9 @@ func (c *CtbFs) Write(path string, buff []byte, ofst int64, fh uint64) (n int) {
 		return -fuse.ENOENT
 	}
 	n, _ = c.fs.Write(path, buff, ofst)
+	if int64(n)+ofst > node.stat.Size {
+		node.stat.Size = int64(n) + ofst
+	}
 	return
 }
 
