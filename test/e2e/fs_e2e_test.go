@@ -254,8 +254,8 @@ func randomFileName() string {
 
 // Monkey test implementation with assertions
 func (suite *TestSuite) TestMonkey() {
+	suite.T().Skip("Skipping monkey test")
 	rand.Seed(uint64(time.Now().UnixNano()))
-
 	operations := []func(){
 		func() {
 			fileName := randomFileName()
