@@ -111,7 +111,11 @@ func getLogPath() string {
 		logPath := filepath.Join(logDir, "client.log")
 		return logPath
 	} else if runtime.GOOS == "linux" {
-		logDir := filepath.Join("/var/log", "cognitechbridge")
+		homeDir := os.Getenv("HOME")
+		if homeDir == "" {
+			panic("HOME environment variable not set")
+		}
+		logDir := filepath.Join(homeDir, ".cognitechbridge", "logs")
 		logPath := filepath.Join(logDir, "client.log")
 		return logPath
 	} else {
