@@ -26,7 +26,8 @@ type TestSuite struct {
 
 func (suite *TestSuite) SetupSuite() {
 	if runtime.GOOS == "linux" {
-		suite.mountPoint = "/mnt/bridge_guard"
+		homeDir := os.Getenv("HOME")
+		suite.mountPoint = filepath.Join(homeDir, "/mnt/")
 	} else {
 		suite.mountPoint = "Z:\\"
 	}
