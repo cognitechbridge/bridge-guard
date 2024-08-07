@@ -21,6 +21,6 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(statusCmd)
+	RootCmd.AddCommand(statusCmd)
 	statusCmd.PersistentFlags().StringVarP(&encryptedPrivateKey, "key", "k", "", "Your private key. Optional.")
 }

@@ -1,8 +1,10 @@
 package e2e_test
 
 import (
+	"bytes"
+	"context"
+	"ctb-cli/cmd"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -19,16 +21,19 @@ type TestSuite struct {
 	repoAddress string
 	mountPoint  string
 	key         string
-	program     string
-	mountCmd    *exec.Cmd
+	cancel      context.CancelFunc
 }
 
 func (suite *TestSuite) SetupSuite() {
-	suite.program = "bridge_guard"
-	suite.mountPoint = "Z:\\"
+	if runtime.GOOS == "linux" {
+		suite.mountPoint = "/mnt/bridge_guard"
+	} else {
+		suite.mountPoint = "Z:\\"
+	}
 	suite.key = "79dvjtK2jcPpfXi1HsKa2S9GV5qjhbKgJHQyoWevg6ZQ"
 	tempDir := os.TempDir()
 	suite.repoAddress = filepath.Join(tempDir, "bridge_guard_temp_mount")
+	os.RemoveAll(suite.repoAddress)
 	err := os.MkdirAll(suite.repoAddress, 0755)
 	assert.NoError(suite.T(), err)
 	suite.initRepo()
@@ -41,9 +46,18 @@ func (suite *TestSuite) TearDownSuite() {
 	assert.NoError(suite.T(), err)
 }
 
+func (suite *TestSuite) exec(args ...string) (context.CancelFunc, string, error) {
+	root := cmd.RootCmd
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetArgs(args)
+	ctx, cancel := context.WithCancel(context.Background())
+	_, err := root.ExecuteContextC(ctx)
+	return cancel, buf.String(), err
+}
+
 func (suite *TestSuite) initRepo() {
-	cmd := exec.Command(suite.program, "init", "-k", suite.key, "-p", suite.repoAddress)
-	err := cmd.Run()
+	_, _, err := suite.exec("init", "-k", suite.key, "-p", suite.repoAddress)
 	assert.NoError(suite.T(), err)
 }
 
@@ -55,16 +69,15 @@ func removeTrailingBackslash(path string) string {
 }
 
 func (suite *TestSuite) mountRepo() {
-	suite.mountCmd = exec.Command(suite.program, "mount", "-k", suite.key, "-p", suite.repoAddress, "-m", removeTrailingBackslash((suite.mountPoint)))
-	err := suite.mountCmd.Start()
-	assert.NoError(suite.T(), err)
+	go func() {
+		suite.cancel, _, _ = suite.exec("mount", "-k", suite.key, "-p", suite.repoAddress, "-m", removeTrailingBackslash((suite.mountPoint)))
+	}()
 	time.Sleep(2 * time.Second)
 }
 
 func (suite *TestSuite) unmountRepo() {
-	if suite.mountCmd != nil && suite.mountCmd.Process != nil {
-		_ = suite.mountCmd.Process.Kill()
-		_ = suite.mountCmd.Wait()
+	if suite.cancel != nil {
+		suite.cancel()
 	}
 }
 
