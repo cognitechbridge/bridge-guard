@@ -28,6 +28,7 @@ func (suite *TestSuite) SetupSuite() {
 	if runtime.GOOS == "linux" {
 		homeDir := os.Getenv("HOME")
 		suite.mountPoint = filepath.Join(homeDir, "/mnt/")
+		_ = os.MkdirAll(suite.mountPoint, 0755)
 	} else {
 		suite.mountPoint = "Z:\\"
 	}
