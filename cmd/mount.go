@@ -25,7 +25,7 @@ var mountCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(mountCmd)
+	RootCmd.AddCommand(mountCmd)
 	SetRequiredKeyFlag(mountCmd)
 	mountCmd.PersistentFlags().StringP("mount", "m", "", "Mount point.")
 }

@@ -19,6 +19,6 @@ var pubkeyCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(pubkeyCmd)
+	RootCmd.AddCommand(pubkeyCmd)
 	SetRequiredKeyFlag(pubkeyCmd)
 }

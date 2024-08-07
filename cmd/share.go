@@ -32,7 +32,7 @@ var shareCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(shareCmd)
+	RootCmd.AddCommand(shareCmd)
 	SetRequiredKeyFlag(shareCmd)
 	shareCmd.PersistentFlags().StringP("recipient", "r", "", "recipient public key. Required.")
 	shareCmd.Flags().BoolP("join", "j", false, "Join the user if not already joined.")

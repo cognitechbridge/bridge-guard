@@ -21,5 +21,5 @@ var generateKeyCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(generateKeyCmd)
+	RootCmd.AddCommand(generateKeyCmd)
 }

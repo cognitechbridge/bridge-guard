@@ -24,8 +24,8 @@ var output outputEnum = outputEnumText
 
 var ctbApp app.App
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
 	Use:   "ctb-cli",
 	Short: "This is CTB cli tool",
 	Long:  `This is CTB cli tool.`,
@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
+	err := RootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
 	}
@@ -50,10 +50,10 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	addSubCommands()
 
-	rootCmd.PersistentFlags().StringVarP(&repoPath, "path", "p", "", "path to the repository")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $USERPROFILE/.ctb/config.yaml)")
-	rootCmd.PersistentFlags().VarP(&output, "output", "o", `Output format. allowed: "json", "text", "yaml", and "xml"`)
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	RootCmd.PersistentFlags().StringVarP(&repoPath, "path", "p", "", "path to the repository")
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $USERPROFILE/.ctb/config.yaml)")
+	RootCmd.PersistentFlags().VarP(&output, "output", "o", `Output format. allowed: "json", "text", "yaml", and "xml"`)
+	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -111,7 +111,11 @@ func getLogPath() string {
 		logPath := filepath.Join(logDir, "client.log")
 		return logPath
 	} else if runtime.GOOS == "linux" {
-		logDir := filepath.Join("/var/log", "cognitechbridge")
+		homeDir := os.Getenv("HOME")
+		if homeDir == "" {
+			panic("HOME environment variable not set")
+		}
+		logDir := filepath.Join(homeDir, ".cognitechbridge", "logs")
 		logPath := filepath.Join(logDir, "client.log")
 		return logPath
 	} else {

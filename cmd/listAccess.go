@@ -21,7 +21,7 @@ var listAccessCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(listAccessCmd)
+	RootCmd.AddCommand(listAccessCmd)
 
 	// Here you will define your flags and configuration settings.
 

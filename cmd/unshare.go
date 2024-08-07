@@ -21,7 +21,7 @@ var unshareCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(unshareCmd)
+	RootCmd.AddCommand(unshareCmd)
 	unshareCmd.PersistentFlags().StringP("recipient", "r", "", "recipient public key. Required.")
 	err := unshareCmd.MarkPersistentFlagRequired("recipient")
 	if err != nil {

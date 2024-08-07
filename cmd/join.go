@@ -21,6 +21,6 @@ var joinCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(joinCmd)
+	RootCmd.AddCommand(joinCmd)
 	SetRequiredKeyFlag(joinCmd)
 }
